@@ -5,136 +5,310 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
 model User {
-  id            String       @id
-  name          String
-  email         String
-  emailVerified Boolean      @default(false)
-  image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  members       Member[]
-  invitations   Invitation[]
+    id            String       @id @default(nanoid())
+    name          String
+    email         String
+    emailVerified Boolean      @default(false)
+    image         String?
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+    sessions      Session[]
+    accounts      Account[]
+    members       Member[]
+    invitations   Invitation[]
 
-  @@unique([email])
-  @@map("user")
+    @@unique([email])
+    @@map("user")
 }
 
 model Session {
-  id                   String   @id
-  expiresAt            DateTime
-  token                String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  ipAddress            String?
-  userAgent            String?
-  userId               String
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activeOrganizationId String?
+    id                   String   @id @default(nanoid())
+    expiresAt            DateTime
+    token                String
+    createdAt            DateTime @default(now())
+    updatedAt            DateTime @updatedAt
+    ipAddress            String?
+    userAgent            String?
+    userId               String
+    user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    activeOrganizationId String?
 
-  @@unique([token])
-  @@index([userId])
-  @@map("session")
+    @@unique([token])
+    @@index([userId])
+    @@map("session")
 }
 
 model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+    id                    String    @id @default(nanoid())
+    accountId             String
+    providerId            String
+    userId                String
+    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accessToken           String?
+    refreshToken          String?
+    idToken               String?
+    accessTokenExpiresAt  DateTime?
+    refreshTokenExpiresAt DateTime?
+    scope                 String?
+    password              String?
+    createdAt             DateTime  @default(now())
+    updatedAt             DateTime  @updatedAt
 
-  @@index([userId])
-  @@map("account")
+    @@index([userId])
+    @@map("account")
 }
 
 model Verification {
-  id         String   @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+    id         String   @id @default(nanoid())
+    identifier String
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
 
-  @@index([identifier])
-  @@map("verification")
+    @@index([identifier])
+    @@map("verification")
 }
 
 model Organization {
-  id                String             @id
-  name              String
-  slug              String
-  logo              String?
-  createdAt         DateTime
-  metadata          String?
-  organizationroles OrganizationRole[]
-  members           Member[]
-  invitations       Invitation[]
+    id                String             @id @default(nanoid())
+    name              String
+    slug              String
+    logo              String?
+    createdAt         DateTime
+    metadata          String?
+    organizationroles OrganizationRole[]
+    members           Member[]
+    invitations       Invitation[]
+    customers         Customer[]
+    segments          Segment[]
+    campaigns         Campaign[]
+    products          Product[]
+    orders            Order[]
+    orderItems        OrderItem[]
+    supportTickets    SupportTicket[]
 
-  @@unique([slug])
-  @@map("organization")
+    @@unique([slug])
+    @@map("organization")
 }
 
 model OrganizationRole {
-  id             String       @id
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  role           String
-  permission     String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime?    @updatedAt
+    id             String       @id @default(nanoid())
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    role           String
+    permission     String
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime?    @updatedAt
 
-  @@index([organizationId])
-  @@index([role])
-  @@map("organizationRole")
+    @@index([organizationId])
+    @@index([role])
+    @@map("organizationRole")
 }
 
 model Member {
-  id             String       @id
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           String       @default("member")
-  createdAt      DateTime
+    id             String       @id @default(nanoid())
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    userId         String
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    role           String       @default("member")
+    createdAt      DateTime
 
-  @@index([organizationId])
-  @@index([userId])
-  @@map("member")
+    @@unique([userId])
+    @@index([organizationId])
+    @@index([userId])
+    @@map("member")
 }
 
 model Invitation {
-  id             String       @id
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  email          String
-  role           String?
-  status         String       @default("pending")
-  expiresAt      DateTime
-  createdAt      DateTime     @default(now())
-  inviterId      String
-  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+    id             String       @id @default(nanoid())
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    email          String
+    role           String?
+    status         String       @default("pending")
+    expiresAt      DateTime
+    createdAt      DateTime     @default(now())
+    inviterId      String
+    user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
-  @@index([organizationId])
-  @@index([email])
-  @@map("invitation")
+    @@index([organizationId])
+    @@index([email])
+    @@map("invitation")
+}
+
+enum CustomerSource {
+    WEBSITE
+    SOCIAL
+    REFERRAL
+    ORGANIC
+    EMAIL
+    CAMPAIGN
+    OTHER
+}
+
+enum CustomerLifecycleStage {
+    PROSPECT // No Purchase Yet
+    ONE_TIME // Only One Purchase
+    RETURNING // 2-4 Orders
+    LOYAL // 5+ Orders
+    VIP // Top 5% LTV
+    AT_RISK // No Purchase in more than their avg.
+    CHURNED // No Purchase in more than 2x their avg.
+    WINBACK // Previously churned but made a purchase
+}
+
+model Customer {
+    id             String                 @id @default(nanoid())
+    name           String
+    phone          String?
+    email          String?
+    address        String?
+    source         CustomerSource         @default(OTHER)
+    lifecycleStage CustomerLifecycleStage @default(PROSPECT)
+    tags           Tag[]
+    notes          String[]
+    organization   Organization           @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime               @default(now())
+    updatedAt      DateTime               @updatedAt
+    organizationId String
+    orders         Order[]
+    supportTickets SupportTicket[]
+
+    @@index([organizationId])
+}
+
+model Tag {
+    id        String     @id @default(nanoid())
+    name      String
+    color     String
+    customers Customer[]
+}
+
+model Segment {
+    id             String       @id @default(nanoid())
+    name           String
+    filter         Json
+    description    String?
+    organization   Organization @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
+    organizationId String
+
+    @@index([organizationId])
+}
+
+model Campaign {
+    id   String @id @default(nanoid())
+    name String
+
+    description    String?
+    organization   Organization @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
+    organizationId String
+
+    @@index([organizationId])
+}
+
+model Product {
+    id             String       @id @default(nanoid())
+    name           String
+    price          Decimal
+    description    String?
+    organization   Organization @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
+    organizationId String
+    orderItems     OrderItem[]
+
+    @@index([organizationId])
+}
+
+enum ShippingStatus {
+    PENDING
+    PROCESSING
+    SHIPPED
+    DELIVERED
+    CANCELLED
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+    REFUNDED
+}
+
+model Order {
+    id             String          @id @default(nanoid())
+    organizationId String
+    customerId     String
+    shippingStatus ShippingStatus  @default(PENDING)
+    paymentStatus  PaymentStatus   @default(PENDING)
+    orderItems     OrderItem[]
+    customer       Customer        @relation(fields: [customerId], references: [id])
+    organization   Organization    @relation(fields: [organizationId], references: [id])
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt
+    supportTickets SupportTicket[]
+
+    @@index([organizationId])
+}
+
+model OrderItem {
+    id             String       @id @default(nanoid())
+    orderId        String
+    productId      String
+    quantity       Int
+    price          Decimal
+    createdAt      DateTime     @default(now())
+    updatedAt      DateTime     @updatedAt
+    organizationId String
+    order          Order        @relation(fields: [orderId], references: [id])
+    product        Product      @relation(fields: [productId], references: [id])
+    organization   Organization @relation(fields: [organizationId], references: [id])
+
+    @@index([organizationId])
+}
+
+enum SupportTicketStatus {
+    OPEN
+    PENDING
+    CLOSED
+}
+
+enum SupportTicketPriority {
+    LOW
+    MEDIUM
+    HIGH
+    URGENT
+}
+
+model SupportTicket {
+    id             String                @id @default(nanoid())
+    organizationId String
+    customerId     String
+    orderId        String
+    subject        String
+    description    String
+    status         SupportTicketStatus   @default(PENDING)
+    priority       SupportTicketPriority @default(MEDIUM)
+    createdAt      DateTime              @default(now())
+    updatedAt      DateTime              @updatedAt
+    organization   Organization          @relation(fields: [organizationId], references: [id])
+    customer       Customer              @relation(fields: [customerId], references: [id])
+    order          Order                 @relation(fields: [orderId], references: [id])
+
+    @@index([organizationId])
 }

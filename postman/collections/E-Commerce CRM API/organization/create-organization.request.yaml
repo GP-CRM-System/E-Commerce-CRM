@@ -1,0 +1,41 @@
+$kind: http-request
+name: Create Organization
+method: POST
+url: "{{baseUrl}}/api/auth/organization/create"
+order: 2000
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{sessionToken}}
+body:
+  type: json
+  content: |-
+    {
+      "name": "{{organizationName}}",
+      "slug": "{{organizationSlug}}",
+      "logo": "logolink"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response is valid JSON", function () {
+          pm.response.to.be.json;
+      });
+
+      pm.test("Response contains organization data", function () {
+          const jsonData = pm.response.json();
+          pm.expect(jsonData).to.have.property("id");
+          pm.expect(jsonData).to.have.property("name");
+          pm.expect(jsonData).to.have.property("slug");
+      });
+
+      // Store organization ID for subsequent requests
+      const jsonData = pm.response.json();
+      if (jsonData.id) {
+          pm.collectionVariables.set("organizationId", jsonData.id);
+          console.log("Organization ID saved: " + jsonData.id);
+      }
+    language: text/javascript

@@ -1,0 +1,27 @@
+$kind: http-request
+name: Cancel Invitation
+method: POST
+url: '{{baseUrl}}/api/auth/organization/cancel-invitation'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+  - key: Authorization
+    value: 'Bearer {{sessionToken}}'
+body:
+  type: json
+  content: |-
+    {
+      "invitationId": "{{invitationId}}"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test("Response is valid JSON", function () {
+          pm.response.to.be.json;
+      });

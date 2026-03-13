@@ -1,0 +1,5 @@
+$kind: collection
+name: Authentication
+description: User authentication endpoints including sign-up, sign-in, sign-out,
+  password management, and session handling.
+order: 1000

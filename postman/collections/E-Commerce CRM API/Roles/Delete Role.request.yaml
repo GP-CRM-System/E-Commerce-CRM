@@ -1,0 +1,17 @@
+$kind: http-request
+name: Delete Role
+url: "{{baseUrl}}/api/auth/organization/delete-role"
+method: POST
+headers:
+  - key: Authorization
+    value: Bearer {{sessionToken}}
+body:
+  type: json
+  content: "{\r
+
+    \t\"roleName\": \"HR Coordinator\", // OR\r
+
+    \t\"roleId\": \"roleId\"\r
+
+    }"
+order: 1069

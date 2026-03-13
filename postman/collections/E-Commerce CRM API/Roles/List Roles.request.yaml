@@ -1,0 +1,8 @@
+$kind: http-request
+name: List Roles
+url: "{{baseUrl}}/api/auth/organization/list-roles"
+method: GET
+headers:
+  - key: Authorization
+    value: Bearer {{sessionToken}}
+order: 3943286102641597

@@ -1,11 +1,11 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from 'express';
 import {
     ResponseHandler,
     AppError,
     ErrorCode,
     HttpStatus
-} from "../utils/response.util.js";
-import { logger } from "../utils/logger.util.js";
+} from '../utils/response.util.js';
+import logger from '../utils/logger.util.js';
 
 /**
  * Format and send a consistent error response for failed requests.
@@ -41,24 +41,24 @@ export const errorHandler = (
     }
 
     // Handle Zod validation errors
-    if (err.name === "ZodError" || (err as any).issues) {
+    if (err.name === 'ZodError' || (err as any).issues) {
         const zodErr = err as any;
         const issues = zodErr.errors || zodErr.issues || [];
 
         const details: Record<string, unknown> = Array.isArray(issues)
             ? issues.reduce((acc: Record<string, unknown>, error: any) => {
-                const errorPath = Array.isArray(error.path)
-                    ? error.path.join(".")
-                    : error.path;
-                acc[errorPath] = error.message;
-                return acc;
-            }, {})
-            : { error: "Unknown validation error" };
+                  const errorPath = Array.isArray(error.path)
+                      ? error.path.join('.')
+                      : error.path;
+                  acc[errorPath] = error.message;
+                  return acc;
+              }, {})
+            : { error: 'Unknown validation error' };
 
         logger.warn(`Validation error - Path: ${path}`);
         return ResponseHandler.error(
             res,
-            "Validation failed",
+            'Validation failed',
             ErrorCode.VALIDATION_ERROR,
             HttpStatus.BAD_REQUEST,
             path,
@@ -70,8 +70,8 @@ export const errorHandler = (
     logger.error(`Unhandled error: ${err.message} - Stack: ${err.stack}`);
     return ResponseHandler.error(
         res,
-        process.env.NODE_ENV === "production"
-            ? "An error occurred"
+        process.env.NODE_ENV === 'production'
+            ? 'An error occurred'
             : err.message,
         ErrorCode.SERVER_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,
