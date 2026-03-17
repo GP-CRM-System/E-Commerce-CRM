@@ -1,0 +1,103 @@
+import { z } from 'zod';
+
+export const createCustomer = z.object({
+    name: z.string().min(2).max(50).trim().nonempty(),
+    phone: z.string().min(11).max(13).trim().optional(),
+    email: z.email().trim().optional(),
+    city: z.string().trim().optional(),
+    address: z.string().trim().optional(),
+    source: z
+        .enum([
+            'WEBSITE',
+            'SOCIAL',
+            'REFERRAL',
+            'ORGANIC',
+            'EMAIL',
+            'CAMPAIGN',
+            'OTHER'
+        ])
+        .default('OTHER'),
+    lifecycleStage: z
+        .enum([
+            'PROSPECT',
+            'ONE_TIME',
+            'RETURNING',
+            'LOYAL',
+            'VIP',
+            'AT_RISK',
+            'CHURNED',
+            'WINBACK'
+        ])
+        .default('PROSPECT'),
+
+    // E-Commerce Specific Fields
+    externalId: z.string().trim().optional(),
+    acceptsMarketing: z.boolean().default(false),
+
+    // Advanced E-commerce Metrics (Optional for manual entry/sync)
+    totalOrders: z.number().int().min(0).optional(),
+    totalSpent: z.number().min(0).optional(),
+    totalRefunded: z.number().min(0).optional(),
+    avgOrderValue: z.number().min(0).optional(),
+    firstOrderAt: z.coerce.date().optional(),
+    lastOrderAt: z.coerce.date().optional(),
+    avgDaysBetweenOrders: z.number().optional(),
+    churnRiskScore: z.number().min(0).max(1).optional(),
+    rfmScore: z.string().optional(),
+    rfmSegment: z.string().optional(),
+    cohortMonth: z.string().optional(),
+
+    createdAt: z.coerce.date().default(() => new Date()),
+    updatedAt: z.coerce.date().default(() => new Date())
+});
+
+export const updateCustomer = z.object({
+    name: z.string().min(2).max(50).trim().optional(),
+    phone: z.string().min(11).max(13).trim().optional(),
+    email: z.string().email().trim().optional(),
+    city: z.string().trim().optional(),
+    address: z.string().trim().optional(),
+    source: z
+        .enum([
+            'WEBSITE',
+            'SOCIAL',
+            'REFERRAL',
+            'ORGANIC',
+            'EMAIL',
+            'CAMPAIGN',
+            'OTHER'
+        ])
+        .optional(),
+    lifecycleStage: z
+        .enum([
+            'PROSPECT',
+            'ONE_TIME',
+            'RETURNING',
+            'LOYAL',
+            'VIP',
+            'AT_RISK',
+            'CHURNED',
+            'WINBACK'
+        ])
+        .optional(),
+
+    // E-Commerce Specific Fields
+    externalId: z.string().trim().optional(),
+    acceptsMarketing: z.boolean().optional(),
+
+    // Advanced E-commerce Metrics
+    totalOrders: z.number().int().min(0).optional(),
+    totalSpent: z.number().min(0).optional(),
+    totalRefunded: z.number().min(0).optional(),
+    avgOrderValue: z.number().min(0).optional(),
+    firstOrderAt: z.coerce.date().optional(),
+    lastOrderAt: z.coerce.date().optional(),
+    avgDaysBetweenOrders: z.number().optional(),
+    churnRiskScore: z.number().min(0).max(1).optional(),
+    rfmScore: z.string().optional(),
+    rfmSegment: z.string().optional(),
+    cohortMonth: z.string().optional(),
+
+    updatedAt: z.coerce.date().default(() => new Date())
+});
+

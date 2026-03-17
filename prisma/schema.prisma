@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
     provider = "prisma-client"
     output   = "../src/generated/prisma"
@@ -25,6 +19,8 @@ model User {
     accounts      Account[]
     members       Member[]
     invitations   Invitation[]
+    auditLogs     AuditLog[]
+    notes         Note[]
 
     @@unique([email])
     @@map("user")
@@ -94,8 +90,10 @@ model Organization {
     campaigns         Campaign[]
     products          Product[]
     orders            Order[]
-    orderItems        OrderItem[]
     supportTickets    SupportTicket[]
+    auditLogs         AuditLog[]
+    tags              Tag[]
+    integrations      Integration[]
 
     @@unique([slug])
     @@map("organization")
@@ -169,15 +167,18 @@ enum CustomerLifecycleStage {
 }
 
 model Customer {
-    id             String                 @id @default(nanoid())
-    name           String
-    phone          String?
-    email          String?
-    address        String?
+    id    String  @id @default(nanoid())
+    name  String
+    phone String?
+    email String?
+
+    city    String?
+    address String?
+
     source         CustomerSource         @default(OTHER)
     lifecycleStage CustomerLifecycleStage @default(PROSPECT)
     tags           Tag[]
-    notes          String[]
+    notes          Note[]
     organization   Organization           @relation(fields: [organizationId], references: [id])
     createdAt      DateTime               @default(now())
     updatedAt      DateTime               @updatedAt
@@ -185,14 +186,70 @@ model Customer {
     orders         Order[]
     supportTickets SupportTicket[]
 
+    // E-Commerce Specific Fields
+    externalId           String?
+    totalOrders          Int             @default(0)
+    totalSpent           Decimal         @default(0)
+    totalRefunded        Decimal         @default(0)
+    avgOrderValue        Decimal         @default(0)
+    firstOrderAt         DateTime?
+    lastOrderAt          DateTime?
+    avgDaysBetweenOrders Float?
+    churnRiskScore       Float?
+    rfmScore             String?
+    rfmSegment           String?
+    cohortMonth          String? // '2024-03'
+    acceptsMarketing     Boolean         @default(false)
+    lastSyncedAt         DateTime?
+    customerEvents       CustomerEvent[]
+
     @@index([organizationId])
 }
 
+model Note {
+    id         String   @id @default(nanoid())
+    customerId String
+    authorId   String
+    body       String
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    customer Customer @relation(fields: [customerId], references: [id])
+    author   User     @relation(fields: [authorId], references: [id])
+}
+
+model Integration {
+    id           String       @id @default(nanoid())
+    orgId        String
+    organization Organization @relation(fields: [orgId], references: [id])
+    provider     String // 'shopify'
+    shopDomain   String?
+    accessToken  String // encrypted
+    syncStatus   String       @default("pending")
+    lastSyncedAt DateTime?
+    createdAt    DateTime     @default(now())
+
+    @@index([orgId])
+}
+
+model CustomerEvent {
+    id          String   @id @default(nanoid())
+    customerId  String
+    eventType   String // 'order_placed', 'refund_issued', 'tag_added'
+    description String
+    metadata    Json?
+    source      String // 'shopify', 'manual'
+    occurredAt  DateTime @default(now())
+    customer    Customer @relation(fields: [customerId], references: [id])
+}
+
 model Tag {
-    id        String     @id @default(nanoid())
-    name      String
-    color     String
-    customers Customer[]
+    id             String       @id @default(nanoid())
+    name           String
+    color          String
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id])
+    customers      Customer[]
 }
 
 model Segment {
@@ -232,6 +289,11 @@ model Product {
     organizationId String
     orderItems     OrderItem[]
 
+    externalId String?
+    sku        String?
+    category   String?
+    imageUrl   String?
+
     @@index([organizationId])
 }
 
@@ -263,23 +325,23 @@ model Order {
     updatedAt      DateTime        @updatedAt
     supportTickets SupportTicket[]
 
+    externalId     String?
+    discountAmount Decimal @default(0)
+    refundAmount   Decimal @default(0)
+
     @@index([organizationId])
 }
 
 model OrderItem {
-    id             String       @id @default(nanoid())
-    orderId        String
-    productId      String
-    quantity       Int
-    price          Decimal
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @updatedAt
-    organizationId String
-    order          Order        @relation(fields: [orderId], references: [id])
-    product        Product      @relation(fields: [productId], references: [id])
-    organization   Organization @relation(fields: [organizationId], references: [id])
-
-    @@index([organizationId])
+    id        String   @id @default(nanoid())
+    orderId   String
+    productId String
+    quantity  Int
+    price     Decimal
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    order     Order    @relation(fields: [orderId], references: [id])
+    product   Product  @relation(fields: [productId], references: [id])
 }
 
 enum SupportTicketStatus {
@@ -299,7 +361,7 @@ model SupportTicket {
     id             String                @id @default(nanoid())
     organizationId String
     customerId     String
-    orderId        String
+    orderId        String?
     subject        String
     description    String
     status         SupportTicketStatus   @default(PENDING)
@@ -308,7 +370,21 @@ model SupportTicket {
     updatedAt      DateTime              @updatedAt
     organization   Organization          @relation(fields: [organizationId], references: [id])
     customer       Customer              @relation(fields: [customerId], references: [id])
-    order          Order                 @relation(fields: [orderId], references: [id])
+    order          Order?                @relation(fields: [orderId], references: [id])
 
     @@index([organizationId])
+}
+
+model AuditLog {
+    id             String @id @default(nanoid())
+    organizationId String
+    userId         String
+    action         String
+    targetId       String
+    targetType     String
+
+    createdAt    DateTime     @default(now())
+    updatedAt    DateTime     @updatedAt
+    organization Organization @relation(fields: [organizationId], references: [id])
+    user         User         @relation(fields: [userId], references: [id])
 }

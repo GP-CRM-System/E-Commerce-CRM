@@ -6,6 +6,7 @@ import {
     HttpStatus
 } from '../utils/response.util.js';
 import logger from '../utils/logger.util.js';
+import type { ZodError } from 'zod';
 
 /**
  * Format and send a consistent error response for failed requests.
@@ -41,19 +42,18 @@ export const errorHandler = (
     }
 
     // Handle Zod validation errors
-    if (err.name === 'ZodError' || (err as any).issues) {
-        const zodErr = err as any;
-        const issues = zodErr.errors || zodErr.issues || [];
+    if (err.name === 'ZodError') {
+        const zodErr = err as ZodError;
+        const issues = zodErr.issues;
 
-        const details: Record<string, unknown> = Array.isArray(issues)
-            ? issues.reduce((acc: Record<string, unknown>, error: any) => {
-                  const errorPath = Array.isArray(error.path)
-                      ? error.path.join('.')
-                      : error.path;
-                  acc[errorPath] = error.message;
-                  return acc;
-              }, {})
-            : { error: 'Unknown validation error' };
+        const details: Record<string, string> = issues.reduce(
+            (acc: Record<string, string>, issue) => {
+                const errorPath = issue.path.join('.');
+                acc[errorPath] = issue.message;
+                return acc;
+            },
+            {}
+        );
 
         logger.warn(`Validation error - Path: ${path}`);
         return ResponseHandler.error(
@@ -102,10 +102,10 @@ export const notFoundHandler = (req: Request, res: Response) => {
  * @param fn Async Express handler to wrap.
  * @returns Middleware that resolves the handler and forwards errors.
  */
-export const asyncHandler = (
-    fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+export const asyncHandler = <T extends Request = Request>(
+    fn: (req: T, res: Response, next: NextFunction) => Promise<unknown>
 ) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        Promise.resolve(fn(req, res, next)).catch(next);
+        Promise.resolve(fn(req as T, res, next)).catch(next);
     };
 };

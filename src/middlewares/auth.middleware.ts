@@ -8,6 +8,30 @@ import { asyncHandler } from './error.middleware.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import prisma from '../config/prisma.config.js';
 
+export type AuthenticatedRequest = Request & {
+    user: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string;
+        emailVerified: boolean;
+        name: string;
+        image?: string | null | undefined;
+    };
+    session: {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        expiresAt: Date;
+        token: string;
+        ipAddress?: string | null | undefined;
+        userAgent?: string | null | undefined;
+        activeOrganizationId?: string | null | undefined;
+    };
+    membership?: unknown; // Optional, as it's only attached by requirePermission
+};
+
 /**
  * Middleware to protect routes and ensure a valid session exists.
  *
@@ -17,8 +41,8 @@ import prisma from '../config/prisma.config.js';
  * @returns A promise that resolves when the session is validated.
  * @throws AuthenticationError When no active session is found.
  */
-export const protect = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
+export const protect = asyncHandler<AuthenticatedRequest>(
+    async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         const session = await auth.api.getSession({
             headers: fromNodeHeaders(req.headers)
         });
@@ -29,8 +53,8 @@ export const protect = asyncHandler(
             );
         }
 
-        (req as any).user = session.user;
-        (req as any).session = session.session;
+        req.user = session.user;
+        req.session = session.session;
 
         next();
     }
@@ -50,7 +74,7 @@ export const protect = asyncHandler(
  * @param permissions One or more permission strings (e.g. "orders:read").
  */
 export const requirePermission = (...permissions: string[]) =>
-    asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    asyncHandler<AuthenticatedRequest>(async (req, res, next) => {
         const headers = fromNodeHeaders(req.headers);
         const session = await auth.api.getSession({ headers });
 
@@ -75,7 +99,7 @@ export const requirePermission = (...permissions: string[]) =>
                 if (!resource || !action) return false;
 
                 try {
-                    const result = await (auth.api as any).hasPermission({
+                    const result = await auth.api.hasPermission({
                         headers,
                         body: {
                             permissions: { [resource]: [action] },
@@ -106,9 +130,9 @@ export const requirePermission = (...permissions: string[]) =>
             }
         });
 
-        (req as any).user = session.user;
-        (req as any).session = session.session;
-        (req as any).membership = membership;
+        req.user = session.user;
+        req.session = session.session;
+        req.membership = membership;
 
         next();
     });

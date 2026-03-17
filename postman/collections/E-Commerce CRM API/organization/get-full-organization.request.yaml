@@ -1,17 +1,15 @@
 $kind: http-request
 name: Get Full Organization
 method: GET
-url: '{{baseUrl}}/api/auth/organization/get-full-organization'
+url: "{{baseUrl}}/api/auth/organization/get-full-organization?organizationId={{\
+  organizationId}}"
 order: 3000
 headers:
-  - key: Authorization
-    value: 'Bearer {{sessionToken}}'
+  Authorization: Bearer {{sessionToken}}
 queryParams:
-  - key: organizationId
-    value: '{{organizationId}}'
+  organizationId: "{{organizationId}}"
 scripts:
   - type: afterResponse
-    language: text/javascript
     code: |-
       pm.test("Status code is 200", function () {
           pm.response.to.have.status(200);
@@ -27,3 +25,4 @@ scripts:
           pm.expect(jsonData).to.have.property("name");
           pm.expect(jsonData).to.have.property("members");
       });
+    language: text/javascript

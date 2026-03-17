@@ -19,8 +19,8 @@ export const validateRequest = (
                 source === 'body'
                     ? req.body
                     : source === 'query'
-                        ? req.query
-                        : req.params;
+                      ? req.query
+                      : req.params;
 
             const result = schema.safeParse(data);
 
@@ -33,13 +33,13 @@ export const validateRequest = (
             if (source === 'body') {
                 req.body = result.data;
             } else if (source === 'query') {
-                const query = req.query as any;
+                const query = req.query;
                 for (const key in query) {
                     delete query[key];
                 }
                 Object.assign(query, result.data);
             } else {
-                const params = req.params as any;
+                const params = req.params;
                 for (const key in params) {
                     delete params[key];
                 }

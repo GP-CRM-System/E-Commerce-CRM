@@ -14,7 +14,7 @@ const ac = createAccessControl({
     member: ['create', 'update', 'delete'],
     invitation: ['create', 'cancel'],
     ac: ['create', 'read', 'update', 'delete'],
-    orders: ['read', 'write', 'delete'],
+    orders: ['read', 'write', 'delete']
 });
 
 export const auth = betterAuth({
@@ -27,7 +27,7 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
-        requireEmailVerification: true,
+        requireEmailVerification: process.env.NODE_ENV !== 'test',
         sendResetPassword: async ({ user, url }) => {
             await sendEmail({
                 to: user.email,
@@ -104,7 +104,29 @@ export const auth = betterAuth({
     advanced: {
         disableOriginCheck: true
     },
+    databaseHooks: {
+        session: {
+            create: {
+                before: async (session) => {
+                    if (!session.activeOrganizationId) {
+                        const member = await prisma.member.findFirst({
+                            where: { userId: session.userId }
+                        });
+                        if (member) {
+                            return {
+                                data: {
+                                    ...session,
+                                    activeOrganizationId: member.organizationId
+                                }
+                            };
+                        }
+                    }
+                }
+            }
+        }
+    }
 });
+
 
 /**
  * Retrieve the current authentication session from request headers.

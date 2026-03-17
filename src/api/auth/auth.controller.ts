@@ -1,25 +1,19 @@
 import { asyncHandler } from '../../middlewares/error.middleware.js';
-import { auth } from './auth.js';
-import { fromNodeHeaders } from 'better-auth/node';
-import { AuthenticationError, HttpStatus, ResponseHandler } from '../../utils/response.util.js';
-import type { Request, Response } from 'express';
+import {
+    HttpStatus,
+    ResponseHandler
+} from '../../utils/response.util.js';
+import type { Response } from 'express';
+import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 
-export const getMe = asyncHandler(async (req: Request, res: Response) => {
-    const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers)
-    });
 
-    if (!session) {
-        throw new AuthenticationError(
-            'Authentication required. Please log in.'
-        );
-    }
-
+export const getMe = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     ResponseHandler.success(
         res,
         'User fetched successfully',
         HttpStatus.OK,
-        session.user,
+        req.user,
         req.path
     );
 });
+

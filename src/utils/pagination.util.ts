@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export function getPagination(
     query: { page: string; limit: string },
     defaultLimit: number = 10
@@ -12,5 +14,10 @@ export function getPagination(
     }
     const skip = (page - 1) * limit;
     const take = limit;
-    return { page, limit, skip, take };
+    return { skip, take };
 }
+
+export const paginationSchema = z.object({
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('10')
+});

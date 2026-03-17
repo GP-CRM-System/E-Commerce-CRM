@@ -1,0 +1,5 @@
+$kind: http-request
+name: New Request
+url: "{{baseUrl}}/api/customers"
+method: GET
+order: 1773671857403
