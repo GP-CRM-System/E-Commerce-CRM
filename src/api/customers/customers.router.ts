@@ -57,4 +57,28 @@ router
         customerController.deleteNote
     );
 
+router
+    .route('/:id/events')
+    .get(
+        requirePermission('customers:read'),
+        customerController.getCustomerEvents
+    )
+    .post(
+        requirePermission('customers:write'),
+        validateRequest(customerSchema.createEvent),
+        customerController.createEvent
+    );
+
+router
+    .route('/:id/events/:eventId')
+    .put(
+        requirePermission('customers:write'),
+        validateRequest(customerSchema.updateEvent),
+        customerController.updateEvent
+    )
+    .delete(
+        requirePermission('customers:write'),
+        customerController.deleteEvent
+    );
+
 export default router;

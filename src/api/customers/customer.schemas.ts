@@ -109,3 +109,35 @@ export const createNote = z.object({
 export const updateNote = z.object({
     body: z.string().min(1, 'Note body cannot be empty').nonempty().trim()
 });
+
+export const createEvent = z.object({
+    eventType: z.enum([
+        'ORDER_PLACED',
+        'ORDER_SHIPPED',
+        'ORDER_DELIVERED',
+        'ORDER_CANCELLED',
+        'ORDER_REFUNDED',
+        'ORDER_RETURNED'
+    ]),
+    description: z.string().trim(),
+    metadata: z.any().optional().nullable(),
+    source: z.string().trim(),
+    occurredAt: z.coerce.date().default(() => new Date())
+});
+
+export const updateEvent = z.object({
+    eventType: z
+        .enum([
+            'ORDER_PLACED',
+            'ORDER_SHIPPED',
+            'ORDER_DELIVERED',
+            'ORDER_CANCELLED',
+            'ORDER_REFUNDED',
+            'ORDER_RETURNED'
+        ])
+        .optional(),
+    description: z.string().trim().optional(),
+    metadata: z.any().optional(),
+    source: z.string().trim().optional(),
+    occurredAt: z.coerce.date().optional()
+});

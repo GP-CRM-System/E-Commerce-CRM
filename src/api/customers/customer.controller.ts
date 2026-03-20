@@ -293,3 +293,119 @@ export const deleteNote = asyncHandler(
         );
     }
 );
+
+export const getCustomerEvents = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+
+        const customerId = req.params.id as string;
+        if (!customerId || !activeOrganizationId) {
+            throw new Error('Customer ID and Organization ID are required');
+        }
+
+        const response = await customerService.getCustomerEvents(customerId);
+
+        if (!response) {
+            throw new Error('Failed to fetch customer events');
+        }
+
+        ResponseHandler.success(
+            res,
+            'Customer events fetched successfully',
+            HttpStatus.OK,
+            response,
+            req.url
+        );
+    }
+);
+
+export const createEvent = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+
+        const customerId = req.params.id as string;
+
+        if (!customerId || !activeOrganizationId) {
+            throw new Error('Customer ID and Organization ID are required');
+        }
+
+        const response = await customerService.createEvent(
+            customerId,
+            req.body
+        );
+
+        if (!response) {
+            throw new Error('Failed to create event');
+        }
+
+        ResponseHandler.success(
+            res,
+            'Event created successfully',
+            HttpStatus.CREATED,
+            response,
+            req.url
+        );
+    }
+);
+
+export const updateEvent = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+
+        const customerId = req.params.id as string;
+        const eventId = req.params.eventId as string;
+
+        if (!customerId || !eventId || !activeOrganizationId) {
+            throw new Error(
+                'Customer ID, Event ID and Organization ID are required'
+            );
+        }
+
+        const response = await customerService.updateEvent(
+            customerId,
+            eventId,
+            req.body
+        );
+
+        if (!response) {
+            throw new Error('Failed to update event');
+        }
+
+        ResponseHandler.success(
+            res,
+            'Event updated successfully',
+            HttpStatus.OK,
+            response,
+            req.url
+        );
+    }
+);
+
+export const deleteEvent = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+
+        const customerId = req.params.id as string;
+        const eventId = req.params.eventId as string;
+
+        if (!customerId || !eventId || !activeOrganizationId) {
+            throw new Error(
+                'Customer ID, Event ID and Organization ID are required'
+            );
+        }
+
+        const response = await customerService.deleteEvent(customerId, eventId);
+
+        if (!response) {
+            throw new Error('Failed to delete event');
+        }
+
+        ResponseHandler.success(
+            res,
+            'Event deleted successfully',
+            HttpStatus.OK,
+            response,
+            req.url
+        );
+    }
+);

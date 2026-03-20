@@ -5,6 +5,7 @@ export const env = {
     port: process.env.PORT,
     nodeEnv: process.env.NODE_ENV,
     corsOrigin: process.env.CORS_ORIGIN,
+    timeZone: process.env.TZ,
 
     // JWT Configuration
     jwtSecret: process.env.JWT_SECRET,

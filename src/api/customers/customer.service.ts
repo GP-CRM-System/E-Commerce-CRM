@@ -2,7 +2,11 @@ import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
 import { z } from 'zod';
 import * as customerSchema from './customer.schemas.js';
-import type { Customer, Note } from '../../generated/prisma/client.js';
+import type {
+    Customer,
+    Note,
+    CustomerEvent
+} from '../../generated/prisma/client.js';
 
 export async function getAllCustomers(
     organizationId: string,
@@ -231,6 +235,110 @@ export async function deleteNote(
         return note;
     } catch (error) {
         logger.error(`Error deleting note: ${error}`);
+        throw error;
+    }
+}
+
+export async function getCustomerEvents(
+    customerId: string
+): Promise<CustomerEvent[]> {
+    try {
+        const events = await prisma.customerEvent.findMany({
+            where: {
+                customerId
+            },
+            orderBy: {
+                occurredAt: 'desc'
+            }
+        });
+
+        return events;
+    } catch (error) {
+        logger.error(`Error fetching customer events: ${error}`);
+        throw error;
+    }
+}
+
+export async function createEvent(
+    customerId: string,
+    data: z.infer<typeof customerSchema.createEvent>
+): Promise<CustomerEvent> {
+    try {
+        const event = await prisma.customerEvent.create({
+            data: {
+                ...data,
+                customerId,
+                occurredAt: new Date()
+            }
+        });
+
+        return event;
+    } catch (error) {
+        logger.error(`Error creating event: ${error}`);
+        throw error;
+    }
+}
+
+export async function updateEvent(
+    id: string,
+    eventId: string,
+    data: z.infer<typeof customerSchema.updateEvent>
+): Promise<CustomerEvent> {
+    try {
+        const event = await prisma.customerEvent.findUnique({
+            where: {
+                id: eventId,
+                customerId: id
+            }
+        });
+
+        if (!event) {
+            throw new Error('Event not found');
+        }
+
+        const updatedEvent = await prisma.customerEvent.update({
+            where: {
+                id: eventId,
+                customerId: id
+            },
+            data: {
+                ...data
+            }
+        });
+
+        return updatedEvent;
+    } catch (error) {
+        logger.error(`Error updating event: ${error}`);
+        throw error;
+    }
+}
+
+export async function deleteEvent(
+    customerId: string,
+    eventId: string
+): Promise<CustomerEvent> {
+    try {
+        const event = await prisma.customerEvent.findUnique({
+            where: {
+                id: eventId,
+                customerId
+            }
+        });
+
+        if (!event) {
+            throw new Error('Event not found');
+        }
+
+        await prisma.customerEvent.delete({
+            where: {
+                id: eventId,
+                customerId
+            }
+        });
+
+        return event;
+    } catch (error) {
+        logger.error(`Error deleting event: ${error}`);
         throw error;
     }
 }
