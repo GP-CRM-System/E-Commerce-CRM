@@ -1,0 +1,391 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "E-Commerce CRM API",
+        "description": "API for E-Commerce CRM with Shopify integration support",
+        "version": "2.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api"
+        }
+    ],
+    "paths": {
+        "/integrations": {
+            "get": {
+                "operationId": "listIntegrations",
+                "summary": "List all integrations",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["shopify"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of integrations"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/shopify/connect": {
+            "post": {
+                "operationId": "connectShopify",
+                "summary": "Connect a Shopify store",
+                "tags": ["Integrations"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["shopDomain", "accessToken"],
+                                "properties": {
+                                    "shopDomain": {
+                                        "type": "string",
+                                        "description": "Shopify store domain (e.g., mystore.myshopify.com)"
+                                    },
+                                    "accessToken": {
+                                        "type": "string",
+                                        "description": "Shopify Admin API access token"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Optional display name for the integration"
+                                    },
+                                    "apiSecret": {
+                                        "type": "string",
+                                        "description": "Webhook API secret for signature verification"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Shopify store connected successfully"
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/{integrationId}": {
+            "get": {
+                "operationId": "getIntegration",
+                "summary": "Get integration by ID",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Integration details"
+                    },
+                    "404": {
+                        "description": "Integration not found"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateIntegration",
+                "summary": "Update integration",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "syncMode": {
+                                        "type": "string",
+                                        "enum": ["webhook", "polling", "manual"]
+                                    },
+                                    "isActive": { "type": "boolean" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Integration updated"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteIntegration",
+                "summary": "Delete integration",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Integration deleted"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/{integrationId}/test-connection": {
+            "post": {
+                "operationId": "testConnection",
+                "summary": "Test integration connection",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connection test result"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/{integrationId}/webhooks/register": {
+            "post": {
+                "operationId": "registerWebhooks",
+                "summary": "Register Shopify webhooks",
+                "tags": ["Integrations"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["topics"],
+                                "properties": {
+                                    "topics": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "orders/create",
+                                                "orders/updated",
+                                                "orders/paid",
+                                                "orders/cancelled",
+                                                "orders/fulfilled",
+                                                "orders/partially_fulfilled",
+                                                "orders/refunded",
+                                                "customers/create",
+                                                "customers/update",
+                                                "customers/disable",
+                                                "products/create",
+                                                "products/update",
+                                                "products/delete"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhooks registered"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/{integrationId}/sync/full": {
+            "post": {
+                "operationId": "triggerFullSync",
+                "summary": "Trigger full data sync",
+                "tags": ["Sync"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "entities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "customers",
+                                                "orders",
+                                                "products"
+                                            ]
+                                        },
+                                        "default": [
+                                            "customers",
+                                            "orders",
+                                            "products"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sync completed"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/integrations/{integrationId}/sync/logs": {
+            "get": {
+                "operationId": "getSyncLogs",
+                "summary": "Get sync logs",
+                "tags": ["Sync"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "syncType",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sync logs"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/webhooks/shopify/{integrationId}": {
+            "post": {
+                "operationId": "handleShopifyWebhook",
+                "summary": "Handle Shopify webhook",
+                "tags": ["Webhooks"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "description": "Shopify webhook payload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Webhook received"
+                    },
+                    "401": {
+                        "description": "Invalid webhook signature"
+                    }
+                }
+            }
+        },
+        "/webhooks/{integrationId}/logs": {
+            "get": {
+                "operationId": "getWebhookLogs",
+                "summary": "Get webhook logs",
+                "tags": ["Webhooks"],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "topic",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Webhook logs"
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

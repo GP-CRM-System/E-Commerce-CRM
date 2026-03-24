@@ -223,13 +223,66 @@ model Integration {
     orgId        String
     organization Organization @relation(fields: [orgId], references: [id])
     provider     String // 'shopify'
+    name         String?
     shopDomain   String?
     accessToken  String // encrypted
+    refreshToken String? // encrypted, for OAuth refresh
+    apiKey       String? // encrypted
+    apiSecret    String? // encrypted
     syncStatus   String       @default("pending")
+    syncMode     String       @default("webhook") // 'webhook', 'polling', 'manual'
     lastSyncedAt DateTime?
     createdAt    DateTime     @default(now())
+    updatedAt    DateTime     @updatedAt
+    isActive     Boolean      @default(true)
+    metadata     Json? // Additional provider-specific config
+
+    webhookLogs  WebhookLog[]
+    syncLogs     SyncLog[]
 
     @@index([orgId])
+    @@index([provider])
+}
+
+model WebhookLog {
+    id            String      @id @default(nanoid())
+    integrationId String
+    integration   Integration @relation(fields: [integrationId], references: [id])
+    topic         String // 'orders/create', 'customers/update', etc.
+    shopDomain    String
+    webhookId     String?
+    payload       Json
+    headers       Json?
+    status        String      @default("received") // 'received', 'processing', 'completed', 'failed'
+    errorMessage  String?
+    retryCount    Int         @default(0)
+    processedAt   DateTime?
+    createdAt     DateTime    @default(now())
+
+    @@index([integrationId])
+    @@index([topic])
+    @@index([status])
+    @@index([createdAt])
+}
+
+model SyncLog {
+    id            String      @id @default(nanoid())
+    integrationId String
+    integration   Integration @relation(fields: [integrationId], references: [id])
+    syncType      String      // 'full', 'incremental', 'manual'
+    entityType    String      // 'customers', 'orders', 'products'
+    status        String      @default("started") // 'started', 'completed', 'failed'
+    itemsProcessed Int        @default(0)
+    itemsCreated  Int         @default(0)
+    itemsUpdated  Int         @default(0)
+    itemsFailed   Int         @default(0)
+    errorMessage  String?
+    startedAt     DateTime    @default(now())
+    completedAt   DateTime?
+
+    @@index([integrationId])
+    @@index([syncType])
+    @@index([status])
 }
 
 model CustomerEvent {
@@ -288,13 +341,48 @@ model Product {
     updatedAt      DateTime     @updatedAt
     organizationId String
     orderItems     OrderItem[]
+    variants       ProductVariant[]
 
     externalId String?
     sku        String?
     category   String?
     imageUrl   String?
+    barcode    String?
+    weight     Float?
+    weightUnit String? // 'kg', 'lb', 'oz', 'g'
+    inventory  Int      @default(0)
+    status     String   @default("active") // 'active', 'draft', 'archived'
+
+    // Shopify-specific
+    shopifyProductId String?
+    shopifyCreatedAt  DateTime?
+    shopifyUpdatedAt  DateTime?
 
     @@index([organizationId])
+    @@index([externalId])
+    @@index([shopifyProductId])
+}
+
+model ProductVariant {
+    id          String   @id @default(nanoid())
+    productId   String
+    product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+    name        String   // e.g., "Small / Blue"
+    sku         String?
+    price       Decimal
+    barcode     String?
+    weight      Float?
+    weightUnit  String?
+    inventory   Int      @default(0)
+    position    Int      @default(0)
+    imageUrl    String?
+    externalId  String?
+    options     Json?    // e.g., {"size": "Small", "color": "Blue"}
+    
+    // Shopify-specific
+    shopifyVariantId String?
+    
+    @@index([productId])
 }
 
 enum ShippingStatus {
@@ -326,10 +414,29 @@ model Order {
     supportTickets SupportTicket[]
 
     externalId     String?
-    discountAmount Decimal @default(0)
-    refundAmount   Decimal @default(0)
+    discountAmount Decimal         @default(0)
+    refundAmount   Decimal         @default(0)
+    subtotal      Decimal?        // Before discounts
+    taxAmount     Decimal?        // Tax amount
+    shippingAmount Decimal?       // Shipping cost
+    totalAmount   Decimal?        // Final total
+    currency      String?         @default("USD")
+    fulfillmentStatus String?     // 'unfulfilled', 'partial', 'fulfilled'
+    fulfillmentItems  Json?      // Fulfillment details
+    
+    // Shopify-specific
+    shopifyOrderId   String?
+    shopifyCreatedAt DateTime?
+    shopifyUpdatedAt DateTime?
+    tags            String?       // Comma-separated tags
+    note            String?
+    source           String?      // 'web', 'pos', 'shopify_draft_order', etc.
+    referringSite   String?
 
     @@index([organizationId])
+    @@index([customerId])
+    @@index([externalId])
+    @@index([shopifyOrderId])
 }
 
 model OrderItem {
