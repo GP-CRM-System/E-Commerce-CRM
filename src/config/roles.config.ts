@@ -7,6 +7,8 @@ export type RolePermissions = {
     customers: ('read' | 'write' | 'delete')[];
     orders: ('read' | 'write' | 'delete')[];
     products: ('read' | 'write' | 'delete')[];
+    imports: ('read' | 'write')[];
+    exports: ('read' | 'write')[];
     integrations: ('read' | 'write' | 'delete')[];
     webhooks: ('read' | 'write' | 'delete')[];
     sync: ('read' | 'write')[];
@@ -27,6 +29,8 @@ export const DEFAULT_ROLES = {
         customers: ['read', 'write', 'delete'],
         orders: ['read', 'write', 'delete'],
         products: ['read', 'write', 'delete'],
+        imports: ['read', 'write'],
+        exports: ['read', 'write'],
         integrations: ['read', 'write', 'delete'],
         webhooks: ['read', 'write', 'delete'],
         sync: ['read', 'write'],
@@ -45,6 +49,8 @@ export const DEFAULT_ROLES = {
         customers: ['read', 'write', 'delete'],
         orders: ['read', 'write', 'delete'],
         products: ['read', 'write', 'delete'],
+        imports: ['read', 'write'],
+        exports: ['read', 'write'],
         integrations: ['read', 'write', 'delete'],
         webhooks: ['read', 'write', 'delete'],
         sync: ['read', 'write'],
@@ -63,6 +69,8 @@ export const DEFAULT_ROLES = {
         customers: ['read'],
         orders: ['read'],
         products: ['read'],
+        imports: [],
+        exports: ['read'],
         integrations: ['read'],
         webhooks: [],
         sync: [],

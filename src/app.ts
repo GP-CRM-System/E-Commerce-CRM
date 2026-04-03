@@ -13,6 +13,8 @@ import logger from './utils/logger.util.js';
 import apiRouter from './api/index.js';
 import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
+import { importWorker } from './queues/import.queue.js';
+import { closeImportQueue } from './api/imports/imports.service.js';
 
 checkEnv();
 
@@ -84,6 +86,8 @@ export async function startServer(): Promise<void> {
             logger.info('SIGTERM received, shutting down gracefully...');
             server.close(async () => {
                 await Sentry.close(2000);
+                await importWorker.close();
+                await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
                 process.exit(0);
@@ -94,6 +98,8 @@ export async function startServer(): Promise<void> {
             logger.info('SIGINT received, shutting down gracefully...');
             server.close(async () => {
                 await Sentry.close(2000);
+                await importWorker.close();
+                await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
                 process.exit(0);

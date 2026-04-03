@@ -65,7 +65,7 @@ export const auth = betterAuth({
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
-            if (env.nodeEnv !== "development") {
+            if (env.nodeEnv !== 'development') {
                 await sendEmail({
                     to: user.email,
                     subject: 'Verify your email address',
@@ -77,7 +77,9 @@ export const auth = betterAuth({
     				`
                 });
             } else {
-                loggerUtil.info(`User ${user.email} was sent a verification mail with url ${url}`)
+                loggerUtil.info(
+                    `User ${user.email} was sent a verification mail with url ${url}`
+                );
             }
         }
     },

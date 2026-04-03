@@ -167,8 +167,8 @@ async function createMemberships(
                 count % 10 === 0
                     ? 'admin'
                     : count % 20 === 0
-                        ? 'root'
-                        : 'member';
+                      ? 'root'
+                      : 'member';
 
             await prisma.member.create({
                 data: {

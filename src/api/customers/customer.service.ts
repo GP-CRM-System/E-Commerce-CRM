@@ -342,3 +342,27 @@ export async function deleteEvent(
         throw error;
     }
 }
+
+export async function getCustomerByExternalId(
+    externalId: string,
+    organizationId: string
+): Promise<Customer | null> {
+    return prisma.customer.findFirst({
+        where: {
+            externalId,
+            organizationId
+        }
+    });
+}
+
+export async function getCustomerByEmail(
+    email: string,
+    organizationId: string
+): Promise<Customer | null> {
+    return prisma.customer.findFirst({
+        where: {
+            email,
+            organizationId
+        }
+    });
+}

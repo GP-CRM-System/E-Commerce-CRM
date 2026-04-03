@@ -36,6 +36,11 @@
       "sourceType": "github",
       "computedHash": "c24cb9aebbe977a75b1bfe207440d604ac54e1802b8f3ad24aad66c001125a60"
     },
+    "redis-patterns": {
+      "source": "patricio0312rev/skills",
+      "sourceType": "github",
+      "computedHash": "7eb79e5ecbf791cd9a7c85400cb336a800e22ffff2238aaf161dfcc73523f396"
+    },
     "sentry-code-review": {
       "source": "getsentry/sentry-for-ai",
       "sourceType": "github",

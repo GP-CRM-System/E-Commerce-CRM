@@ -84,7 +84,18 @@ beforeAll(async () => {
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
         console.log('Org created, ID:', testOrgId);
 
-        // 4. Sign in again to get fresh session with org context
+        // 4. Set the organization as active
+        console.log('Setting active organization...');
+        await auth.api.setActiveOrganization({
+            headers: fromNodeHeaders({
+                authorization: `Bearer ${authToken}`
+            }),
+            body: {
+                organizationId: testOrgId
+            }
+        });
+
+        // 5. Sign in again to get fresh session with org context
         console.log('Signing in again...');
         const signin = await auth.api.signInEmail({
             body: {

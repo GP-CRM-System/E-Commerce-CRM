@@ -22,6 +22,8 @@ model User {
   invitations   Invitation[]
   auditLogs     AuditLog[]
   notes         Note[]
+  importJobs    ImportJob[]
+  exportJobs    ExportJob[]
 
   @@unique([email])
   @@map("user")
@@ -96,6 +98,8 @@ model Organization {
     tags        Tag[]
     integrations Integration[]
     roles       OrganizationRole[]
+    importJobs  ImportJob[]
+    exportJobs  ExportJob[]
 
     @@map("organization")
 }
@@ -511,4 +515,85 @@ model AuditLog {
   updatedAt    DateTime     @updatedAt
   organization Organization @relation(fields: [organizationId], references: [id])
   user         User         @relation(fields: [userId], references: [id])
+}
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIALLY_FAILED
+  CANCELLED
+}
+
+enum ExportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImportJob {
+  id              String          @id @default(nanoid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  createdByUserId String
+  user            User            @relation(fields: [createdByUserId], references: [id])
+  entityType      String // 'customer', 'product', 'order'
+  fileName        String
+  fileType        String // 'csv', 'xlsx'
+  status          ImportJobStatus @default(PENDING)
+  mapping         Json?
+  summary         Json?
+  totalRows       Int             @default(0)
+  processedRows   Int             @default(0)
+  successfulRows  Int             @default(0)
+  failedRows      Int             @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  errors          ImportJobError[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+model ImportJobError {
+  id          String   @id @default(nanoid())
+  importJobId String
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  rowNumber   Int
+  columnName  String?
+  errorCode   String
+  message     String
+  rawRow      Json?
+  createdAt   DateTime @default(now())
+
+  @@index([importJobId])
+}
+
+model ExportJob {
+  id              String          @id @default(nanoid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  createdByUserId String
+  user            User            @relation(fields: [createdByUserId], references: [id])
+  entityType      String
+  format          String // 'csv', 'xlsx'
+  status          ExportJobStatus @default(PENDING)
+  filters         Json?
+  selectedColumns String[]
+  totalRows       Int             @default(0)
+  fileName        String?
+  filePath        String?
+  createdAt       DateTime        @default(now())
+  completedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdAt])
 }

@@ -35,6 +35,22 @@
         {
             "name": "Webhooks",
             "description": "Webhook handlers"
+        },
+        {
+            "name": "Products",
+            "description": "Product management"
+        },
+        {
+            "name": "Orders",
+            "description": "Order management"
+        },
+        {
+            "name": "Imports",
+            "description": "Import jobs for CSV/XLSX data"
+        },
+        {
+            "name": "Exports",
+            "description": "Export jobs for CSV/XLSX data"
         }
     ],
     "paths": {
@@ -1642,6 +1658,497 @@
                 ],
                 "responses": {
                     "200": { "description": "Webhook logs" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/products": {
+            "get": {
+                "operationId": "listProducts",
+                "summary": "List all products",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of products" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createProduct",
+                "summary": "Create a new product",
+                "tags": ["Products"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["name", "price"],
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "price": { "type": "number" },
+                                    "description": { "type": "string" },
+                                    "sku": { "type": "string" },
+                                    "category": { "type": "string" },
+                                    "inventory": { "type": "integer" },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": ["active", "draft", "archived"]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Product created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/products/{id}": {
+            "get": {
+                "operationId": "getProduct",
+                "summary": "Get a product by ID",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Product details" },
+                    "404": { "description": "Product not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "put": {
+                "operationId": "updateProduct",
+                "summary": "Update a product",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "type": "object" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Product updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteProduct",
+                "summary": "Delete a product",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Product deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/orders": {
+            "get": {
+                "operationId": "listOrders",
+                "summary": "List all orders",
+                "tags": ["Orders"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of orders" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createOrder",
+                "summary": "Create a new order",
+                "tags": ["Orders"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["customerId"],
+                                "properties": {
+                                    "customerId": { "type": "string" },
+                                    "externalId": { "type": "string" },
+                                    "subtotal": { "type": "number" },
+                                    "taxAmount": { "type": "number" },
+                                    "shippingAmount": { "type": "number" },
+                                    "totalAmount": { "type": "number" },
+                                    "currency": { "type": "string" },
+                                    "fulfillmentStatus": { "type": "string" },
+                                    "note": { "type": "string" },
+                                    "source": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Order created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "operationId": "getOrder",
+                "summary": "Get an order by ID",
+                "tags": ["Orders"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Order details" },
+                    "404": { "description": "Order not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "put": {
+                "operationId": "updateOrder",
+                "summary": "Update an order",
+                "tags": ["Orders"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "type": "object" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Order updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteOrder",
+                "summary": "Delete an order",
+                "tags": ["Orders"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Order deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports": {
+            "get": {
+                "operationId": "listImportJobs",
+                "summary": "List import jobs",
+                "tags": ["Imports"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    },
+                    {
+                        "name": "entityType",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["customer", "product", "order"]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING",
+                                "PROCESSING",
+                                "COMPLETED",
+                                "FAILED",
+                                "PARTIALLY_FAILED",
+                                "CANCELLED"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of import jobs" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createImportJob",
+                "summary": "Create and start an import job",
+                "tags": ["Imports"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["entityType", "file"],
+                                "properties": {
+                                    "entityType": {
+                                        "type": "string",
+                                        "enum": ["customer", "product", "order"]
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "hasHeader": { "type": "boolean" },
+                                    "mapping": { "type": "string" },
+                                    "duplicateStrategy": {
+                                        "type": "string",
+                                        "enum": ["create_only", "upsert"]
+                                    },
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["create_only", "upsert"]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Import job created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports/{id}": {
+            "get": {
+                "operationId": "getImportJob",
+                "summary": "Get an import job by ID",
+                "tags": ["Imports"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Import job details" },
+                    "404": { "description": "Import job not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports/{id}/errors": {
+            "get": {
+                "operationId": "getImportErrors",
+                "summary": "Get import job errors",
+                "tags": ["Imports"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 100 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of import errors" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports": {
+            "get": {
+                "operationId": "listExportJobs",
+                "summary": "List export jobs",
+                "tags": ["Exports"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    },
+                    {
+                        "name": "entityType",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["customer", "product", "order"]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING",
+                                "PROCESSING",
+                                "COMPLETED",
+                                "FAILED"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of export jobs" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createExportJob",
+                "summary": "Create and start an export job",
+                "tags": ["Exports"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["entityType", "format"],
+                                "properties": {
+                                    "entityType": {
+                                        "type": "string",
+                                        "enum": ["customer", "product", "order"]
+                                    },
+                                    "format": {
+                                        "type": "string",
+                                        "enum": ["csv", "xlsx"]
+                                    },
+                                    "selectedColumns": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    },
+                                    "filters": { "type": "object" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Export job created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports/{id}": {
+            "get": {
+                "operationId": "getExportJob",
+                "summary": "Get an export job by ID",
+                "tags": ["Exports"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Export job details" },
+                    "404": { "description": "Export job not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports/{id}/download": {
+            "get": {
+                "operationId": "downloadExport",
+                "summary": "Download export file",
+                "tags": ["Exports"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Export file",
+                        "content": { "application/octet-stream": {} }
+                    },
+                    "404": { "description": "Export not ready or not found" }
                 },
                 "security": [{ "bearerAuth": [] }]
             }
