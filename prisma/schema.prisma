@@ -161,6 +161,7 @@ enum CustomerSource {
 
 enum CustomerLifecycleStage {
   PROSPECT // No Purchase Yet
+  LEAD // AI-identified potential customer
   ONE_TIME // Only One Purchase
   RETURNING // 2-4 Orders
   LOYAL // 5+ Orders
@@ -206,6 +207,19 @@ model Customer {
   acceptsMarketing     Boolean         @default(false)
   lastSyncedAt         DateTime?
   customerEvents       CustomerEvent[]
+  metrics              CustomerMetric?
+  interactions         Interaction[]
+
+  // AI & Behavioral Fields
+  isLoyaltyMember       Boolean        @default(false)
+  accountAgeMonths      Int            @default(0)
+  engagementScore       Float?
+  satisfactionScore     Float?
+  browsingFrequency     Float?
+  cartAbandonmentRate   Float?
+  supportTicketsCount   Int            @default(0)
+  lastSentimentScore    Float?
+  priceSensitivityIndex Float?
 
   @@index([organizationId])
   @@index([email])
@@ -306,6 +320,40 @@ model CustomerEvent {
   @@index([customerId])
   @@index([eventType])
   @@index([occurredAt])
+}
+
+model CustomerMetric {
+  id                    String   @id @default(nanoid())
+  customerId            String   @unique
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  // Churn Prediction
+  churnProbability      Float?
+  
+  // Behavioral
+  avgOrderValue         Decimal  @default(0)
+  daysSinceLastPurchase Int      @default(0)
+  totalOrders           Int      @default(0)
+  returnRate            Float    @default(0)
+  
+  updatedAt             DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model Interaction {
+  id                String   @id @default(nanoid())
+  customerId        String
+  type              String   // "complaint", "inquiry", "feedback"
+  content           String   
+  sentiment         Float?   // Score from sentiment model (-1 to 1)
+  extractedInsights Json?    // AI-extracted data points
+  createdAt         DateTime @default(now())
+  
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([type])
 }
 
 model Tag {
