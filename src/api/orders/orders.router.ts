@@ -12,6 +12,7 @@ router
     .get(
         requirePermission('orders:read'),
         validateRequest(paginationSchema, 'query'),
+        validateRequest(orderSchema.orderFilters, 'query'),
         orderController.list
     )
     .post(

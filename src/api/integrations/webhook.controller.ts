@@ -38,6 +38,25 @@ export const handleShopifyWebhookRequest = asyncHandler(
             return;
         }
 
+        if (webhookId) {
+            const existingLog = await prisma.webhookLog.findFirst({
+                where: {
+                    integrationId,
+                    webhookId: webhookId.toString()
+                }
+            });
+            if (existingLog) {
+                logger.info(
+                    `Duplicate webhook received: ${webhookId}, skipping`
+                );
+                res.status(HttpStatus.OK).json({
+                    received: true,
+                    duplicate: true
+                });
+                return;
+            }
+        }
+
         const rawBody = JSON.stringify(req.body);
 
         const secret = integration.apiSecret || integration.accessToken;

@@ -49,7 +49,6 @@ beforeAll(async () => {
             throw new Error('Signup failed');
         }
 
-        console.log('Signup successful, user ID:', signup.user.id);
         testUserId = signup.user.id;
         authToken = signup.token!;
 
@@ -71,8 +70,6 @@ beforeAll(async () => {
             }
         });
 
-        console.log('Org response:', JSON.stringify(org, null, 2));
-
         if (!org) {
             throw new Error('Org creation failed');
         }
@@ -82,7 +79,6 @@ beforeAll(async () => {
             id?: string;
         };
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
-        console.log('Org created, ID:', testOrgId);
 
         // 4. Set the organization as active
         console.log('Setting active organization...');
@@ -138,7 +134,7 @@ afterAll(async () => {
     await prisma.user.delete({ where: { id: testUserId } });
 });
 
-describe('Customer Routes', () => {
+describe('Customer API', () => {
     it('should create a new customer', async () => {
         const customerData = {
             name: 'John Doe',
@@ -177,6 +173,66 @@ describe('Customer Routes', () => {
         expect(response.body.data.length).toBeGreaterThan(0);
     });
 
+    it('should filter customers by search', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ search: 'John' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should filter customers by city', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ city: 'Test City' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should filter customers by source', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ source: 'WEBSITE' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should filter customers by lifecycleStage', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ lifecycleStage: 'PROSPECT' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should sort customers by createdAt asc', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ sortBy: 'createdAt', sortOrder: 'asc' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should sort customers by name desc', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ sortBy: 'name', sortOrder: 'desc' });
+
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
     it('should fetch customer details', async () => {
         const response = await request(app)
             .get(`/api/customers/${testCustomerId}`)
@@ -211,20 +267,6 @@ describe('Customer Routes', () => {
         const response = await request(app).get('/api/customers');
         expect(response.status).toBe(401);
     });
-
-    // it('should delete a customer', async () => {
-    //     const response = await request(app)
-    //         .delete(`/api/customers/${testCustomerId}`)
-    //         .set('Authorization', `Bearer ${authToken}`);
-
-    //     expect(response.status).toBe(200);
-
-    //     // Verify it's gone
-    //     const verify = await prisma.customer.findUnique({
-    //         where: { id: testCustomerId }
-    //     });
-    //     expect(verify).toBeNull();
-    // });
 
     describe('Note Routes', () => {
         it('should create a new note', async () => {
@@ -284,81 +326,75 @@ describe('Customer Routes', () => {
             });
             expect(verify).toBeNull();
         });
+    });
 
-        describe('Event Routes', () => {
-            it('should create a new event', async () => {
-                const eventData = {
-                    eventType: 'ORDER_PLACED',
-                    description: 'Customer placed an order',
-                    metadata: {
-                        orderId: '123',
-                        amount: 100
-                    },
-                    source: 'shopify',
-                    occurredAt: new Date().toISOString()
-                };
+    describe('Event Routes', () => {
+        it('should create a new event', async () => {
+            const eventData = {
+                eventType: 'ORDER_PLACED',
+                description: 'Customer placed an order',
+                metadata: {
+                    orderId: '123',
+                    amount: 100
+                },
+                source: 'shopify',
+                occurredAt: new Date().toISOString()
+            };
 
-                const response = await request(app)
-                    .post(`/api/customers/${testCustomerId}/events`)
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .send(eventData);
+            const response = await request(app)
+                .post(`/api/customers/${testCustomerId}/events`)
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(eventData);
 
-                expect(response.status).toBe(201);
-                expect(response.body.data).toHaveProperty('id');
-                expect(response.body.data.eventType).toBe(eventData.eventType);
-                expect(response.body.data.description).toBe(
-                    eventData.description
-                );
-                expect(response.body.data.customerId).toBe(testCustomerId);
+            expect(response.status).toBe(201);
+            expect(response.body.data).toHaveProperty('id');
+            expect(response.body.data.eventType).toBe(eventData.eventType);
+            expect(response.body.data.description).toBe(eventData.description);
+            expect(response.body.data.customerId).toBe(testCustomerId);
 
-                testEventId = response.body.data.id;
+            testEventId = response.body.data.id;
+        });
+
+        it('should list all events', async () => {
+            const response = await request(app)
+                .get(`/api/customers/${testCustomerId}/events`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body.data)).toBe(true);
+            expect(response.body.data.length).toBeGreaterThan(0);
+        });
+
+        it('should update an event', async () => {
+            const eventData = {
+                description: 'Updated event description'
+            };
+
+            const response = await request(app)
+                .put(`/api/customers/${testCustomerId}/events/${testEventId}`)
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(eventData);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data).toHaveProperty('id');
+            expect(response.body.data.description).toBe(eventData.description);
+            expect(response.body.data.customerId).toBe(testCustomerId);
+        });
+
+        it('should delete an event', async () => {
+            const response = await request(app)
+                .delete(
+                    `/api/customers/${testCustomerId}/events/${testEventId}`
+                )
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+
+            // Verify it's gone
+            const verify = await prisma.customerEvent.findUnique({
+                where: { id: testEventId }
             });
-
-            it('should list all events', async () => {
-                const response = await request(app)
-                    .get(`/api/customers/${testCustomerId}/events`)
-                    .set('Authorization', `Bearer ${authToken}`);
-
-                expect(response.status).toBe(200);
-                expect(Array.isArray(response.body.data)).toBe(true);
-                expect(response.body.data.length).toBeGreaterThan(0);
-            });
-
-            it('should update an event', async () => {
-                const eventData = {
-                    description: 'Updated event description'
-                };
-
-                const response = await request(app)
-                    .put(
-                        `/api/customers/${testCustomerId}/events/${testEventId}`
-                    )
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .send(eventData);
-
-                expect(response.status).toBe(200);
-                expect(response.body.data).toHaveProperty('id');
-                expect(response.body.data.description).toBe(
-                    eventData.description
-                );
-                expect(response.body.data.customerId).toBe(testCustomerId);
-            });
-
-            it('should delete an event', async () => {
-                const response = await request(app)
-                    .delete(
-                        `/api/customers/${testCustomerId}/events/${testEventId}`
-                    )
-                    .set('Authorization', `Bearer ${authToken}`);
-
-                expect(response.status).toBe(200);
-
-                // Verify it's gone
-                const verify = await prisma.customerEvent.findUnique({
-                    where: { id: testEventId }
-                });
-                expect(verify).toBeNull();
-            });
+            expect(verify).toBeNull();
         });
     });
 });

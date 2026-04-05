@@ -54,3 +54,20 @@ export const updateOrder = z.object({
     paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
     updatedAt: z.coerce.date().default(() => new Date())
 });
+
+export const orderFilters = z.object({
+    search: z.coerce.string().optional(),
+    status: z.enum(['unfulfilled', 'partial', 'fulfilled']).optional(),
+    paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
+    shippingStatus: z
+        .enum(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'])
+        .optional(),
+    customerId: z.coerce.string().optional(),
+    sortBy: z
+        .enum(['createdAt', 'updatedAt', 'totalAmount'])
+        .optional()
+        .default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
+});
+
+export type OrderFilters = z.infer<typeof orderFilters>;

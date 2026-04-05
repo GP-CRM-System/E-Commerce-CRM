@@ -3,23 +3,48 @@ import prisma from '../../config/prisma.config.js';
 import { z } from 'zod';
 import * as orderSchema from './order.schemas.js';
 import type { Order } from '../../generated/prisma/client.js';
+import type { OrderFilters } from './order.schemas.js';
 
 export async function getAllOrders(
     organizationId: string,
     take: number,
-    skip: number
+    skip: number,
+    filters?: OrderFilters
 ): Promise<{
     orders: Order[];
     total: number;
 }> {
     try {
+        const search = filters?.search;
+        const status = filters?.status;
+        const paymentStatus = filters?.paymentStatus;
+        const shippingStatus = filters?.shippingStatus;
+        const customerId = filters?.customerId;
+        const sortBy = filters?.sortBy || 'createdAt';
+        const sortOrder = filters?.sortOrder || 'desc';
+
         const [orders, total] = await Promise.all([
             prisma.order.findMany({
                 where: {
-                    organizationId
+                    organizationId,
+                    ...(search && {
+                        OR: [
+                            {
+                                externalId: {
+                                    contains: search,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            { note: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }),
+                    ...(status && { fulfillmentStatus: status }),
+                    ...(paymentStatus && { paymentStatus }),
+                    ...(shippingStatus && { shippingStatus }),
+                    ...(customerId && { customerId })
                 },
                 orderBy: {
-                    createdAt: 'desc'
+                    [sortBy]: sortOrder
                 },
                 take,
                 skip,
@@ -34,7 +59,22 @@ export async function getAllOrders(
             }),
             prisma.order.count({
                 where: {
-                    organizationId
+                    organizationId,
+                    ...(search && {
+                        OR: [
+                            {
+                                externalId: {
+                                    contains: search,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            { note: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }),
+                    ...(status && { fulfillmentStatus: status }),
+                    ...(paymentStatus && { paymentStatus }),
+                    ...(shippingStatus && { shippingStatus }),
+                    ...(customerId && { customerId })
                 }
             })
         ]);
@@ -141,6 +181,10 @@ export async function deleteOrder(
     organizationId: string
 ): Promise<Order> {
     try {
+        await prisma.orderItem.deleteMany({
+            where: { orderId: id }
+        });
+
         const order = await prisma.order.delete({
             where: {
                 id,

@@ -60,3 +60,18 @@ export const updateProductVariant = z.object({
     externalId: z.string().trim().optional(),
     options: z.any().optional()
 });
+
+export const productFilters = z.object({
+    search: z.string().optional(),
+    category: z.string().optional(),
+    status: z.enum(['active', 'draft', 'archived']).optional(),
+    minPrice: z.coerce.number().optional(),
+    maxPrice: z.coerce.number().optional(),
+    sortBy: z
+        .enum(['createdAt', 'updatedAt', 'name', 'price', 'inventory'])
+        .optional()
+        .default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
+});
+
+export type ProductFilters = z.infer<typeof productFilters>;

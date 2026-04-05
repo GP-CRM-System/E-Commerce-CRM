@@ -7,28 +7,67 @@ import type {
     Note,
     CustomerEvent
 } from '../../generated/prisma/client.js';
+import type { CustomerFilters } from './customer.schemas.js';
 
 export async function getAllCustomers(
     organizationId: string,
     take: number,
-    skip: number
+    skip: number,
+    filters?: CustomerFilters
 ): Promise<{
     customers: Customer[];
     total: number;
 }> {
     try {
+        const search = filters?.search;
+        const city = filters?.city;
+        const source = filters?.source;
+        const lifecycleStage = filters?.lifecycleStage;
+        const tagId = filters?.tagId;
+        const sortBy = filters?.sortBy || 'createdAt';
+        const sortOrder = filters?.sortOrder || 'desc';
+
         const customers = await prisma.customer.findMany({
             where: {
-                organizationId
+                organizationId,
+                ...(search && {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { email: { contains: search, mode: 'insensitive' } },
+                        { phone: { contains: search, mode: 'insensitive' } }
+                    ]
+                }),
+                ...(city && { city: { equals: city, mode: 'insensitive' } }),
+                ...(source && { source }),
+                ...(lifecycleStage && { lifecycleStage }),
+                ...(tagId && { tags: { some: { id: tagId } } })
             },
             orderBy: {
-                createdAt: 'desc'
+                [sortBy]: sortOrder
             },
             take,
-            skip
+            skip,
+            include: { tags: true }
         });
 
-        return { customers, total: customers.length };
+        const total = await prisma.customer.count({
+            where: {
+                organizationId,
+                ...(search && {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { email: { contains: search, mode: 'insensitive' } },
+                        { phone: { contains: search, mode: 'insensitive' } }
+                    ]
+                }),
+                ...(city && { city: { equals: city, mode: 'insensitive' } }),
+                ...(source && { source }),
+                ...(lifecycleStage && { lifecycleStage }),
+                ...(tagId && { tags: { some: { id: tagId } } })
+            }
+        });
+
+        return { customers, total };
     } catch (error) {
         logger.error(`Error fetching customers: ${error}`);
         throw error;

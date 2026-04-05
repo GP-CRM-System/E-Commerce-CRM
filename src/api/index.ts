@@ -8,11 +8,12 @@ import exportsRouter from './exports/exports.router.js';
 import integrationRouter from './integrations/integration.router.js';
 import webhookRouter from './integrations/webhook.router.js';
 import syncRouter from './integrations/sync.router.js';
-import { rateLimiter } from '../config/ratelimit.config.js';
+import { rateLimiter, authRateLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
 router.use(rateLimiter);
 
+router.use('/auth', authRateLimiter);
 router.use('/auth', authRouter);
 router.use('/customers', customerRouter);
 router.use('/products', productRouter);

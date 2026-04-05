@@ -12,3 +12,11 @@ export const rateLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 });
+
+export const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 15,
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false
+});

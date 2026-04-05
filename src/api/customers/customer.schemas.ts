@@ -140,3 +140,46 @@ export const updateEvent = z.object({
     source: z.string().trim().optional(),
     occurredAt: z.coerce.date().optional()
 });
+
+export const customerFilters = z.object({
+    search: z.string().optional(),
+    city: z.string().optional(),
+    source: z
+        .enum([
+            'WEBSITE',
+            'SOCIAL',
+            'REFERRAL',
+            'ORGANIC',
+            'EMAIL',
+            'CAMPAIGN',
+            'OTHER'
+        ])
+        .optional(),
+    lifecycleStage: z
+        .enum([
+            'PROSPECT',
+            'ONE_TIME',
+            'RETURNING',
+            'LOYAL',
+            'VIP',
+            'AT_RISK',
+            'CHURNED',
+            'WINBACK'
+        ])
+        .optional(),
+    tagId: z.string().optional(),
+    sortBy: z
+        .enum([
+            'createdAt',
+            'updatedAt',
+            'name',
+            'totalSpent',
+            'totalOrders',
+            'lastOrderAt'
+        ])
+        .optional()
+        .default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
+});
+
+export type CustomerFilters = z.infer<typeof customerFilters>;

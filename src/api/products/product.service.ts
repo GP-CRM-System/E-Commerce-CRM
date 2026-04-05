@@ -3,23 +3,51 @@ import prisma from '../../config/prisma.config.js';
 import { z } from 'zod';
 import * as productSchema from './product.schemas.js';
 import type { Product, ProductVariant } from '../../generated/prisma/client.js';
+import type { ProductFilters } from './product.schemas.js';
 
 export async function getAllProducts(
     organizationId: string,
     take: number,
-    skip: number
+    skip: number,
+    filters?: ProductFilters
 ): Promise<{
     products: Product[];
     total: number;
 }> {
     try {
+        const search = filters?.search;
+        const category = filters?.category;
+        const status = filters?.status;
+        const minPrice = filters?.minPrice;
+        const maxPrice = filters?.maxPrice;
+        const sortBy = filters?.sortBy || 'createdAt';
+        const sortOrder = filters?.sortOrder || 'desc';
+
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where: {
-                    organizationId
+                    organizationId,
+                    ...(search && {
+                        OR: [
+                            { name: { contains: search, mode: 'insensitive' } },
+                            {
+                                description: {
+                                    contains: search,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            { sku: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }),
+                    ...(category && {
+                        category: { equals: category, mode: 'insensitive' }
+                    }),
+                    ...(status && { status }),
+                    ...(minPrice !== undefined && { price: { gte: minPrice } }),
+                    ...(maxPrice !== undefined && { price: { lte: maxPrice } })
                 },
                 orderBy: {
-                    createdAt: 'desc'
+                    [sortBy]: sortOrder
                 },
                 take,
                 skip,
@@ -29,7 +57,25 @@ export async function getAllProducts(
             }),
             prisma.product.count({
                 where: {
-                    organizationId
+                    organizationId,
+                    ...(search && {
+                        OR: [
+                            { name: { contains: search, mode: 'insensitive' } },
+                            {
+                                description: {
+                                    contains: search,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            { sku: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }),
+                    ...(category && {
+                        category: { equals: category, mode: 'insensitive' }
+                    }),
+                    ...(status && { status }),
+                    ...(minPrice !== undefined && { price: { gte: minPrice } }),
+                    ...(maxPrice !== undefined && { price: { lte: maxPrice } })
                 }
             })
         ]);

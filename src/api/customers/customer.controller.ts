@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import * as customerService from './customer.service.js';
+import type { CustomerFilters } from './customer.schemas.js';
 import {
     HttpStatus,
     ResponseHandler,
@@ -22,10 +23,24 @@ export const getAllCustomers = asyncHandler(
             throw new AuthorizationError('No active organization selected');
         }
 
+        const filters: CustomerFilters = {
+            search: req.query.search as string | undefined,
+            city: req.query.city as string | undefined,
+            source: req.query.source as CustomerFilters['source'],
+            lifecycleStage: req.query
+                .lifecycleStage as CustomerFilters['lifecycleStage'],
+            tagId: req.query.tagId as string | undefined,
+            sortBy:
+                (req.query.sortBy as CustomerFilters['sortBy']) || 'createdAt',
+            sortOrder:
+                (req.query.sortOrder as CustomerFilters['sortOrder']) || 'desc'
+        };
+
         const response = await customerService.getAllCustomers(
             orgId,
             take,
-            skip
+            skip,
+            filters
         );
 
         ResponseHandler.paginated(

@@ -31,6 +31,11 @@ const streams =
               },
               { stream: prettyStream }
           ]
-        : [{ stream: prettyStream }];
+        : env.nodeEnv === 'test'
+          ? []
+          : [{ stream: prettyStream }];
 
-export default pino({ level: 'info' }, multistream(streams));
+export default pino(
+    { level: env.nodeEnv === 'test' ? 'silent' : 'info' },
+    multistream(streams)
+);

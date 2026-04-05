@@ -203,6 +203,10 @@ model Customer {
   churnRiskScore       Float?
   rfmScore             String?
   rfmSegment           String?
+  rfmRecency           Int? // 1-5 score
+  rfmFrequency         Int? // 1-5 score
+  rfmMonetary          Int? // 1-5 score
+  lastScoredAt         DateTime?
   cohortMonth          String? // '2024-03'
   acceptsMarketing     Boolean         @default(false)
   lastSyncedAt         DateTime?
@@ -285,6 +289,7 @@ model WebhookLog {
   @@index([topic])
   @@index([status])
   @@index([createdAt])
+  @@index([integrationId, webhookId])
 }
 
 model SyncLog {

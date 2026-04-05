@@ -9,6 +9,7 @@ import {
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import * as productSchema from './product.schemas.js';
+import type { ProductFilters } from './product.schemas.js';
 
 export const list = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -30,10 +31,27 @@ export const list = asyncHandler(
             20
         );
 
+        const filters: ProductFilters = {
+            search: req.query.search as string | undefined,
+            category: req.query.category as string | undefined,
+            status: req.query.status as ProductFilters['status'],
+            minPrice: req.query.minPrice
+                ? Number(req.query.minPrice)
+                : undefined,
+            maxPrice: req.query.maxPrice
+                ? Number(req.query.maxPrice)
+                : undefined,
+            sortBy:
+                (req.query.sortBy as ProductFilters['sortBy']) || 'createdAt',
+            sortOrder:
+                (req.query.sortOrder as ProductFilters['sortOrder']) || 'desc'
+        };
+
         const { products, total } = await productService.getAllProducts(
             organizationId,
             take,
-            skip
+            skip,
+            filters
         );
 
         return ResponseHandler.paginated(
@@ -42,7 +60,8 @@ export const list = asyncHandler(
             'Products fetched successfully',
             page,
             limit,
-            total
+            total,
+            req.url
         );
     }
 );

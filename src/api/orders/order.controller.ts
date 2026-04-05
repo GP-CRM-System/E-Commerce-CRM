@@ -9,6 +9,7 @@ import {
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import * as orderSchema from './order.schemas.js';
+import type { OrderFilters } from './order.schemas.js';
 
 export const list = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -30,10 +31,24 @@ export const list = asyncHandler(
             20
         );
 
+        const filters: OrderFilters = {
+            search: req.query.search as string | undefined,
+            status: req.query.status as OrderFilters['status'],
+            paymentStatus: req.query
+                .paymentStatus as OrderFilters['paymentStatus'],
+            shippingStatus: req.query
+                .shippingStatus as OrderFilters['shippingStatus'],
+            customerId: req.query.customerId as string | undefined,
+            sortBy: (req.query.sortBy as OrderFilters['sortBy']) || 'createdAt',
+            sortOrder:
+                (req.query.sortOrder as OrderFilters['sortOrder']) || 'desc'
+        };
+
         const { orders, total } = await orderService.getAllOrders(
             organizationId,
             take,
-            skip
+            skip,
+            filters
         );
 
         return ResponseHandler.paginated(
@@ -42,7 +57,8 @@ export const list = asyncHandler(
             'Orders fetched successfully',
             page,
             limit,
-            total
+            total,
+            req.url
         );
     }
 );

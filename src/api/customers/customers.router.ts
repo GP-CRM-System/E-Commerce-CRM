@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as customerController from './customer.controller.js';
+import * as analyticsController from './analytics.controller.js';
 import * as customerSchema from './customer.schemas.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
 import { paginationSchema } from '../../utils/pagination.util.js';
@@ -12,6 +13,7 @@ router
     .get(
         requirePermission('customers:read'),
         validateRequest(paginationSchema, 'query'),
+        validateRequest(customerSchema.customerFilters, 'query'),
         customerController.getAllCustomers
     )
     .post(
@@ -19,6 +21,17 @@ router
         validateRequest(customerSchema.createCustomer),
         customerController.createCustomer
     );
+
+router
+    .route('/analytics/compute')
+    .post(
+        requirePermission('customers:write'),
+        analyticsController.triggerRFMCompute
+    );
+
+router
+    .route('/analytics/rfm')
+    .get(requirePermission('customers:read'), analyticsController.getRFMStats);
 
 router
     .route('/:id')
@@ -31,6 +44,13 @@ router
     .delete(
         requirePermission('customers:delete'),
         customerController.deleteCustomer
+    );
+
+router
+    .route('/:id/analytics')
+    .get(
+        requirePermission('customers:read'),
+        analyticsController.getCustomerRFM
     );
 
 router
