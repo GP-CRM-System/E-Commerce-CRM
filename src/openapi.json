@@ -14,31 +14,23 @@
     "tags": [
         {
             "name": "Auth",
-            "description": "Authentication and user management (Better Auth)"
+            "description": "Authentication endpoints (sign-in, sign-up, session)"
         },
         {
-            "name": "Organization",
-            "description": "Organization and team management (Better Auth)"
+            "name": "Members",
+            "description": "Organizations, members, invitations, and role management"
+        },
+        {
+            "name": "Roles",
+            "description": "Custom role and permission management"
         },
         {
             "name": "Customers",
             "description": "Customer management"
         },
         {
-            "name": "Integrations",
-            "description": "External integrations (Shopify)"
-        },
-        {
-            "name": "Sync",
-            "description": "Data synchronization"
-        },
-        {
-            "name": "Webhooks",
-            "description": "Webhook handlers"
-        },
-        {
             "name": "Products",
-            "description": "Product management"
+            "description": "Product catalog"
         },
         {
             "name": "Orders",
@@ -46,11 +38,11 @@
         },
         {
             "name": "Imports",
-            "description": "Import jobs for CSV/XLSX data"
+            "description": "CSV/XLSX import jobs"
         },
         {
             "name": "Exports",
-            "description": "Export jobs for CSV/XLSX data"
+            "description": "CSV/XLSX export jobs"
         }
     ],
     "paths": {
@@ -332,7 +324,7 @@
             "post": {
                 "operationId": "createOrganization",
                 "summary": "Create a new organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -364,7 +356,7 @@
             "get": {
                 "operationId": "listOrganizations",
                 "summary": "List user's organizations",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "responses": {
                     "200": { "description": "List of organizations" }
                 },
@@ -375,7 +367,7 @@
             "get": {
                 "operationId": "getFullOrganization",
                 "summary": "Get full organization details with members",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "organizationId",
@@ -405,7 +397,7 @@
             "post": {
                 "operationId": "setActiveOrganization",
                 "summary": "Set active organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -430,7 +422,7 @@
             "post": {
                 "operationId": "updateOrganization",
                 "summary": "Update organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -464,7 +456,7 @@
             "post": {
                 "operationId": "deleteOrganization",
                 "summary": "Delete organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -489,7 +481,7 @@
             "post": {
                 "operationId": "checkSlug",
                 "summary": "Check if organization slug is available",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -511,7 +503,7 @@
             "post": {
                 "operationId": "inviteMember",
                 "summary": "Invite member to organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -526,8 +518,7 @@
                                     },
                                     "role": { "type": "string" },
                                     "organizationId": { "type": "string" },
-                                    "resend": { "type": "boolean" },
-                                    "teamId": { "type": "string" }
+                                    "resend": { "type": "boolean" }
                                 }
                             }
                         }
@@ -543,7 +534,7 @@
             "post": {
                 "operationId": "acceptInvitation",
                 "summary": "Accept organization invitation",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -568,7 +559,7 @@
             "post": {
                 "operationId": "cancelInvitation",
                 "summary": "Cancel organization invitation",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -593,7 +584,7 @@
             "post": {
                 "operationId": "rejectInvitation",
                 "summary": "Reject organization invitation",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -618,7 +609,7 @@
             "get": {
                 "operationId": "getInvitation",
                 "summary": "Get invitation by ID",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "id",
@@ -637,7 +628,7 @@
             "get": {
                 "operationId": "listInvitations",
                 "summary": "List organization invitations",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "organizationId",
@@ -655,7 +646,7 @@
             "get": {
                 "operationId": "listMembers",
                 "summary": "List organization members",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "organizationId",
@@ -693,7 +684,7 @@
             "post": {
                 "operationId": "removeMember",
                 "summary": "Remove member from organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -719,7 +710,7 @@
             "post": {
                 "operationId": "updateMemberRole",
                 "summary": "Update member role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -746,7 +737,7 @@
             "get": {
                 "operationId": "getActiveMember",
                 "summary": "Get current member details",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "responses": {
                     "200": { "description": "Member details" }
                 },
@@ -757,7 +748,7 @@
             "get": {
                 "operationId": "getActiveMemberRole",
                 "summary": "Get current member role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "responses": {
                     "200": { "description": "Member role" }
                 },
@@ -768,7 +759,7 @@
             "post": {
                 "operationId": "addMember",
                 "summary": "Add member directly (server only)",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -779,8 +770,7 @@
                                 "properties": {
                                     "userId": { "type": "string" },
                                     "role": { "type": "string" },
-                                    "organizationId": { "type": "string" },
-                                    "teamId": { "type": "string" }
+                                    "organizationId": { "type": "string" }
                                 }
                             }
                         }
@@ -796,7 +786,7 @@
             "post": {
                 "operationId": "leaveOrganization",
                 "summary": "Leave organization",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -821,7 +811,7 @@
             "post": {
                 "operationId": "createRole",
                 "summary": "Create custom role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -848,7 +838,7 @@
             "get": {
                 "operationId": "listRoles",
                 "summary": "List organization roles",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "organizationId",
@@ -866,7 +856,7 @@
             "get": {
                 "operationId": "getRole",
                 "summary": "Get specific role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "parameters": [
                     {
                         "name": "roleName",
@@ -894,7 +884,7 @@
             "post": {
                 "operationId": "updateRole",
                 "summary": "Update role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -921,7 +911,7 @@
             "post": {
                 "operationId": "deleteRole",
                 "summary": "Delete role",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -947,7 +937,7 @@
             "post": {
                 "operationId": "hasPermission",
                 "summary": "Check if user has permission",
-                "tags": ["Organization"],
+                "tags": ["Members"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -964,76 +954,6 @@
                 },
                 "responses": {
                     "200": { "description": "Permission check result" }
-                },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/auth/organization/create-team": {
-            "post": {
-                "operationId": "createTeam",
-                "summary": "Create a team",
-                "tags": ["Organization"],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["name"],
-                                "properties": {
-                                    "name": { "type": "string" },
-                                    "organizationId": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": { "description": "Team created" }
-                },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/auth/organization/list-teams": {
-            "get": {
-                "operationId": "listTeams",
-                "summary": "List teams",
-                "tags": ["Organization"],
-                "parameters": [
-                    {
-                        "name": "organizationId",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "List of teams" }
-                },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/auth/organization/delete-team": {
-            "post": {
-                "operationId": "deleteTeam",
-                "summary": "Delete a team",
-                "tags": ["Organization"],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["teamId"],
-                                "properties": {
-                                    "teamId": { "type": "string" },
-                                    "organizationId": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": { "description": "Team deleted" }
                 },
                 "security": [{ "bearerAuth": [] }]
             }
@@ -2300,6 +2220,190 @@
                 },
                 "security": [{ "bearerAuth": [] }]
             }
+        },
+        "/roles/permissions": {
+            "get": {
+                "operationId": "getPermissions",
+                "summary": "Get available permissions",
+                "tags": ["Roles"],
+                "responses": {
+                    "200": {
+                        "description": "List of available permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/roles": {
+            "get": {
+                "operationId": "listCustomRoles",
+                "summary": "List all custom roles",
+                "tags": ["Roles"],
+                "responses": {
+                    "200": {
+                        "description": "List of roles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "default": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Role"
+                                            }
+                                        },
+                                        "custom": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Role"
+                                            }
+                                        },
+                                        "all": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Role"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createCustomRole",
+                "summary": "Create a custom role",
+                "tags": ["Roles"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Role created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or reserved role name"
+                    },
+                    "403": { "description": "Insufficient permissions" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/roles/{id}": {
+            "get": {
+                "operationId": "getCustomRole",
+                "summary": "Get a specific custom role",
+                "tags": ["Roles"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "404": { "description": "Role not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateCustomRole",
+                "summary": "Update a custom role",
+                "tags": ["Roles"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Role updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Role"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or cannot modify default roles"
+                    },
+                    "404": { "description": "Role not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteCustomRole",
+                "summary": "Delete a custom role",
+                "tags": ["Roles"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Role deleted" },
+                    "400": { "description": "Cannot delete default roles" },
+                    "404": { "description": "Role not found" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
         }
     },
     "components": {
@@ -2311,6 +2415,65 @@
             }
         },
         "schemas": {
+            "Role": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "permissions": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    },
+                    "isDefault": { "type": "boolean" }
+                }
+            },
+            "CreateRoleRequest": {
+                "type": "object",
+                "required": ["name", "permissions"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Role name (lowercase, alphanumeric, hyphens)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional role description"
+                    },
+                    "permissions": {
+                        "type": "object",
+                        "description": "Permission key-value pairs",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                }
+            },
+            "UpdateRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "New role name"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "New role description"
+                    },
+                    "permissions": {
+                        "type": "object",
+                        "description": "Updated permissions",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                }
+            },
             "User": {
                 "type": "object",
                 "properties": {

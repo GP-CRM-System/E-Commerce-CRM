@@ -8,27 +8,13 @@ import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
 import { env } from '../../config/env.config.js';
 import { sendEmail } from '../../utils/email.util.js';
-import { DEFAULT_ROLES } from '../../config/roles.config.js';
+import {
+    AVAILABLE_PERMISSIONS,
+    DEFAULT_ROLES
+} from '../../config/roles.config.js';
 import loggerUtil from '../../utils/logger.util.js';
 
-const ac = createAccessControl({
-    organization: ['read', 'update', 'delete'],
-    member: ['read', 'create', 'update', 'delete'],
-    invitation: ['read', 'create', 'cancel'],
-    team: ['read', 'create', 'update', 'delete'],
-    ac: ['read', 'create', 'update', 'delete'],
-    customers: ['read', 'write', 'delete'],
-    orders: ['read', 'write', 'delete'],
-    products: ['read', 'write', 'delete'],
-    integrations: ['read', 'write', 'delete'],
-    webhooks: ['read', 'write', 'delete'],
-    sync: ['read', 'write'],
-    segments: ['read', 'write', 'delete'],
-    campaigns: ['read', 'write', 'delete'],
-    supportTickets: ['read', 'write', 'delete'],
-    tags: ['read', 'write', 'delete'],
-    reports: ['read']
-});
+const ac = createAccessControl(AVAILABLE_PERMISSIONS);
 
 export const auth = betterAuth({
     baseURL: env.appUrl,

@@ -269,3 +269,21 @@ export class NotFoundError extends AppError {
         Object.setPrototypeOf(this, NotFoundError.prototype);
     }
 }
+
+export class BadRequestError extends AppError {
+    /**
+     * Create a bad-request application error.
+     *
+     * @param message Human-readable bad request error message.
+     * @param status HTTP status associated with bad requests.
+     * @param code Application-specific bad request error code.
+     */
+    constructor(
+        message: string = 'Bad request',
+        status: HttpStatus = HttpStatus.BAD_REQUEST,
+        code: ErrorCode = ErrorCode.INVALID_INPUT
+    ) {
+        super(message, status, code);
+        Object.setPrototypeOf(this, BadRequestError.prototype);
+    }
+}

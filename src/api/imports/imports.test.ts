@@ -10,8 +10,6 @@ let testOrgId: string;
 
 describe('Imports API', () => {
     beforeAll(async () => {
-        console.log('Setting up import tests...');
-
         await prisma.importJob.deleteMany({
             where: { organization: { slug: { startsWith: 'import-test-org' } } }
         });
@@ -74,7 +72,6 @@ describe('Imports API', () => {
             body: { email: 'import-test@test.com', password: 'Password123!' }
         });
         authToken = signin.token!;
-        console.log('Import test setup complete');
     });
 
     afterAll(async () => {

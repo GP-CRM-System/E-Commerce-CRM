@@ -11,8 +11,6 @@ let testProductId: string;
 
 describe('Products API', () => {
     beforeAll(async () => {
-        console.log('Setting up product tests...');
-
         await prisma.product.deleteMany({
             where: {
                 organization: { slug: { startsWith: 'product-test-org' } }
@@ -74,8 +72,6 @@ describe('Products API', () => {
             body: { email: 'product-test@test.com', password: 'Password123!' }
         });
         authToken = signin.token!;
-
-        console.log('Product test setup complete');
     });
 
     afterAll(async () => {

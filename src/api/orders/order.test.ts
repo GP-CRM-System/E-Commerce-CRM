@@ -13,8 +13,6 @@ let testOrderId: string;
 
 describe('Orders API', () => {
     beforeAll(async () => {
-        console.log('Setting up order tests...');
-
         await prisma.order.deleteMany({
             where: { organization: { slug: { startsWith: 'order-test-org' } } }
         });
@@ -99,8 +97,6 @@ describe('Orders API', () => {
             }
         });
         testProductId = product.id;
-
-        console.log('Order test setup complete');
     });
 
     afterAll(async () => {

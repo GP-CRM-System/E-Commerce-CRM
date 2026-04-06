@@ -14,7 +14,6 @@ let testNoteId: string;
 let testEventId: string;
 
 beforeAll(async () => {
-    console.log('Starting test setup...');
     // 1. Cleanup
     await prisma.customer.deleteMany({
         where: { organization: { slug: { startsWith: 'test-org-slug' } } }
@@ -32,10 +31,8 @@ beforeAll(async () => {
         where: { slug: { startsWith: 'test-org-slug' } }
     });
     await prisma.user.deleteMany({ where: { email: 'test-user@test.com' } });
-    console.log('Cleanup finished.');
 
     // 2. Sign up test user
-    console.log('Signing up user...');
     try {
         const signup = await auth.api.signUpEmail({
             body: {
@@ -59,7 +56,6 @@ beforeAll(async () => {
         });
 
         // 3. Create test organization
-        console.log('Creating organization...');
         const org = await auth.api.createOrganization({
             headers: fromNodeHeaders({
                 authorization: `Bearer ${authToken}`
@@ -81,7 +77,6 @@ beforeAll(async () => {
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
 
         // 4. Set the organization as active
-        console.log('Setting active organization...');
         await auth.api.setActiveOrganization({
             headers: fromNodeHeaders({
                 authorization: `Bearer ${authToken}`
@@ -92,7 +87,6 @@ beforeAll(async () => {
         });
 
         // 5. Sign in again to get fresh session with org context
-        console.log('Signing in again...');
         const signin = await auth.api.signInEmail({
             body: {
                 email: 'test-user@test.com',
@@ -104,7 +98,6 @@ beforeAll(async () => {
             throw new Error('Signin failed');
         }
         authToken = signin.token;
-        console.log('Setup complete, auth token length:', authToken.length);
     } catch (err) {
         console.error('Test setup error:', err);
         throw err;

@@ -10,8 +10,6 @@ let testOrgId: string;
 
 describe('Exports API', () => {
     beforeAll(async () => {
-        console.log('Setting up export tests...');
-
         await prisma.exportJob.deleteMany({
             where: { organization: { slug: { startsWith: 'test-export-org' } } }
         });
@@ -93,8 +91,6 @@ describe('Exports API', () => {
                 }
             ]
         });
-
-        console.log('Export test setup complete');
     });
 
     afterAll(async () => {

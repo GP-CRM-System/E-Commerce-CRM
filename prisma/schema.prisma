@@ -108,11 +108,12 @@ model OrganizationRole {
     id             String       @id @default(nanoid())
     organizationId String
     organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    name           String       // role name (owner, admin, member, or custom)
-    permissions    String[]     // array of permissions e.g., ['customers:read', 'customers:write']
+    role           String       // role name (owner, admin, member, or custom)
+    permission    Json          // Better Auth stores as JSON string
+    description    String?
     createdAt      DateTime     @default(now())
 
-    @@unique([organizationId, name])
+    @@unique([organizationId, role])
     @@index([organizationId])
     @@map("organizationRole")
 }

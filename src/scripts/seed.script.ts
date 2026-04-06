@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker';
 import prisma from '../config/prisma.config.js';
 import { DEFAULT_ROLES } from '../config/roles.config.js';
 import { auth } from '../api/auth/auth.js';
+import logger from '../utils/logger.util.js';
 
 const BATCH_SIZE = 100;
 
@@ -14,7 +15,7 @@ async function safeDelete<T>(fn: () => Promise<T>): Promise<void> {
 }
 
 async function resetDatabase() {
-    console.log('Resetting database...\n');
+    logger.info('[SEED] Resetting database...\n');
 
     await safeDelete(() => prisma.webhookLog.deleteMany());
     await safeDelete(() => prisma.syncLog.deleteMany());
@@ -39,16 +40,16 @@ async function resetDatabase() {
     await safeDelete(() => prisma.user.deleteMany());
     await safeDelete(() => prisma.organization.deleteMany());
 
-    console.log('Database reset complete\n');
+    logger.info('[SEED] Database reset complete\n');
 }
 
 async function createOrganizations() {
-    console.log('Creating organizations via Better Auth API...');
+    logger.info('[SEED] Creating organizations via Better Auth API...');
 
     const existingOrgs = await prisma.organization.findMany();
     if (existingOrgs.length > 0) {
-        console.log(
-            `Found ${existingOrgs.length} existing organizations - skipping\n`
+        logger.info(
+            `[SEED] Found ${existingOrgs.length} existing organizations - skipping\n`
         );
         return existingOrgs;
     }
@@ -94,20 +95,22 @@ async function createOrganizations() {
                 await prisma.organizationRole.create({
                     data: {
                         organizationId: orgId,
-                        name: roleName,
-                        permissions: flatPermissions
+                        role: roleName.toLowerCase(),
+                        permission: JSON.stringify(permissions)
                     }
                 });
             }
         }
     }
 
-    console.log(`Created ${organizations.length} organizations with roles\n`);
+    logger.info(
+        `[SEED] Created ${organizations.length} organizations with roles\n`
+    );
     return organizations;
 }
 
 async function createUsers() {
-    console.log('Creating users via Better Auth API...');
+    logger.info('[SEED] Creating users via Better Auth API...');
 
     const users = [];
 
@@ -145,7 +148,7 @@ async function createUsers() {
         }
     }
 
-    console.log(`Created ${users.length} users\n`);
+    logger.info(`[SEED] Created ${users.length} users\n`);
     return users;
 }
 
@@ -153,7 +156,7 @@ async function createMemberships(
     organizations: { id: string }[],
     users: { id: string; email: string }[]
 ) {
-    console.log('Creating memberships...');
+    logger.info('[SEED] Creating memberships...');
 
     let count = 0;
     for (const org of organizations) {
@@ -182,11 +185,11 @@ async function createMemberships(
         }
     }
 
-    console.log(`Created ${count} memberships\n`);
+    logger.info(`[SEED] Created ${count} memberships\n`);
 }
 
 async function createCustomers(organizations: { id: string }[]) {
-    console.log('Creating customers...');
+    logger.info('[SEED] Creating customers...');
 
     let totalCreated = 0;
     const lifecycleStages = [
@@ -254,11 +257,11 @@ async function createCustomers(organizations: { id: string }[]) {
         }
     }
 
-    console.log(`Created ${totalCreated} customers\n`);
+    logger.info(`[SEED] Created ${totalCreated} customers\n`);
 }
 
 async function createTags(organizations: { id: string }[]) {
-    console.log('Creating tags...');
+    logger.info('[SEED] Creating tags...');
 
     const tagNames = [
         'VIP',
@@ -291,11 +294,11 @@ async function createTags(organizations: { id: string }[]) {
         await prisma.tag.createMany({ data: tags });
     }
 
-    console.log(`Created ${tagNames.length} tags per organization\n`);
+    logger.info(`[SEED] Created ${tagNames.length} tags per organization\n`);
 }
 
 async function createProducts(organizations: { id: string }[]) {
-    console.log('Creating products...');
+    logger.info('[SEED] Creating products...');
 
     let totalCreated = 0;
     const categories = [
@@ -340,11 +343,11 @@ async function createProducts(organizations: { id: string }[]) {
         }
     }
 
-    console.log(`Created ${totalCreated} products\n`);
+    logger.info(`[SEED] Created ${totalCreated} products\n`);
 }
 
 async function createOrders(organizations: { id: string }[]) {
-    console.log('Creating orders...');
+    logger.info('[SEED] Creating orders...');
 
     let totalCreated = 0;
     const shippingStatuses = [
@@ -423,11 +426,11 @@ async function createOrders(organizations: { id: string }[]) {
         }
     }
 
-    console.log(`Created ${totalCreated} orders\n`);
+    logger.info(`[SEED] Created ${totalCreated} orders\n`);
 }
 
 async function createSegments(organizations: { id: string }[]) {
-    console.log('Creating segments...');
+    logger.info('[SEED] Creating segments...');
 
     const segmentTemplates = [
         {
@@ -485,13 +488,13 @@ async function createSegments(organizations: { id: string }[]) {
         }
     }
 
-    console.log(
-        `Created ${segmentTemplates.length} segments per organization\n`
+    logger.info(
+        `[SEED] Created ${segmentTemplates.length} segments per organization\n`
     );
 }
 
 async function createCampaigns(organizations: { id: string }[]) {
-    console.log('Creating campaigns...');
+    logger.info('[SEED] Creating campaigns...');
 
     const campaignNames = [
         'Welcome Series',
@@ -520,11 +523,11 @@ async function createCampaigns(organizations: { id: string }[]) {
         }
     }
 
-    console.log('Created 20 campaigns per organization\n');
+    logger.info('[SEED] Created 20 campaigns per organization\n');
 }
 
 async function createSupportTickets(organizations: { id: string }[]) {
-    console.log('Creating support tickets...');
+    logger.info('[SEED] Creating support tickets...');
 
     let totalCreated = 0;
     const statuses = ['OPEN', 'PENDING', 'CLOSED'] as const;
@@ -568,11 +571,11 @@ async function createSupportTickets(organizations: { id: string }[]) {
         }
     }
 
-    console.log(`Created ${totalCreated} support tickets\n`);
+    logger.info(`[SEED] Created ${totalCreated} support tickets\n`);
 }
 
 async function createCustomerEvents(organizations: { id: string }[]) {
-    console.log('Creating customer events...');
+    logger.info('[SEED] Creating customer events...');
 
     let totalCreated = 0;
     const eventTypes = [
@@ -614,11 +617,11 @@ async function createCustomerEvents(organizations: { id: string }[]) {
         }
     }
 
-    console.log(`Created ${totalCreated} customer events\n`);
+    logger.info(`[SEED] Created ${totalCreated} customer events\n`);
 }
 
 async function createIntegrations(organizations: { id: string }[]) {
-    console.log('Creating integrations...');
+    logger.info('[SEED] Creating integrations...');
 
     for (const org of organizations) {
         await prisma.integration.create({
@@ -636,13 +639,15 @@ async function createIntegrations(organizations: { id: string }[]) {
         });
     }
 
-    console.log(`Created ${organizations.length} Shopify integrations\n`);
+    logger.info(
+        `[SEED] Created ${organizations.length} Shopify integrations\n`
+    );
 }
 
 async function main() {
-    console.log('='.repeat(50));
-    console.log('DATABASE SEED SCRIPT');
-    console.log('='.repeat(50) + '\n');
+    logger.info('[SEED] ='.repeat(50));
+    logger.info('[SEED] DATABASE SEED SCRIPT');
+    logger.info('[SEED] ='.repeat(50) + '\n');
 
     const startTime = Date.now();
 
@@ -662,15 +667,15 @@ async function main() {
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    console.log('='.repeat(50));
-    console.log('SEED COMPLETED SUCCESSFULLY');
-    console.log(`Duration: ${duration}s`);
-    console.log('='.repeat(50));
+    logger.info('[SEED] ='.repeat(50));
+    logger.info('[SEED] SEED COMPLETED SUCCESSFULLY');
+    logger.info(`[SEED] Duration: ${duration}s`);
+    logger.info('[SEED] ='.repeat(50));
 }
 
 main()
     .catch((error) => {
-        console.error('\nSeed failed:', error);
+        logger.error('[SEED]Seed failed:', error);
         process.exit(1);
     })
     .finally(async () => {

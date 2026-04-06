@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRouter from './auth/auth.router.js';
+import rolesRouter from './auth/roles.router.js';
 import customerRouter from './customers/customers.router.js';
 import productRouter from './products/products.router.js';
 import orderRouter from './orders/orders.router.js';
@@ -15,6 +16,7 @@ router.use(rateLimiter);
 
 router.use('/auth', authRateLimiter);
 router.use('/auth', authRouter);
+router.use('/roles', rolesRouter);
 router.use('/customers', customerRouter);
 router.use('/products', productRouter);
 router.use('/orders', orderRouter);

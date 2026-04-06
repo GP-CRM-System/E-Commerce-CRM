@@ -11,8 +11,6 @@ let testCustomerId: string;
 
 describe('Customer Analytics API', () => {
     beforeAll(async () => {
-        console.log('Setting up analytics tests...');
-
         await prisma.customer.deleteMany({
             where: {
                 organization: { slug: { startsWith: 'analytics-test-org' } }
@@ -94,8 +92,6 @@ describe('Customer Analytics API', () => {
             }
         });
         testCustomerId = customer.id;
-
-        console.log('Analytics test setup complete');
     });
 
     afterAll(async () => {
