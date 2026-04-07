@@ -22,14 +22,16 @@ export const sendEmail = async ({
     html: string;
 }) => {
     try {
-        const info = await transporter.sendMail({
-            from: env.smtpFrom,
-            to,
-            subject,
-            html
-        });
-        logger.info(`Email sent to ${to}: ${info.messageId}`);
-        return info;
+        if (env.nodeEnv === 'production') {
+            const info = await transporter.sendMail({
+                from: env.smtpFrom,
+                to,
+                subject,
+                html
+            });
+            logger.info(`Email sent to ${to}: ${info.messageId}`);
+            return info;
+        }
     } catch (error) {
         logger.error(
             `Error sending email to ${to}: ${error instanceof Error ? error.message : String(error)}`
