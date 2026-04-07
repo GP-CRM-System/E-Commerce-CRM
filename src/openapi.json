@@ -160,6 +160,70 @@
                 }
             }
         },
+        "/auth/oauth/sign-in/facebook": {
+            "get": {
+                "operationId": "signInWithFacebook",
+                "summary": "Sign in with Facebook OAuth",
+                "tags": ["Auth"],
+                "responses": {
+                    "302": { "description": "Redirect to Facebook" }
+                }
+            }
+        },
+        "/auth/oauth/callback/facebook": {
+            "get": {
+                "operationId": "facebookCallback",
+                "summary": "Facebook OAuth callback",
+                "tags": ["Auth"],
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "302": { "description": "Redirect to app" }
+                }
+            }
+        },
+        "/auth/oauth/sign-in/microsoft": {
+            "get": {
+                "operationId": "signInWithMicrosoft",
+                "summary": "Sign in with Microsoft OAuth",
+                "tags": ["Auth"],
+                "responses": {
+                    "302": { "description": "Redirect to Microsoft" }
+                }
+            }
+        },
+        "/auth/oauth/callback/microsoft": {
+            "get": {
+                "operationId": "microsoftCallback",
+                "summary": "Microsoft OAuth callback",
+                "tags": ["Auth"],
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "302": { "description": "Redirect to app" }
+                }
+            }
+        },
         "/auth/verify-email": {
             "post": {
                 "operationId": "verifyEmail",

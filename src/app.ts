@@ -15,6 +15,8 @@ import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
 import { importWorker } from './queues/import.queue.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
+import { redisConnection, isRedisAvailable } from './config/redis.config.js';
+import { RedisConnection } from 'bullmq';
 
 checkEnv();
 
@@ -68,9 +70,27 @@ app.use(errorHandler);
  */
 export async function startServer(): Promise<void> {
     try {
-        // Test database connection
+        // Test PostgreSQL connection
         await prisma.$queryRaw`SELECT 1`;
-        logger.info('[Init] Database connected successfully');
+        logger.info('[Init] PostgreSQL connected successfully');
+
+        // Test Redis connection if available
+        if (isRedisAvailable) {
+            try {
+                new RedisConnection(redisConnection);
+                logger.info('[Init] Redis connected successfully');
+            } catch (redisErr) {
+                logger.error(`[Init] Redis connection failed: ${redisErr}`);
+                throw new Error(
+                    `Failed to connect to Redis: ${(redisErr as Error).message}`,
+                    { cause: redisErr }
+                );
+            }
+        } else {
+            logger.warn(
+                '[Init] Redis not configured, some features may be unavailable'
+            );
+        }
 
         const server = app.listen(env.port, async () => {
             logger.info(
