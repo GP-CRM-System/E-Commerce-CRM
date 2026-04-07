@@ -68,7 +68,7 @@ jobs:
               run: bunx prisma generate
 
             - name: Run Database Migrations
-              run: bunx prisma migrate deploy
+              run: bunx prisma db push
               env:
                   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
                   NODE_ENV: test
