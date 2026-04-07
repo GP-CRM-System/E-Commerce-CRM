@@ -60,7 +60,13 @@ export const listRoles = async (organizationId: string) => {
         orderBy: { createdAt: 'asc' }
     });
 
-    const formattedRoles = dbRoles.map((role: OrganizationRole) => ({
+    const formattedRoles: Array<{
+        id: string;
+        name: string;
+        description: string | undefined;
+        permissions: RolePermissions;
+        isDefault: boolean;
+    }> = dbRoles.map((role: OrganizationRole) => ({
         id: role.id,
         name: role.role,
         description: role.description || undefined,

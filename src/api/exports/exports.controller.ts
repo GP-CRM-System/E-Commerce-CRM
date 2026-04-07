@@ -9,7 +9,6 @@ import {
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import { toCSV, toExcel } from '../../utils/parser.util.js';
-import type { Prisma } from '../../generated/prisma/client.js';
 
 export const create = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -110,7 +109,7 @@ async function processExportJob(
                 where: where as object,
                 take: 10000
             });
-            data = customers.map((c: Prisma.CustomerCreateInput) => ({
+            data = customers.map((c: (typeof customers)[number]) => ({
                 name: c.name,
                 email: c.email,
                 phone: c.phone,
