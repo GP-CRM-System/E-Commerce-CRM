@@ -27,6 +27,7 @@
         "start": "bun run src/index.ts --preload ./src/instrument.ts",
         "lint": "eslint src --ext .ts",
         "format": "prettier --write ./src",
+        "format-check": "prettier --check \"src/**/*.ts\"",
         "generate": "prisma generate",
         "typecheck": "tsc --noEmit",
         "build": "tsc",
