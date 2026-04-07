@@ -59,6 +59,7 @@
         "@better-auth/prisma-adapter": "^1.6.0",
         "@faker-js/faker": "^10.4.0",
         "@prisma/adapter-pg": "^7.7.0",
+        "@prisma/client": "^7.7.0",
         "@scalar/express-api-reference": "^0.9.6",
         "@sentry/bun": "^10.47.0",
         "bcrypt": "^6.0.0",

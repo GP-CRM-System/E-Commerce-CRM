@@ -129,14 +129,14 @@ export const auth = betterAuth({
             clientId: env.googleClientId!,
             clientSecret: env.googleClientSecret!
         },
-        facebook: {
-            clientId: env.facebookClientId!,
-            clientSecret: env.facebookClientSecret!
-        },
-        microsoft: {
-            clientId: env.microsoftClientId!,
-            clientSecret: env.microsoftClientSecret!
-        }
+        // facebook: {
+        //     clientId: env.facebookClientId!,
+        //     clientSecret: env.facebookClientSecret!
+        // },
+        // microsoft: {
+        //     clientId: env.microsoftClientId!,
+        //     clientSecret: env.microsoftClientSecret!
+        // }
     },
     advanced: {
         cookiePrefix: 'better-auth',

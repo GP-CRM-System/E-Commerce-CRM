@@ -10,6 +10,31 @@ jobs:
     check:
         runs-on: ubuntu-latest
 
+        services:
+            postgres:
+                image: postgres:latest
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: test_db
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
+
+            redis:
+                image: redis:latest
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+
         steps:
             - uses: actions/checkout@v4
 
@@ -27,6 +52,11 @@ jobs:
             - name: Prisma Generate
               run: bun run generate
 
+            - name: Run Database Migrations
+              run: bun x prisma migrate deploy
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
             - name: Type Check
               run: bun run typecheck
 
@@ -40,4 +70,5 @@ jobs:
               run: bun test
               env:
                   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+                  REDIS_URL: redis://localhost:6379
                   BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}

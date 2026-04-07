@@ -33,15 +33,15 @@ export const env = {
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
 
-    // Facebook OAuth Configuration
-    facebookClientId: process.env.FACEBOOK_CLIENT_ID,
-    facebookClientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    facebookCallbackUrl: process.env.FACEBOOK_CALLBACK_URL,
+    // // Facebook OAuth Configuration
+    // facebookClientId: process.env.FACEBOOK_CLIENT_ID,
+    // facebookClientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+    // facebookCallbackUrl: process.env.FACEBOOK_CALLBACK_URL,
 
-    // Microsoft OAuth Configuration
-    microsoftClientId: process.env.MICROSOFT_CLIENT_ID,
-    microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-    microsoftCallbackUrl: process.env.MICROSOFT_CALLBACK_URL
+    // // Microsoft OAuth Configuration
+    // microsoftClientId: process.env.MICROSOFT_CLIENT_ID,
+    // microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+    // microsoftCallbackUrl: process.env.MICROSOFT_CALLBACK_URL
 };
 
 export function checkEnv(): void {
@@ -62,12 +62,12 @@ export function checkEnv(): void {
     if (!env.googleClientId) missingVars.push('GOOGLE_CLIENT_ID');
     if (!env.googleClientSecret) missingVars.push('GOOGLE_CLIENT_SECRET');
     if (!env.googleCallbackUrl) missingVars.push('GOOGLE_CALLBACK_URL');
-    if (!env.facebookClientId) missingVars.push('FACEBOOK_CLIENT_ID');
-    if (!env.facebookClientSecret) missingVars.push('FACEBOOK_CLIENT_SECRET');
-    if (!env.facebookCallbackUrl) missingVars.push('FACEBOOK_CALLBACK_URL');
-    if (!env.microsoftClientId) missingVars.push('MICROSOFT_CLIENT_ID');
-    if (!env.microsoftClientSecret) missingVars.push('MICROSOFT_CLIENT_SECRET');
-    if (!env.microsoftCallbackUrl) missingVars.push('MICROSOFT_CALLBACK_URL');
+    // if (!env.facebookClientId) missingVars.push('FACEBOOK_CLIENT_ID');
+    // if (!env.facebookClientSecret) missingVars.push('FACEBOOK_CLIENT_SECRET');
+    // if (!env.facebookCallbackUrl) missingVars.push('FACEBOOK_CALLBACK_URL');
+    // if (!env.microsoftClientId) missingVars.push('MICROSOFT_CLIENT_ID');
+    // if (!env.microsoftClientSecret) missingVars.push('MICROSOFT_CLIENT_SECRET');
+    // if (!env.microsoftCallbackUrl) missingVars.push('MICROSOFT_CALLBACK_URL');
 
     if (missingVars.length > 0) {
         throw new Error(
