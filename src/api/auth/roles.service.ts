@@ -97,8 +97,8 @@ export const listRoles = async (organizationId: string) => {
     }
 
     return {
-        default: formattedRoles.filter((r: OrganizationRole) => r.isDefault),
-        custom: formattedRoles.filter((r: OrganizationRole) => !r.isDefault),
+        default: formattedRoles.filter((r) => r.isDefault),
+        custom: formattedRoles.filter((r) => !r.isDefault),
         all: formattedRoles
     };
 };

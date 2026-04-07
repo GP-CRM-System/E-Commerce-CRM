@@ -1,74 +1,93 @@
 name: CI
 
 on:
-    push:
-        branches: [master]
-    pull_request:
-        branches: [master]
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
-    check:
-        runs-on: ubuntu-latest
+  check:
+    runs-on: ubuntu-latest
 
-        services:
-            postgres:
-                image: postgres:latest
-                env:
-                    POSTGRES_USER: postgres
-                    POSTGRES_PASSWORD: postgres
-                    POSTGRES_DB: test_db
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 5432:5432
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
-            redis:
-                image: redis:latest
-                options: >-
-                    --health-cmd "redis-cli ping"
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-                ports:
-                    - 6379:6379
+      redis:
+        image: redis:latest
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
-        steps:
-            - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Install dependencies
-              run: bun install
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
 
-            - name: Prisma Validate
-              run: bun x prisma validate
+      - name: Install dependencies
+        run: bun install
 
-            - name: Prisma Generate
-              run: bun run generate
+      - name: Wait for Postgres
+        run: |
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5432 && break
+            sleep 2
+          done
 
-            - name: Run Database Migrations
-              run: bun x prisma migrate deploy
-              env:
-                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      - name: Prisma Validate
+        run: bunx prisma validate
 
-            - name: Type Check
-              run: bun run typecheck
+      - name: Prisma Generate
+        run: bunx prisma generate
 
-            - name: Lint
-              run: bun run lint
+      - name: Run Database Migrations
+        run: bunx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NODE_ENV: test
 
-            - name: Format Check
-              run: bun run format-check
+      - name: Type Check
+        run: bun run typecheck
+        env:
+          NODE_ENV: test
 
-            - name: Run Tests
-              run: bun test
-              env:
-                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-                  REDIS_URL: redis://localhost:6379
-                  BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      - name: Lint
+        run: bun run lint
+
+      - name: Format Check
+        run: bun run format-check
+
+      - name: Run Tests
+        run: bun test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'test-secret' }}
+          NODE_ENV: test

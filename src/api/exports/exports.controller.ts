@@ -141,23 +141,14 @@ async function processExportJob(
                 where: where as object,
                 take: 10000
             });
-            data = products.map(
-                (p: {
-                    name: string;
-                    price: number;
-                    sku: string | null;
-                    category: string | null;
-                    inventory: number | null;
-                    status: string | null;
-                }) => ({
-                    name: p.name,
-                    price: p.price,
-                    sku: p.sku,
-                    category: p.category,
-                    inventory: p.inventory,
-                    status: p.status
-                })
-            );
+            data = products.map((p: (typeof products)[number]) => ({
+                name: p.name,
+                price: Number(p.price),
+                sku: p.sku,
+                category: p.category,
+                inventory: p.inventory,
+                status: p.status
+            }));
         } else if (entityType === 'order') {
             const where: Record<string, unknown> = { organizationId };
 
@@ -186,23 +177,14 @@ async function processExportJob(
                 take: 10000,
                 include: { customer: true }
             });
-            data = orders.map(
-                (o: {
-                    externalId: string | null;
-                    customer: { name: string } | null;
-                    paymentStatus: string | null;
-                    shippingStatus: string | null;
-                    totalAmount: number;
-                    currency: string | null;
-                }) => ({
-                    externalId: o.externalId,
-                    customerName: o.customer?.name,
-                    paymentStatus: o.paymentStatus,
-                    shippingStatus: o.shippingStatus,
-                    totalAmount: o.totalAmount,
-                    currency: o.currency
-                })
-            );
+            data = orders.map((o: (typeof orders)[number]) => ({
+                externalId: o.externalId,
+                customerName: o.customer?.name,
+                paymentStatus: o.paymentStatus,
+                shippingStatus: o.shippingStatus,
+                totalAmount: Number(o.totalAmount),
+                currency: o.currency
+            }));
         }
 
         let buffer: Buffer;
