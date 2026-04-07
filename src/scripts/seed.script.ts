@@ -6,6 +6,17 @@ import logger from '../utils/logger.util.js';
 
 const BATCH_SIZE = 100;
 
+type CustomerIdRecord = { id: string };
+type OrderSeedInput = NonNullable<
+    Parameters<typeof prisma.order.createMany>[0]
+>['data'];
+type SupportTicketSeedInput = NonNullable<
+    Parameters<typeof prisma.supportTicket.createMany>[0]
+>['data'];
+type CustomerEventSeedInput = NonNullable<
+    Parameters<typeof prisma.customerEvent.createMany>[0]
+>['data'];
+
 async function safeDelete<T>(fn: () => Promise<T>): Promise<void> {
     try {
         await fn();
@@ -360,12 +371,12 @@ async function createOrders(organizations: { id: string }[]) {
     const paymentStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED'] as const;
 
     for (const org of organizations) {
-        const customers = await prisma.customer.findMany({
+        const customers: CustomerIdRecord[] = await prisma.customer.findMany({
             where: { organizationId: org.id },
             select: { id: true }
         });
 
-        const orders = [];
+        const orders: OrderSeedInput = [];
 
         for (let i = 0; i < 1000; i++) {
             const customer = faker.helpers.arrayElement(customers);
@@ -546,12 +557,12 @@ async function createSupportTickets(organizations: { id: string }[]) {
     ];
 
     for (const org of organizations) {
-        const customers = await prisma.customer.findMany({
+        const customers: CustomerIdRecord[] = await prisma.customer.findMany({
             where: { organizationId: org.id },
             select: { id: true }
         });
 
-        const tickets = [];
+        const tickets: SupportTicketSeedInput = [];
 
         for (let i = 0; i < 200; i++) {
             tickets.push({
@@ -589,12 +600,12 @@ async function createCustomerEvents(organizations: { id: string }[]) {
     const sources = ['shopify', 'manual', 'web', 'pos', 'app'];
 
     for (const org of organizations) {
-        const customers = await prisma.customer.findMany({
+        const customers: CustomerIdRecord[] = await prisma.customer.findMany({
             where: { organizationId: org.id },
             select: { id: true }
         });
 
-        const events = [];
+        const events: CustomerEventSeedInput = [];
 
         for (let i = 0; i < 2000; i++) {
             events.push({

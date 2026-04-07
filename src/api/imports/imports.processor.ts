@@ -1,10 +1,13 @@
-import prisma from '../../config/prisma.config.js';
+import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { CustomerUncheckedCreateInput } from '../../generated/prisma/models/Customer.js';
+import type { ProductUncheckedCreateInput } from '../../generated/prisma/models/Product.js';
+import type { OrderUncheckedCreateInput } from '../../generated/prisma/models/Order.js';
 import type { EntityType, ParsedRow } from '../../types/import.types.js';
 
-type PrismaTx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+type PrismaDb = PrismaClient;
 
 export async function processRow(
-    tx: PrismaTx,
+    db: PrismaDb,
     row: ParsedRow,
     entityType: EntityType,
     organizationId: string,
@@ -13,27 +16,27 @@ export async function processRow(
     switch (entityType) {
         case 'customer':
             return processCustomerRow(
-                tx,
+                db,
                 row,
                 organizationId,
                 duplicateStrategy
             );
         case 'product':
             return processProductRow(
-                tx,
+                db,
                 row,
                 organizationId,
                 duplicateStrategy
             );
         case 'order':
-            return processOrderRow(tx, row, organizationId, duplicateStrategy);
+            return processOrderRow(db, row, organizationId, duplicateStrategy);
         default:
             throw new Error(`Unknown entity type: ${entityType}`);
     }
 }
 
 async function processCustomerRow(
-    tx: PrismaTx,
+    db: PrismaDb,
     row: ParsedRow,
     organizationId: string,
     duplicateStrategy: 'create_only' | 'upsert'
@@ -45,7 +48,7 @@ async function processCustomerRow(
         throw new Error('Name is required');
     }
 
-    const customerData: Parameters<typeof tx.customer.create>[0]['data'] = {
+    const customerData: CustomerUncheckedCreateInput = {
         name: String(name),
         organizationId,
         createdAt: new Date(),
@@ -85,11 +88,11 @@ async function processCustomerRow(
             data.acceptsMarketing === true || data.acceptsMarketing === 'true';
 
     if (duplicateStrategy === 'upsert' && data.externalId) {
-        const existing = await tx.customer.findFirst({
+        const existing = await db.customer.findFirst({
             where: { externalId: String(data.externalId), organizationId }
         });
         if (existing) {
-            return tx.customer.update({
+            return db.customer.update({
                 where: { id: existing.id },
                 data: { ...customerData, updatedAt: new Date() }
             });
@@ -97,22 +100,22 @@ async function processCustomerRow(
     }
 
     if (duplicateStrategy === 'upsert' && data.email) {
-        const existing = await tx.customer.findFirst({
+        const existing = await db.customer.findFirst({
             where: { email: String(data.email), organizationId }
         });
         if (existing) {
-            return tx.customer.update({
+            return db.customer.update({
                 where: { id: existing.id },
                 data: { ...customerData, updatedAt: new Date() }
             });
         }
     }
 
-    return tx.customer.create({ data: customerData });
+    return db.customer.create({ data: customerData });
 }
 
 async function processProductRow(
-    tx: PrismaTx,
+    db: PrismaDb,
     row: ParsedRow,
     organizationId: string,
     duplicateStrategy: 'create_only' | 'upsert'
@@ -128,7 +131,7 @@ async function processProductRow(
         throw new Error('Price is required');
     }
 
-    const productData: Parameters<typeof tx.product.create>[0]['data'] = {
+    const productData: ProductUncheckedCreateInput = {
         name: String(name),
         price: Number(price),
         organizationId,
@@ -153,11 +156,11 @@ async function processProductRow(
     }
 
     if (duplicateStrategy === 'upsert' && data.externalId) {
-        const existing = await tx.product.findFirst({
+        const existing = await db.product.findFirst({
             where: { externalId: String(data.externalId), organizationId }
         });
         if (existing) {
-            return tx.product.update({
+            return db.product.update({
                 where: { id: existing.id },
                 data: { ...productData, updatedAt: new Date() }
             });
@@ -165,22 +168,22 @@ async function processProductRow(
     }
 
     if (duplicateStrategy === 'upsert' && data.sku) {
-        const existing = await tx.product.findFirst({
+        const existing = await db.product.findFirst({
             where: { sku: String(data.sku), organizationId }
         });
         if (existing) {
-            return tx.product.update({
+            return db.product.update({
                 where: { id: existing.id },
                 data: { ...productData, updatedAt: new Date() }
             });
         }
     }
 
-    return tx.product.create({ data: productData });
+    return db.product.create({ data: productData });
 }
 
 async function processOrderRow(
-    tx: PrismaTx,
+    db: PrismaDb,
     row: ParsedRow,
     organizationId: string,
     _duplicateStrategy: 'create_only' | 'upsert'
@@ -191,7 +194,7 @@ async function processOrderRow(
     let customerId = data.customerId as string | undefined;
 
     if (!customerId && data.externalId) {
-        const customer = await tx.customer.findFirst({
+        const customer = await db.customer.findFirst({
             where: { externalId: String(data.externalId), organizationId }
         });
         if (customer) {
@@ -200,7 +203,7 @@ async function processOrderRow(
     }
 
     if (!customerId && data.customerEmail) {
-        const customer = await tx.customer.findFirst({
+        const customer = await db.customer.findFirst({
             where: { email: String(data.customerEmail), organizationId }
         });
         if (customer) {
@@ -214,7 +217,7 @@ async function processOrderRow(
         );
     }
 
-    const orderData: Parameters<typeof tx.order.create>[0]['data'] = {
+    const orderData: OrderUncheckedCreateInput = {
         organizationId,
         customerId,
         createdAt: new Date(),
@@ -241,5 +244,5 @@ async function processOrderRow(
     if (data.tags) orderData.tags = String(data.tags);
     if (data.source) orderData.source = String(data.source);
 
-    return tx.order.create({ data: orderData });
+    return db.order.create({ data: orderData });
 }

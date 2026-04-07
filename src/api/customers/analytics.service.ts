@@ -102,11 +102,14 @@ export async function getRFMDistribution(organizationId: string) {
     });
 
     return {
-        distribution: distribution.map((d) => ({
-            segment: d.rfmSegment,
-            count: d._count.id,
-            percentage: total > 0 ? Math.round((d._count.id / total) * 100) : 0
-        })),
+        distribution: distribution.map(
+            (d: { rfmSegment: string | null; _count: { id: number } }) => ({
+                segment: d.rfmSegment,
+                count: d._count.id,
+                percentage:
+                    total > 0 ? Math.round((d._count.id / total) * 100) : 0
+            })
+        ),
         total,
         lastUpdated: new Date()
     };

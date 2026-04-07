@@ -22,6 +22,7 @@ import {
     AVAILABLE_PERMISSIONS
 } from '../../config/roles.config.js';
 import { NotFoundError, BadRequestError } from '../../utils/response.util.js';
+import type { OrganizationRole } from '../../generated/prisma/client.js';
 
 const DEFAULT_ROLE_NAMES = Object.keys(DEFAULT_ROLES) as [string, ...string[]];
 
@@ -59,7 +60,7 @@ export const listRoles = async (organizationId: string) => {
         orderBy: { createdAt: 'asc' }
     });
 
-    const formattedRoles = dbRoles.map((role) => ({
+    const formattedRoles = dbRoles.map((role: OrganizationRole) => ({
         id: role.id,
         name: role.role,
         description: role.description || undefined,
@@ -90,8 +91,8 @@ export const listRoles = async (organizationId: string) => {
     }
 
     return {
-        default: formattedRoles.filter((r) => r.isDefault),
-        custom: formattedRoles.filter((r) => !r.isDefault),
+        default: formattedRoles.filter((r: OrganizationRole) => r.isDefault),
+        custom: formattedRoles.filter((r: OrganizationRole) => !r.isDefault),
         all: formattedRoles
     };
 };

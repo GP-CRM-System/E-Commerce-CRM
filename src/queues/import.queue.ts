@@ -8,6 +8,7 @@ import {
 import type { EntityType, ColumnMapping } from '../types/import.types.js';
 import { redisConnection } from '../config/redis.config.js';
 import { processRow } from '../api/imports/imports.processor.js';
+import type { ImportJobErrorUncheckedCreateInput } from '../generated/prisma/models/ImportJobError.js';
 import { parseFile, applyMapping } from '../utils/parser.util.js';
 
 interface ImportJobData {
@@ -72,44 +73,42 @@ export const importWorker = new Worker<ImportJobData>(
             for (let i = 0; i < mappedRows.length; i += batchSize) {
                 const batch = mappedRows.slice(i, i + batchSize);
 
-                const batchResult = await prisma.$transaction(async (tx) => {
-                    let batchSuccess = 0;
-                    let batchFailed = 0;
+                let batchSuccess = 0;
+                let batchFailed = 0;
 
-                    for (const row of batch) {
-                        try {
-                            await processRow(
-                                tx,
-                                row,
-                                entityType,
-                                organizationId,
-                                duplicateStrategy
-                            );
-                            batchSuccess++;
-                        } catch (error) {
-                            batchFailed++;
-                            const errorMessage =
-                                error instanceof Error
-                                    ? error.message
-                                    : 'Unknown error';
+                for (const row of batch) {
+                    try {
+                        await processRow(
+                            prisma,
+                            row,
+                            entityType,
+                            organizationId,
+                            duplicateStrategy
+                        );
+                        batchSuccess++;
+                    } catch (error) {
+                        batchFailed++;
+                        const errorMessage =
+                            error instanceof Error
+                                ? error.message
+                                : 'Unknown error';
 
-                            await tx.importJobError.create({
-                                data: {
-                                    importJobId: jobId,
-                                    rowNumber: row.rowNumber,
-                                    errorCode: 'VALIDATION_ERROR',
-                                    message: errorMessage,
-                                    rawRow: row.data as object
-                                }
-                            });
-                        }
+                        const errorData: ImportJobErrorUncheckedCreateInput = {
+                            importJobId: jobId,
+                            rowNumber: row.rowNumber,
+                            errorCode: 'VALIDATION_ERROR',
+                            message: errorMessage,
+                            rawRow: row.data as object
+                        };
+
+                        await prisma.importJobError.create({
+                            data: errorData
+                        });
                     }
+                }
 
-                    return { batchSuccess, batchFailed };
-                });
-
-                successfulRows += batchResult.batchSuccess;
-                failedRows += batchResult.batchFailed;
+                successfulRows += batchSuccess;
+                failedRows += batchFailed;
 
                 // Removed status update inside batch loop to reduce DB contention
             }

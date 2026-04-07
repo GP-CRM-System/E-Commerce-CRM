@@ -126,8 +126,23 @@ Most entities are scoped to an `organizationId`.
 Always import the Prisma client from the config file:
 
 ```typescript
-import { prisma } from '../config/prisma.config.js';
+import prisma from '../config/prisma.config.js';
 ```
+
+### Generated Prisma Types
+
+Prefer Prisma-generated types over hand-written TypeScript shapes when working with database code.
+
+```typescript
+import prisma from '../config/prisma.config.js';
+import type { PrismaClient } from '../generated/prisma/client.js';
+import type { CustomerUncheckedCreateInput } from '../generated/prisma/models/Customer.js';
+```
+
+- Use model input types from `src/generated/prisma/models/*` for create/update payloads.
+- Use `PrismaClient` from `src/generated/prisma/client.js` when a function needs a Prisma client type.
+- Do not create custom structural database types when a Prisma-generated type already exists.
+- If Prisma interactive transaction typing is awkward in a specific flow, prefer simplifying the flow to direct Prisma writes unless atomic rollback is actually required.
 
 ### Query Patterns
 
@@ -151,7 +166,7 @@ const [data, total] = await Promise.all([
 
 ### Transactions
 
-Use transactions for atomic operations:
+Use transactions only for atomic operations that must succeed or fail together:
 
 ```typescript
 await prisma.$transaction([
@@ -159,6 +174,24 @@ await prisma.$transaction([
     prisma.customer.update({ ... }),
 ]);
 ```
+
+For interactive transactions, follow Prisma's native pattern:
+
+```typescript
+await prisma.$transaction(async (tx) => {
+    const sender = await tx.account.update({ ... });
+
+    if (sender.balance < 0) {
+        throw new Error('Insufficient funds');
+    }
+
+    await tx.account.update({ ... });
+});
+```
+
+- Do not add `$transaction` just to batch unrelated per-row processing when partial success and per-row error logging are required.
+- For import/export style flows that intentionally continue after row-level failures, use normal Prisma writes and log row errors explicitly.
+- Prefer Prisma-generated input types for transaction payloads instead of `Parameters<typeof tx.model.create>[0]['data']` when a generated model input type is available.
 
 ---
 
