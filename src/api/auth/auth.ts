@@ -128,7 +128,7 @@ export const auth = betterAuth({
         google: {
             clientId: env.googleClientId!,
             clientSecret: env.googleClientSecret!
-        },
+        }
         // facebook: {
         //     clientId: env.facebookClientId!,
         //     clientSecret: env.facebookClientSecret!
