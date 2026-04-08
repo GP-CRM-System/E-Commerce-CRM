@@ -43,6 +43,10 @@
         {
             "name": "Exports",
             "description": "CSV/XLSX export jobs"
+        },
+        {
+            "name": "Cron",
+            "description": "Manual triggers for RFM and lifecycle recalculations"
         }
     ],
     "paths": {
@@ -1463,6 +1467,69 @@
                 "security": [{ "bearerAuth": [] }]
             }
         },
+        "/cron/rfm": {
+            "post": {
+                "operationId": "triggerRFMJob",
+                "summary": "Trigger RFM score recalculation",
+                "tags": ["Cron"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TriggerRFMJobRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": { "description": "RFM job queued" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/cron/lifecycle": {
+            "post": {
+                "operationId": "triggerLifecycleJob",
+                "summary": "Trigger lifecycle stage recalculation",
+                "tags": ["Cron"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TriggerLifecycleJobRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": { "description": "Lifecycle check complete" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/cron/vip": {
+            "post": {
+                "operationId": "triggerVipJob",
+                "summary": "Trigger VIP status recalculation",
+                "tags": ["Cron"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TriggerVipJobRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": { "description": "VIP recalculation complete" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
         "/integrations": {
             "get": {
                 "operationId": "listIntegrations",
@@ -2557,6 +2624,48 @@
                     "userId": { "type": "string" },
                     "expiresAt": { "type": "string", "format": "date-time" },
                     "activeOrganizationId": { "type": "string" }
+                }
+            },
+            "TriggerRFMJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": {
+                        "type": "string",
+                        "description": "Organization ID"
+                    },
+                    "customerId": {
+                        "type": "string",
+                        "description": "Optional: specific customer ID"
+                    },
+                    "daysWindow": {
+                        "type": "integer",
+                        "description": "Optional: analysis window in days (1-365)"
+                    }
+                }
+            },
+            "TriggerLifecycleJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": {
+                        "type": "string",
+                        "description": "Organization ID"
+                    },
+                    "customerId": {
+                        "type": "string",
+                        "description": "Optional: specific customer ID"
+                    }
+                }
+            },
+            "TriggerVipJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": {
+                        "type": "string",
+                        "description": "Organization ID"
+                    }
                 }
             }
         }

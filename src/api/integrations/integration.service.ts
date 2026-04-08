@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import logger from '../../utils/logger.util.js';
+import { NotFoundError } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { Integration } from '../../generated/prisma/client.js';
 import type {
@@ -84,7 +85,7 @@ export async function updateIntegrationData(
     });
 
     if (!integration) {
-        throw new Error('Integration not found');
+        throw new NotFoundError('Integration not found');
     }
 
     return prisma.integration.update({
@@ -106,7 +107,7 @@ export async function deleteIntegration(
     });
 
     if (!integration) {
-        throw new Error('Integration not found');
+        throw new NotFoundError('Integration not found');
     }
 
     await prisma.$transaction([
@@ -127,7 +128,7 @@ export async function testConnection(
     });
 
     if (!integration) {
-        throw new Error('Integration not found');
+        throw new NotFoundError('Integration not found');
     }
 
     if (integration.provider !== 'shopify') {

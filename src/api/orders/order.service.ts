@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as orderSchema from './order.schemas.js';
 import type { Order } from '../../generated/prisma/client.js';
 import type { OrderFilters } from './order.schemas.js';
+import { addRFMScoreJob } from '../../queues/rfm.queue.js';
 
 export async function getAllOrders(
     organizationId: string,
@@ -91,7 +92,7 @@ export async function createOrder(
     activeOrganizationId: string
 ): Promise<Order> {
     try {
-        const { items, ...orderData } = data;
+        const { items, createdAt, ...orderData } = data;
 
         const order = await prisma.order.create({
             data: {
@@ -104,7 +105,7 @@ export async function createOrder(
                         price: item.price
                     }))
                 },
-                createdAt: new Date(),
+                createdAt,
                 updatedAt: new Date()
             },
             include: {
@@ -112,6 +113,13 @@ export async function createOrder(
                 customer: true
             }
         });
+
+        if (order.customerId) {
+            await triggerCustomerScoreUpdate(
+                order.customerId,
+                activeOrganizationId
+            );
+        }
 
         return order;
     } catch (error) {
@@ -168,6 +176,10 @@ export async function updateOrder(
                 customer: true
             }
         });
+
+        if (order.customerId) {
+            await triggerCustomerScoreUpdate(order.customerId, organizationId);
+        }
 
         return order;
     } catch (error) {
@@ -249,4 +261,19 @@ export async function findProductBySku(
         },
         select: { id: true }
     });
+}
+
+async function triggerCustomerScoreUpdate(
+    customerId: string,
+    organizationId: string
+): Promise<void> {
+    try {
+        await addRFMScoreJob(organizationId, undefined, customerId);
+
+        logger.info(`Queued customer metrics recomputation for ${customerId}`);
+    } catch (error) {
+        logger.error(
+            `Failed to trigger customer score update: ${error instanceof Error ? error.stack : error}`
+        );
+    }
 }

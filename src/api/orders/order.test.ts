@@ -4,6 +4,7 @@ import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
 import { auth } from '../auth/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
+import { processSingleCustomerRFM } from '../../queues/rfm.queue.js';
 
 let authToken: string;
 let testOrgId: string;
@@ -142,6 +143,23 @@ describe('Orders API', () => {
         expect(response.body.data.externalId).toBe(orderData.externalId);
 
         testOrderId = response.body.data.id;
+
+        await processSingleCustomerRFM(testCustomerId, testOrgId);
+
+        const customer = await prisma.customer.findUnique({
+            where: { id: testCustomerId },
+            select: {
+                totalOrders: true,
+                totalSpent: true,
+                firstOrderAt: true,
+                lastOrderAt: true
+            }
+        });
+
+        expect(customer?.totalOrders).toBe(1);
+        expect(Number(customer?.totalSpent ?? 0)).toBe(orderData.totalAmount);
+        expect(customer?.firstOrderAt).not.toBeNull();
+        expect(customer?.lastOrderAt).not.toBeNull();
     });
 
     it('should list all orders', async () => {
@@ -230,6 +248,14 @@ describe('Orders API', () => {
             paymentStatus: 'PAID'
         };
 
+        const beforeCustomer = await prisma.customer.findUnique({
+            where: { id: testCustomerId },
+            select: {
+                totalOrders: true,
+                totalSpent: true
+            }
+        });
+
         const response = await request(app)
             .put(`/api/orders/${testOrderId}`)
             .set('Authorization', `Bearer ${authToken}`)
@@ -239,6 +265,63 @@ describe('Orders API', () => {
         expect(response.body.data.fulfillmentStatus).toBe(
             updateData.fulfillmentStatus
         );
+
+        await processSingleCustomerRFM(testCustomerId, testOrgId);
+
+        const afterCustomer = await prisma.customer.findUnique({
+            where: { id: testCustomerId },
+            select: {
+                totalOrders: true,
+                totalSpent: true
+            }
+        });
+
+        expect(afterCustomer?.totalOrders).toBe(beforeCustomer?.totalOrders);
+        expect(Number(afterCustomer?.totalSpent ?? 0)).toBe(
+            Number(beforeCustomer?.totalSpent ?? 0)
+        );
+    });
+
+    it('should use historical order createdAt when recalculating customer dates', async () => {
+        const historicalResponse = await request(app)
+            .post('/api/orders')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                customerId: testCustomerId,
+                externalId: 'ORD-HISTORICAL',
+                totalAmount: 50,
+                subtotal: 50,
+                fulfillmentStatus: 'unfulfilled',
+                paymentStatus: 'PENDING',
+                createdAt: '2020-01-01T00:00:00.000Z',
+                items: [
+                    {
+                        productId: testProductId,
+                        quantity: 1,
+                        price: 50
+                    }
+                ]
+            });
+
+        expect(historicalResponse.status).toBe(201);
+
+        await processSingleCustomerRFM(testCustomerId, testOrgId);
+
+        const customer = await prisma.customer.findUnique({
+            where: { id: testCustomerId },
+            select: {
+                totalOrders: true,
+                firstOrderAt: true,
+                lastOrderAt: true,
+                avgDaysBetweenOrders: true
+            }
+        });
+
+        expect(customer?.totalOrders).toBe(2);
+        expect(customer?.firstOrderAt?.toISOString()).toBe(
+            '2020-01-01T00:00:00.000Z'
+        );
+        expect(customer?.avgDaysBetweenOrders).not.toBeNull();
     });
 
     it('should delete an order', async () => {

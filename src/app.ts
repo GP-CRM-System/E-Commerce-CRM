@@ -14,6 +14,7 @@ import apiRouter from './api/index.js';
 import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
 import { importWorker } from './queues/import.queue.js';
+import { rfmWorker } from './queues/rfm.processor.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import { redisConnection, isRedisAvailable } from './config/redis.config.js';
 import { RedisConnection } from 'bullmq';
@@ -107,6 +108,7 @@ export async function startServer(): Promise<void> {
             server.close(async () => {
                 await Sentry.close(2000);
                 await importWorker.close();
+                await rfmWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
@@ -119,6 +121,7 @@ export async function startServer(): Promise<void> {
             server.close(async () => {
                 await Sentry.close(2000);
                 await importWorker.close();
+                await rfmWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');

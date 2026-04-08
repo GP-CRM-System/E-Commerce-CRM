@@ -9,6 +9,7 @@ import exportsRouter from './exports/exports.router.js';
 import integrationRouter from './integrations/integration.router.js';
 import webhookRouter from './integrations/webhook.router.js';
 import syncRouter from './integrations/sync.router.js';
+import cronRouter from './cron/cron.router.js';
 import { rateLimiter, authRateLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
@@ -25,5 +26,6 @@ router.use('/exports', exportsRouter);
 router.use('/integrations', integrationRouter);
 router.use('/webhooks', webhookRouter);
 router.use('/integrations', syncRouter);
+router.use('/cron', cronRouter);
 
 export default router;

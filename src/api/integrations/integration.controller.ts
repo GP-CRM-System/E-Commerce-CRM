@@ -4,7 +4,8 @@ import * as integrationService from './integration.service.js';
 import {
     HttpStatus,
     ResponseHandler,
-    AuthorizationError
+    AuthorizationError,
+    NotFoundError
 } from '../../utils/response.util.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import { env } from '../../config/env.config.js';
@@ -110,7 +111,7 @@ export const getIntegration = asyncHandler(
         );
 
         if (!integration) {
-            throw new Error('Integration not found');
+            throw new NotFoundError('Integration not found');
         }
 
         ResponseHandler.success(

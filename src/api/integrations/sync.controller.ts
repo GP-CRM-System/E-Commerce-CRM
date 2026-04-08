@@ -4,7 +4,8 @@ import * as syncService from './sync.service.js';
 import {
     HttpStatus,
     ResponseHandler,
-    AuthorizationError
+    AuthorizationError,
+    NotFoundError
 } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
@@ -24,7 +25,7 @@ export const triggerFullSync = asyncHandler(
         });
 
         if (!integration) {
-            throw new Error('Integration not found');
+            throw new NotFoundError('Integration not found');
         }
 
         const stats = await syncService.fullSync(
