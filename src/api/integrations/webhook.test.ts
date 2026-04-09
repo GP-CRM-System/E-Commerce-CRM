@@ -1,12 +1,5 @@
 import request from 'supertest';
-import {
-    it,
-    describe,
-    expect,
-    beforeAll,
-    afterAll,
-    beforeEach
-} from 'bun:test';
+import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
 import crypto from 'crypto';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
@@ -42,16 +35,15 @@ describe('Webhook & Idempotency API', () => {
         if (!signup || !signup.token) throw new Error('Signup failed');
         authToken = signup.token;
 
-        const org = await auth.api.createOrganization({
+        const org = (await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
             body: {
                 name: 'Webhook Test Org',
                 slug: 'webhook-test-org-' + Date.now()
             }
-        });
+        })) as { organization?: { id: string }; id?: string };
 
-        const orgRes = org as any;
-        testOrgId = orgRes.organization?.id ?? orgRes.id;
+        testOrgId = org.organization?.id ?? org.id ?? '';
 
         await auth.api.setActiveOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
@@ -178,11 +170,6 @@ describe('Webhook & Idempotency API', () => {
         });
 
         it('should reject duplicates', async () => {
-            const bodyStr = JSON.stringify(payload);
-            const sig = getSignature(bodyStr, TEST_SECRET);
-
-            // First request (duplicate of the one in first test if payload is same)
-            // But we use a unique payload to be sure
             const uniquePayload = { id: Date.now(), email: 'dup@test.com' };
             const uniqueBody = JSON.stringify(uniquePayload);
             const uniqueSig = getSignature(uniqueBody, TEST_SECRET);
