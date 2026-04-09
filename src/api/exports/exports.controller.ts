@@ -68,7 +68,7 @@ export const create = asyncHandler(
     }
 );
 
-async function processExportJob(
+export async function processExportJob(
     jobId: string,
     entityType: string,
     format: string,
@@ -86,6 +86,16 @@ async function processExportJob(
 
         if (entityType === 'customer') {
             const where: Record<string, unknown> = { organizationId };
+
+            if (
+                filters.prismaWhere &&
+                typeof filters.prismaWhere === 'object'
+            ) {
+                Object.assign(where, filters.prismaWhere as object);
+            }
+
+            // Re-assert org isolation after merging prismaWhere to prevent injection
+            where.organizationId = organizationId;
 
             // Apply filters for customers
             if (filters.city) where.city = filters.city;

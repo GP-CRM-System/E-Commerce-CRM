@@ -25,26 +25,34 @@ The project follows a **Feature-Based Modular Architecture**. Instead of groupin
 
 ## 📂 Folder Structure
 
-```text
+````text
 src/
 ├── api/                   # Feature-based API modules
-│   ├── auth/              # Better Auth handler (exception - minimal structure)
-│   ├── customers/         # Customer management feature
-│   ├── integrations/      # Webhooks and sync features
-│   ├── ...                # Other feature modules
-│   └── index.ts           # Main API router (combines all features)
-├── config/                # Configuration files (env, database, roles)
-├── constants/             # Enums and project constants
-├── errors/                # Custom error classes
-├── generated/             # Auto-generated code (e.g., Prisma client)
-├── middlewares/           # Global or shared Express middlewares
-├── types/                 # Shared TypeScript interfaces and types
-├── utils/                 # Helper functions and utilities
-├── app.ts                 # Express application setup
-├── scripts/                # Scripts for database seeding, etc.
-├── openapi.json           # OpenAPI specification for the API
-└── index.ts               # Entry point (server start)
-```
+│   ├── auth/              # Better Auth + custom roles endpoints
+│   ├── cron/              # Cron job endpoints
+│   ├── customers/         # Customer management + analytics
+│   ├── exports/           # Export job management
+│   ├── imports/           # Import job processing
+│   ├── integrations/      # Multiple sub-modules
+│   │   ├── integration.router.ts   # Integration CRUD
+│   │   ├── webhook.router.ts       # Webhook management
+│   │   └── sync.router.ts          # Sync operations
+│   ├── orders/            # Order management
+│   ├── products/         # Product management
+│   └── index.ts          # Main API router (combines all features)
+├── config/               # Configuration (env, prisma, roles, ratelimit, redis)
+├── constants/            # Enums and project constants
+├── errors/               # Custom error classes (AppError, NotFoundError, etc.)
+├── generated/            # Auto-generated code (Prisma client + models)
+├── middlewares/          # Global Express middlewares (auth, error, validation)
+├── queues/               # BullMQ workers (import queue, RFM processor)
+├── scripts/              # Database seeding scripts
+├── types/                # Shared TypeScript interfaces and types
+├── utils/                # Helper functions (logger, response, pagination, parser, email, ratelimit)
+├── app.ts                # Express application setup
+├── index.ts              # Entry point (server start)
+├── instrument.ts         # Sentry instrumentation
+└── openapi.json          # OpenAPI specification
 
 ### Feature Module Structure
 
@@ -55,6 +63,8 @@ Every new feature in `src/api/` should contain:
 - `feature.service.ts`: Business logic and database operations (Prisma).
 - `feature.schemas.ts`: Zod validation schemas for requests.
 - `feature.test.ts`: Tests for the feature using bun:test.
+
+> **Note**: The `integrations/` folder contains multiple sub-modules (integration, webhook, sync), each with their own router/controller/service/schemas pattern.
 
 ### Auth Exception
 
@@ -86,7 +96,7 @@ Check for existing patterns in `api/index.ts`. Add your new feature router to th
 ```typescript
 // src/api/index.ts
 router.use('/new-feature', newFeatureRouter);
-```
+````
 
 ### 2. Controller Pattern
 
@@ -232,14 +242,36 @@ Permissions are defined in `src/config/roles.config.ts`. The system uses Better 
 
 Permissions follow the pattern `resource:action`:
 
-| Permission           | Description                 |
-| :------------------- | :-------------------------- |
-| `customers:read`     | View customers              |
-| `customers:write`    | Create and update customers |
-| `customers:delete`   | Delete customers            |
-| `integrations:read`  | View integrations           |
-| `integrations:write` | Manage integrations         |
-| `reports:read`       | View reports                |
+| Permission            | Description                    |
+| :-------------------- | :----------------------------- |
+| `customers:read`      | View customers                 |
+| `customers:write`     | Create and update customers    |
+| `customers:delete`    | Delete customers               |
+| `orders:read`         | View orders                    |
+| `orders:write`        | Create and update orders       |
+| `orders:delete`       | Delete orders                  |
+| `products:read`       | View products                  |
+| `products:write`      | Create and update products     |
+| `products:delete`     | Delete products                |
+| `imports:read`        | View imports                   |
+| `imports:write`       | Create/start imports           |
+| `exports:read`        | View exports                   |
+| `exports:write`       | Create/start exports           |
+| `integrations:read`   | View integrations              |
+| `integrations:write`  | Create and update integrations |
+| `integrations:delete` | Delete integrations            |
+| `webhooks:read`       | View webhooks                  |
+| `webhooks:write`      | Create and update webhooks     |
+| `webhooks:delete`     | Delete webhooks                |
+| `sync:read`           | View sync status               |
+| `sync:write`          | Trigger sync operations        |
+| `reports:read`        | View reports                   |
+| `segments:read`       | View segments                  |
+| `segments:write`      | Create and update segments     |
+| `segments:delete`     | Delete segments                |
+| `campaigns:read`      | View campaigns                 |
+| `campaigns:write`     | Create and update campaigns    |
+| `campaigns:delete`    | Delete campaigns               |
 
 ### Adding a New Resource
 

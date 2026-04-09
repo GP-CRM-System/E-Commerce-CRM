@@ -47,6 +47,10 @@
         {
             "name": "Cron",
             "description": "Manual triggers for RFM and lifecycle recalculations"
+        },
+        {
+            "name": "Segments",
+            "description": "Customer segmentation and grouping"
         }
     ],
     "paths": {
@@ -1070,6 +1074,11 @@
                         "name": "source",
                         "in": "query",
                         "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "segmentId",
+                        "in": "query",
+                        "schema": { "type": "string" }
                     }
                 ],
                 "responses": {
@@ -1530,6 +1539,17 @@
                 "security": [{ "bearerAuth": [] }]
             }
         },
+        "/cron/cleanup/idempotency": {
+            "post": {
+                "operationId": "runCleanupIdempotencyJob",
+                "summary": "Cleanup expired webhook idempotency keys",
+                "tags": ["Cron"],
+                "responses": {
+                    "200": { "description": "Cleanup complete" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
         "/integrations": {
             "get": {
                 "operationId": "listIntegrations",
@@ -1794,6 +1814,218 @@
                 ],
                 "responses": {
                     "200": { "description": "Webhook logs" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments": {
+            "get": {
+                "operationId": "listSegments",
+                "summary": "List all segments",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 50 }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 0 }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of segments" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createSegment",
+                "summary": "Create a new segment",
+                "tags": ["Segments"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateSegmentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Segment created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments/{id}": {
+            "get": {
+                "operationId": "getSegment",
+                "summary": "Get segment by ID",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Segment details" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateSegment",
+                "summary": "Update segment",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSegmentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Segment updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteSegment",
+                "summary": "Delete segment",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Segment deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments/{id}/customers": {
+            "get": {
+                "operationId": "getSegmentCustomers",
+                "summary": "Get customers in segment",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 50 }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 0 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of customers" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments/{id}/count": {
+            "get": {
+                "operationId": "getSegmentCount",
+                "summary": "Get number of customers in segment",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Segment count" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments/{id}/preview": {
+            "get": {
+                "operationId": "previewSegment",
+                "summary": "Get sample of customers in segment",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Segment preview" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/segments/{id}/export": {
+            "post": {
+                "operationId": "exportSegment",
+                "summary": "Export segment customers",
+                "tags": ["Segments"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "format": {
+                                        "type": "string",
+                                        "enum": ["csv", "xlsx"],
+                                        "default": "csv"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": { "description": "Export job accepted" }
                 },
                 "security": [{ "bearerAuth": [] }]
             }
@@ -2665,6 +2897,78 @@
                     "organizationId": {
                         "type": "string",
                         "description": "Organization ID"
+                    }
+                }
+            },
+            "Segment": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "filter": { "$ref": "#/components/schemas/SegmentFilter" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "CreateSegmentRequest": {
+                "type": "object",
+                "required": ["name", "filter"],
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "filter": { "$ref": "#/components/schemas/SegmentFilter" }
+                }
+            },
+            "UpdateSegmentRequest": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "filter": { "$ref": "#/components/schemas/SegmentFilter" }
+                }
+            },
+            "SegmentFilter": {
+                "oneOf": [
+                    { "$ref": "#/components/schemas/SegmentCondition" },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "and": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SegmentFilter"
+                                }
+                            }
+                        },
+                        "required": ["and"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "or": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SegmentFilter"
+                                }
+                            }
+                        },
+                        "required": ["or"]
+                    }
+                ]
+            },
+            "SegmentCondition": {
+                "type": "object",
+                "required": ["field", "operator"],
+                "properties": {
+                    "field": { "type": "string" },
+                    "operator": { "type": "string" },
+                    "value": {
+                        "oneOf": [
+                            { "type": "string" },
+                            { "type": "number" },
+                            { "type": "boolean" }
+                        ]
                     }
                 }
             }

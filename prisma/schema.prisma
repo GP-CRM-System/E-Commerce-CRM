@@ -293,6 +293,20 @@ model WebhookLog {
   @@index([integrationId, webhookId])
 }
 
+model WebhookIdempotencyKey {
+  id             String   @id @default(nanoid())
+  integrationId  String
+  provider       String   @default("shopify") // 'shopify', 'meta', 'fawry'
+  key            String   // Unique key (webhookId, or content hash)
+  topic          String   // Event topic for additional context
+  expiresAt      DateTime // TTL for automatic cleanup
+  createdAt      DateTime @default(now())
+
+  @@unique([integrationId, provider, key])
+  @@index([integrationId])
+  @@index([expiresAt])
+}
+
 model SyncLog {
   id             String      @id @default(nanoid())
   integrationId  String

@@ -168,6 +168,7 @@ export const customerFilters = z.object({
         ])
         .optional(),
     tagId: z.string().optional(),
+    segmentId: z.string().optional(),
     sortBy: z
         .enum([
             'createdAt',

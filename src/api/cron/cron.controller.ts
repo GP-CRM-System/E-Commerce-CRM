@@ -13,6 +13,7 @@ import {
     recalculateVIPCustomers,
     processBatchLifecycleUpdate
 } from '../customers/lifecycle.service.js';
+import { cleanupExpiredIdempotencyKeys } from '../integrations/webhook.service.js';
 
 function validateOrganizationAccess(
     organizationId: string,
@@ -156,6 +157,39 @@ export const runVipJob = asyncHandler(
             ResponseHandler.error(
                 res,
                 'Failed to run VIP job',
+                ErrorCode.SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                req.url
+            );
+        }
+    }
+);
+
+// Intentionally not org-scoped: idempotency keys are global (keyed by webhook signature, not org).
+// Cleanup removes expired keys across all orgs — no tenant data is exposed.
+export const runCleanupIdempotencyJob = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const deletedCount = await cleanupExpiredIdempotencyKeys();
+
+            logger.info(
+                `Webhook idempotency cleanup complete: ${deletedCount} expired keys removed`
+            );
+
+            ResponseHandler.success(
+                res,
+                'Cleanup complete',
+                HttpStatus.OK,
+                { deletedCount },
+                req.url
+            );
+        } catch (error) {
+            logger.error(
+                `Idempotency cleanup failed: ${error instanceof Error ? error.stack : error}`
+            );
+            ResponseHandler.error(
+                res,
+                'Failed to run cleanup',
                 ErrorCode.SERVER_ERROR,
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 req.url

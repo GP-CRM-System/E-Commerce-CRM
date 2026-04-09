@@ -3,6 +3,99 @@ import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { Integration } from '../../generated/prisma/client.js';
 
+const IDEMPOTENCY_KEY_TTL_HOURS = 24;
+
+export function generateIdempotencyKey(
+    payload: unknown,
+    topic: string,
+    webhookId?: string
+): string {
+    if (webhookId) {
+        return `wh:${webhookId}`;
+    }
+
+    const content = JSON.stringify(payload) + topic;
+    return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+}
+
+export async function checkAndStoreIdempotencyAtomic(
+    integrationId: string,
+    provider: string,
+    key: string,
+    topic: string
+): Promise<{ isDuplicate: boolean }> {
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + IDEMPOTENCY_KEY_TTL_HOURS);
+
+    try {
+        // We rely on the unique constraint [integrationId, provider, key]
+        // If it already exists, we attempt to update it only if it's expired.
+        // If it's not expired, we want to fail (isDuplicate: true).
+        // Prisma upsert always updates if found, so we check existence in the query.
+
+        // Use a single upsert. We'll check the existing one's expiry in the app logic
+        // because Prisma's upsert doesn't support conditional updates based on values.
+        // However, to be truly atomic without two round-trips, we use create and catch P2002.
+        await prisma.webhookIdempotencyKey.create({
+            data: {
+                integrationId,
+                provider,
+                key,
+                topic,
+                expiresAt
+            }
+        });
+
+        return { isDuplicate: false };
+    } catch (error) {
+        if ((error as { code?: string }).code === 'P2002') {
+            // It exists. Now we check if it's expired to see if we can reuse it.
+            // This is a second round trip, but only on the conflict path.
+            const existing = await prisma.webhookIdempotencyKey.findUnique({
+                where: {
+                    integrationId_provider_key: {
+                        integrationId,
+                        provider,
+                        key
+                    }
+                }
+            });
+
+            if (existing && existing.expiresAt <= new Date()) {
+                // Expired, we can update it and proceed
+                await prisma.webhookIdempotencyKey.update({
+                    where: { id: existing.id },
+                    data: {
+                        topic,
+                        expiresAt,
+                        createdAt: new Date()
+                    }
+                });
+                return { isDuplicate: false };
+            }
+
+            return { isDuplicate: true };
+        }
+        throw error;
+    }
+}
+
+export async function cleanupExpiredIdempotencyKeys(): Promise<number> {
+    const result = await prisma.webhookIdempotencyKey.deleteMany({
+        where: {
+            expiresAt: { lt: new Date() }
+        }
+    });
+
+    if (result.count > 0) {
+        logger.info(
+            `Cleaned up ${result.count} expired webhook idempotency keys`
+        );
+    }
+
+    return result.count;
+}
+
 export interface ShopifyWebhookPayload {
     id: number;
     email?: string;

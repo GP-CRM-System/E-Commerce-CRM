@@ -15,6 +15,11 @@ export const triggerVipJob = z.object({
     organizationId: z.string()
 });
 
+export const cleanupWebhookIdempotency = z.object({});
+
 export type TriggerRFMJobInput = z.infer<typeof triggerRFMJob>;
 export type TriggerLifecycleJobInput = z.infer<typeof triggerLifecycleJob>;
 export type TriggerVipJobInput = z.infer<typeof triggerVipJob>;
+export type CleanupWebhookIdempotencyInput = z.infer<
+    typeof cleanupWebhookIdempotency
+>;

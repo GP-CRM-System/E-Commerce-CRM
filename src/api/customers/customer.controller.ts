@@ -30,6 +30,7 @@ export const getAllCustomers = asyncHandler(
             lifecycleStage: req.query
                 .lifecycleStage as CustomerFilters['lifecycleStage'],
             tagId: req.query.tagId as string | undefined,
+            segmentId: req.query.segmentId as string | undefined,
             sortBy:
                 (req.query.sortBy as CustomerFilters['sortBy']) || 'createdAt',
             sortOrder:

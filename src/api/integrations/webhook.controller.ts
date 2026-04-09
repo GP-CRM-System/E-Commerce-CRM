@@ -1,9 +1,11 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import {
     verifyShopifyWebhookSignature,
     createWebhookLog,
-    handleShopifyWebhook
+    handleShopifyWebhook,
+    generateIdempotencyKey,
+    checkAndStoreIdempotencyAtomic
 } from './webhook.service.js';
 import { HttpStatus, ResponseHandler } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
@@ -11,7 +13,7 @@ import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js'
 import logger from '../../utils/logger.util.js';
 
 export const handleShopifyWebhookRequest = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: Request, res: Response) => {
         const integrationId = req.params.integrationId as string;
         const hmacHeader = req.headers['x-shopify-hmac-sha256'] as
             | string
@@ -38,27 +40,7 @@ export const handleShopifyWebhookRequest = asyncHandler(
             return;
         }
 
-        if (webhookId) {
-            const existingLog = await prisma.webhookLog.findFirst({
-                where: {
-                    integrationId,
-                    webhookId: webhookId.toString()
-                }
-            });
-            if (existingLog) {
-                logger.info(
-                    `Duplicate webhook received: ${webhookId}, skipping`
-                );
-                res.status(HttpStatus.OK).json({
-                    received: true,
-                    duplicate: true
-                });
-                return;
-            }
-        }
-
         const rawBody = JSON.stringify(req.body);
-
         const secret = integration.apiSecret || integration.accessToken;
         const isValid = verifyShopifyWebhookSignature(
             rawBody,
@@ -72,6 +54,33 @@ export const handleShopifyWebhookRequest = asyncHandler(
             );
             res.status(HttpStatus.UNAUTHORIZED).json({
                 error: 'Invalid signature'
+            });
+            return;
+        }
+
+        const idempotencyKey = generateIdempotencyKey(
+            req.body,
+            topic || 'unknown',
+            webhookId
+        );
+        const provider = 'shopify';
+
+        const { isDuplicate } = await checkAndStoreIdempotencyAtomic(
+            integrationId,
+            provider,
+            idempotencyKey,
+            topic || 'unknown'
+        );
+
+        if (isDuplicate) {
+            const keyDisplay =
+                idempotencyKey.length > 16
+                    ? `${idempotencyKey.substring(0, 16)}...`
+                    : idempotencyKey;
+            logger.info(`Duplicate webhook received: ${keyDisplay}, skipping`);
+            res.status(HttpStatus.OK).json({
+                received: true,
+                duplicate: true
             });
             return;
         }
@@ -109,6 +118,25 @@ export const getWebhookLogs = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const integrationId = req.params.integrationId as string;
         const { status, topic, limit = '50', offset = '0' } = req.query;
+
+        const integration = await prisma.integration.findUnique({
+            where: { id: integrationId }
+        });
+
+        if (!integration) {
+            res.status(HttpStatus.NOT_FOUND).json({
+                error: 'Integration not found'
+            });
+            return;
+        }
+
+        const { activeOrganizationId: activeOrgId } = req.session;
+        if (integration.orgId !== activeOrgId) {
+            res.status(HttpStatus.FORBIDDEN).json({
+                error: 'Access denied'
+            });
+            return;
+        }
 
         const where: Record<string, unknown> = { integrationId };
         if (status) where.status = status;

@@ -5,9 +5,11 @@ import * as customerSchema from './customer.schemas.js';
 import type {
     Customer,
     Note,
-    CustomerEvent
+    CustomerEvent,
+    Prisma
 } from '../../generated/prisma/client.js';
 import type { CustomerFilters } from './customer.schemas.js';
+import { buildPrismaWhere } from '../segments/segment.utils.js';
 
 export async function getAllCustomers(
     organizationId: string,
@@ -24,24 +26,42 @@ export async function getAllCustomers(
         const source = filters?.source;
         const lifecycleStage = filters?.lifecycleStage;
         const tagId = filters?.tagId;
+        const segmentId = filters?.segmentId;
         const sortBy = filters?.sortBy || 'createdAt';
         const sortOrder = filters?.sortOrder || 'desc';
 
+        let segmentWhere: Prisma.CustomerWhereInput = {};
+        if (segmentId) {
+            const segment = await prisma.segment.findFirst({
+                where: {
+                    id: segmentId,
+                    organizationId: organizationId
+                }
+            });
+            if (!segment) {
+                throw new Error('Segment not found');
+            }
+            segmentWhere = buildPrismaWhere(segment.filter);
+        }
+
+        const where: Prisma.CustomerWhereInput = {
+            organizationId,
+            ...(search && {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } }
+                ]
+            }),
+            ...(city && { city: { equals: city, mode: 'insensitive' } }),
+            ...(source && { source }),
+            ...(lifecycleStage && { lifecycleStage }),
+            ...(tagId && { tags: { some: { id: tagId } } }),
+            ...(segmentId && segmentWhere)
+        };
+
         const customers = await prisma.customer.findMany({
-            where: {
-                organizationId,
-                ...(search && {
-                    OR: [
-                        { name: { contains: search, mode: 'insensitive' } },
-                        { email: { contains: search, mode: 'insensitive' } },
-                        { phone: { contains: search, mode: 'insensitive' } }
-                    ]
-                }),
-                ...(city && { city: { equals: city, mode: 'insensitive' } }),
-                ...(source && { source }),
-                ...(lifecycleStage && { lifecycleStage }),
-                ...(tagId && { tags: { some: { id: tagId } } })
-            },
+            where,
             orderBy: {
                 [sortBy]: sortOrder
             },
@@ -50,22 +70,7 @@ export async function getAllCustomers(
             include: { tags: true }
         });
 
-        const total = await prisma.customer.count({
-            where: {
-                organizationId,
-                ...(search && {
-                    OR: [
-                        { name: { contains: search, mode: 'insensitive' } },
-                        { email: { contains: search, mode: 'insensitive' } },
-                        { phone: { contains: search, mode: 'insensitive' } }
-                    ]
-                }),
-                ...(city && { city: { equals: city, mode: 'insensitive' } }),
-                ...(source && { source }),
-                ...(lifecycleStage && { lifecycleStage }),
-                ...(tagId && { tags: { some: { id: tagId } } })
-            }
-        });
+        const total = await prisma.customer.count({ where });
 
         return { customers, total };
     } catch (error) {
