@@ -39,7 +39,8 @@ describe('Webhook & Idempotency API', () => {
                 name: 'Webhook Test User'
             }
         });
-        authToken = signup!.token;
+        if (!signup || !signup.token) throw new Error('Signup failed');
+        authToken = signup.token;
 
         const org = await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
