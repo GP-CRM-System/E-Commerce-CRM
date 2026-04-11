@@ -18,6 +18,7 @@ import { rfmWorker } from './queues/rfm.processor.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import { redisConnection, isRedisAvailable } from './config/redis.config.js';
 import { RedisConnection } from 'bullmq';
+import { auth } from './api/auth/auth.js';
 
 checkEnv();
 
@@ -30,13 +31,21 @@ app.use(
                 'script-src': [
                     "'self'",
                     "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net'
+                    'https://cdn.jsdelivr.net',
+                    'https://api.scalar.com'
                 ],
                 'script-src-elem': [
                     "'self'",
                     "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net'
-                ]
+                    'https://cdn.jsdelivr.net',
+                    'https://api.scalar.com'
+                ],
+                'connect-src': [
+                    "'self'",
+                    'https://cdn.jsdelivr.net',
+                    'https://api.scalar.com'
+                ],
+                'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net']
             }
         }
     })
@@ -55,7 +64,29 @@ app.use(
 
 // Auth routes
 app.use('/api', apiRouter);
-app.use('/docs', apiReference({ content: openApi }));
+
+// Serve combined API documentation with Scalar
+app.get(
+    '/docs',
+    apiReference({
+        pageTitle: 'E-Commerce CRM API',
+        sources: [
+            {
+                title: "Core API",
+                content: openApi,
+                slug: "core-api"
+            },
+            {
+                title: "Auth",
+                content: await auth.api.generateOpenAPISchema(),
+                slug: "auth"
+            }
+        ]
+    }
+    )
+);
+
+// Serve Auth API documentation
 
 // Sentry error handler - captures 5xx errors
 Sentry.setupExpressErrorHandler(app);
