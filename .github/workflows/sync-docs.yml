@@ -1,0 +1,45 @@
+name: Sync Documentation
+
+on:
+    push:
+        branches: [master]
+        paths:
+            - 'docs/**'
+            - 'docs.json'
+            - 'public/**'
+
+jobs:
+    sync:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Git
+              run: |
+                  git config user.name "GitHub Actions"
+                  git config user.email "actions@github.com"
+
+            - name: Sync docs to documentation repo
+              env:
+                  DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+              run: |
+                  # Create a temporary dir with just docs content
+                  mkdir -p temp-docs
+
+                  # Copy docs folder
+                  cp -r docs temp-docs/
+
+                  # Copy root files needed for docs
+                  cp docs.json temp-docs/
+                  cp -r public temp-docs/
+
+                  # Add the docs repo as a remote
+                  git remote add docs https://seifsheikhelarab:${DOCS_REPO_TOKEN}@github.com/GP-CRM-System/Briefly-Server-Docs.git
+
+                  # Push to docs repo
+                  cd temp-docs
+                  git add -A
+                  git commit -m "Sync docs from E-Commerce-CRM" || echo "No changes to sync"
+                  git push docs master || echo "Push failed"
