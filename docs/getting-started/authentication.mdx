@@ -48,3 +48,46 @@ curl http://localhost:3000/api/customers \
 ## Organization Scoping
 
 All data is scoped to organizations. Users can only access data within their organization unless they have administrative privileges.
+
+## Sign Up
+
+### Email/Password Registration
+
+```bash
+curl -X POST http://localhost:3000/api/auth/sign-up/email \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "your-password", "name": "John Doe"}'
+```
+
+**Response:**
+
+```json
+{
+    "message": "Account created successfully",
+    "data": {
+        "user": {
+            "id": "usr_xxx",
+            "email": "user@example.com",
+            "name": "John Doe"
+        },
+        "session": {
+            "token": "yyy_session_token"
+        }
+    }
+}
+```
+
+### Sign In
+
+```bash
+curl -X POST http://localhost:3000/api/auth/sign-in/email \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "your-password"}'
+```
+
+### Sign Out
+
+```bash
+curl -X POST http://localhost:3000/api/auth/sign-out \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```

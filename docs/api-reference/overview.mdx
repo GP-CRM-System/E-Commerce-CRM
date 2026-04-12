@@ -21,18 +21,22 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground 
 
 ### Customers
 
-| Endpoint                       | Description              |
-| ------------------------------ | ------------------------ |
-| `GET /customers`               | List all customers       |
-| `POST /customers`              | Create a customer        |
-| `GET /customers/:id`           | Get customer by ID       |
-| `PUT /customers/:id`           | Update customer          |
-| `DELETE /customers/:id`        | Delete customer          |
-| `GET /customers/:id/analytics` | Get RFM scores & metrics |
-| `GET /customers/:id/notes`     | List customer notes      |
-| `POST /customers/:id/notes`    | Create note              |
-| `GET /customers/:id/events`    | List customer events     |
-| `POST /customers/:id/events`   | Create event             |
+| Endpoint                                | Description              |
+| --------------------------------------- | ------------------------ |
+| `GET /customers`                        | List all customers       |
+| `POST /customers`                       | Create a customer        |
+| `GET /customers/:id`                    | Get customer by ID       |
+| `PATCH /customers/:id`                  | Update customer          |
+| `DELETE /customers/:id`                 | Delete customer          |
+| `GET /customers/:id/analytics`          | Get RFM scores & metrics |
+| `GET /customers/:id/notes`              | List customer notes      |
+| `POST /customers/:id/notes`             | Create note              |
+| `PATCH /customers/:id/notes/:noteId`    | Update note              |
+| `DELETE /customers/:id/notes/:noteId`   | Delete note              |
+| `GET /customers/:id/events`             | List customer events     |
+| `POST /customers/:id/events`            | Create event             |
+| `PATCH /customers/:id/events/:eventId`  | Update event             |
+| `DELETE /customers/:id/events/:eventId` | Delete event             |
 
 ### Segments
 
@@ -45,6 +49,7 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground 
 | `DELETE /segments/:id`        | Delete segment        |
 | `GET /segments/:id/customers` | Get segment customers |
 | `GET /segments/:id/count`     | Get customer count    |
+| `GET /segments/:id/preview`   | Preview segment       |
 | `POST /segments/:id/export`   | Export segment        |
 
 ### Orders
@@ -54,7 +59,7 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground 
 | `GET /orders`        | List all orders |
 | `POST /orders`       | Create an order |
 | `GET /orders/:id`    | Get order by ID |
-| `PUT /orders/:id`    | Update order    |
+| `PATCH /orders/:id`  | Update order    |
 | `DELETE /orders/:id` | Delete order    |
 
 ### Products
@@ -110,13 +115,14 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground 
 
 ### Sync
 
-| Endpoint                                | Description    |
-| --------------------------------------- | -------------- |
-| `POST /integrations/:id/sync/full`      | Full sync      |
-| `POST /integrations/:id/sync/customers` | Sync customers |
-| `POST /integrations/:id/sync/orders`    | Sync orders    |
-| `POST /integrations/:id/sync/products`  | Sync products  |
-| `GET /integrations/:id/sync/logs`       | View sync logs |
+| Endpoint                                | Description     |
+| --------------------------------------- | --------------- |
+| `POST /integrations/:id/sync/full`      | Full sync       |
+| `POST /integrations/:id/sync/customers` | Sync customers  |
+| `POST /integrations/:id/sync/orders`    | Sync orders     |
+| `POST /integrations/:id/sync/products`  | Sync products   |
+| `POST /integrations/:id/sync/cleanup`   | Cleanup deleted |
+| `GET /integrations/:id/sync/logs`       | View sync logs  |
 
 ### Webhooks
 
@@ -127,11 +133,12 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground 
 
 ### Jobs
 
-| Endpoint               | Description                 |
-| ---------------------- | --------------------------- |
-| `POST /cron/rfm`       | Run RFM scoring             |
-| `POST /cron/lifecycle` | Run lifecycle recalculation |
-| `POST /cron/vip`       | Run VIP identification      |
+| Endpoint                         | Description                 |
+| -------------------------------- | --------------------------- |
+| `POST /cron/rfm`                 | Run RFM scoring             |
+| `POST /cron/lifecycle`           | Run lifecycle recalculation |
+| `POST /cron/vip`                 | Run VIP identification      |
+| `POST /cron/cleanup/idempotency` | Cleanup old keys            |
 
 ## Response Format
 

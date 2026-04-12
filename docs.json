@@ -29,6 +29,7 @@
                 "icon": "compass",
                 "pages": [
                     "docs/guides/customers",
+                    "docs/guides/customer-notes-events",
                     "docs/guides/segments",
                     "docs/guides/orders",
                     "docs/guides/products",
@@ -53,6 +54,7 @@
         "dark": "public/logo/dark.svg"
     },
     "favicon": "./public/favicon.svg",
+    "baseUrl": "/E-Commerce-CRM",
     "api": {
         "openapi": "./src/openapi.json",
         "playground": {

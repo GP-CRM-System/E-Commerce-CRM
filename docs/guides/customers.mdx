@@ -41,7 +41,7 @@ Customers are the core entities in Briefly CRM. Each customer can have:
 | -------- | ------------------------------ | ----------- |
 | `GET`    | `/customers/:id/notes`         | List notes  |
 | `POST`   | `/customers/:id/notes`         | Create note |
-| `PUT`    | `/customers/:id/notes/:noteId` | Update note |
+| `PATCH`  | `/customers/:id/notes/:noteId` | Update note |
 | `DELETE` | `/customers/:id/notes/:noteId` | Delete note |
 
 ### Events
@@ -50,7 +50,7 @@ Customers are the core entities in Briefly CRM. Each customer can have:
 | -------- | -------------------------------- | ------------ |
 | `GET`    | `/customers/:id/events`          | List events  |
 | `POST`   | `/customers/:id/events`          | Create event |
-| `PUT`    | `/customers/:id/events/:eventId` | Update event |
+| `PATCH`  | `/customers/:id/events/:eventId` | Update event |
 | `DELETE` | `/customers/:id/events/:eventId` | Delete event |
 
 ## Query Parameters
@@ -143,6 +143,10 @@ Risk levels:
 }
 ```
 
+## Notes & Events
+
+Track customer interactions with notes and events. See [Notes & Events](/guides/customer-notes-events) for details.
+
 ## Segments
 
 Group customers into dynamic segments:
@@ -157,4 +161,4 @@ GET /segments/:id/customers
 POST /segments/:id/export
 ```
 
-See [Segments](/docs/guides/segments) for details.
+See [Segments](/guides/segments) for details.

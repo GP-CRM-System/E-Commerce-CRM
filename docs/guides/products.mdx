@@ -71,3 +71,33 @@ Update any field individually. Stock quantity can be adjusted:
     }
 }
 ```
+
+### Delete Product
+
+```http
+DELETE /products/:id
+```
+
+## Response Example
+
+```json
+{
+    "message": "Product retrieved successfully",
+    "data": {
+        "id": "prod_xxx",
+        "name": "Product Name",
+        "description": "Product description",
+        "sku": "SKU-001",
+        "price": 29.99,
+        "compareAtPrice": 39.99,
+        "stockQuantity": 100,
+        "status": "active",
+        "images": [],
+        "metadata": {},
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "path": "/api/products/prod_xxx"
+}
+```
