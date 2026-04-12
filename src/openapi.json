@@ -13,14 +13,6 @@
     ],
     "tags": [
         {
-            "name": "Auth",
-            "description": "Authentication endpoints (sign-in, sign-up, session)"
-        },
-        {
-            "name": "Members",
-            "description": "Organizations, members, invitations, and role management"
-        },
-        {
             "name": "Roles",
             "description": "Custom role and permission management"
         },

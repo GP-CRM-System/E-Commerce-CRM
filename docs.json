@@ -1,0 +1,67 @@
+{
+    "theme": "mint",
+    "name": "Briefly CRM",
+    "description": "High-performance, multi-tenant CRM backend for e-commerce businesses",
+    "colors": {
+        "primary": "#3982CE",
+        "light": "#5A9BD5",
+        "dark": "#1E5A9C"
+    },
+    "navigation": {
+        "tabs": [
+            {
+                "tab": "Getting Started",
+                "icon": "rocket",
+                "pages": [
+                    "introduction",
+                    "getting-started/installation",
+                    "getting-started/configuration",
+                    "getting-started/authentication"
+                ]
+            },
+            {
+                "tab": "API Reference",
+                "icon": "book-open",
+                "pages": ["api-reference/overview"]
+            },
+            {
+                "tab": "Guides",
+                "icon": "compass",
+                "pages": [
+                    "guides/customers",
+                    "guides/orders",
+                    "guides/products",
+                    "guides/imports-exports"
+                ]
+            }
+        ],
+        "anchors": [
+            {
+                "anchor": "GitHub",
+                "icon": "github",
+                "href": "https://github.com/seifsheikhelarab/E-Commerce-CRM"
+            }
+        ]
+    },
+    "logo": {
+        "light": "/logo/light.svg",
+        "dark": "/logo/dark.svg"
+    },
+    "favicon": "/favicon.svg",
+    "api": {
+        "openapi": "./src/openapi.json",
+        "playground": {
+            "display": "interactive",
+            "proxy": true
+        },
+        "params": {
+            "expanded": "closed"
+        }
+    },
+    "footer": {
+        "socials": {
+            "github": "https://github.com/seifsheikhelarab/E-Commerce-CRM",
+            "linkedin": "https://www.linkedin.com/in/seifsheikhelarab"
+        }
+    }
+}

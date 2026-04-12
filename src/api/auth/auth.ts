@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { bearer } from 'better-auth/plugins/bearer';
 import { organization } from 'better-auth/plugins/organization';
-import { openAPI } from "better-auth/plugins";
+import { openAPI } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import prisma from '../../config/prisma.config.js';

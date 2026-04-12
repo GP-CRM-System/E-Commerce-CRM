@@ -67,23 +67,22 @@ app.use('/api', apiRouter);
 
 // Serve combined API documentation with Scalar
 app.get(
-    '/docs',
+    '/reference',
     apiReference({
         pageTitle: 'E-Commerce CRM API',
         sources: [
             {
-                title: "Core API",
+                title: 'Core API',
                 content: openApi,
-                slug: "core-api"
+                slug: 'core-api'
             },
             {
-                title: "Auth",
+                title: 'Auth',
                 content: await auth.api.generateOpenAPISchema(),
-                slug: "auth"
+                slug: 'auth'
             }
         ]
-    }
-    )
+    })
 );
 
 // Serve Auth API documentation

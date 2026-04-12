@@ -1,0 +1,76 @@
+---
+title: Order Management
+description: Track and manage orders in Briefly CRM.
+---
+
+# Order Management
+
+## Order Model
+
+Orders represent customer purchases with:
+
+- **Customer Reference**: Linked customer
+- **Products**: List of ordered items with quantities
+- **Totals**: Subtotal, tax, shipping, total
+- **Status**: pending, processing, shipped, delivered, cancelled
+- **Source**: Origin of the order (manual, shopify, etc.)
+
+## Endpoints
+
+### List Orders
+
+```http
+GET /orders
+```
+
+**Query Parameters:**
+
+| Parameter    | Type    | Description        |
+| ------------ | ------- | ------------------ |
+| `page`       | integer | Page number        |
+| `limit`      | integer | Items per page     |
+| `sortBy`     | string  | Sort field         |
+| `sortOrder`  | string  | asc or desc        |
+| `customerId` | string  | Filter by customer |
+| `status`     | string  | Filter by status   |
+| `source`     | string  | Filter by source   |
+
+### Create Order
+
+```http
+POST /orders
+```
+
+**Body:**
+
+```json
+{
+    "customerId": "cus_xxx",
+    "items": [
+        {
+            "productId": "prod_xxx",
+            "quantity": 2,
+            "price": 29.99
+        }
+    ],
+    "subtotal": 59.98,
+    "tax": 5.4,
+    "shipping": 0,
+    "total": 65.38,
+    "status": "pending",
+    "source": "manual"
+}
+```
+
+### Update Order Status
+
+```http
+PATCH /orders/:id
+```
+
+Common status transitions:
+
+- `pending` → `processing`
+- `processing` → `shipped`
+- `shipped` → `delivered`
+- Any → `cancelled`

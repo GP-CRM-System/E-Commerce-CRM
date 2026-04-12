@@ -1,0 +1,73 @@
+---
+title: Product Catalog
+description: Manage your product catalog in Briefly CRM.
+---
+
+# Product Catalog
+
+## Product Model
+
+Products include:
+
+- **Basic Info**: Name, description, SKU
+- **Pricing**: Price, compare-at price
+- **Inventory**: Stock quantity
+- **Status**: active, draft, archived
+- **Images**: Product images
+- **Metadata**: Custom attributes
+
+## Endpoints
+
+### List Products
+
+```http
+GET /products
+```
+
+**Query Parameters:**
+
+| Parameter   | Type    | Description           |
+| ----------- | ------- | --------------------- |
+| `page`      | integer | Page number           |
+| `limit`     | integer | Items per page        |
+| `sortBy`    | string  | Sort field            |
+| `sortOrder` | string  | asc or desc           |
+| `search`    | string  | Search by name or SKU |
+| `status`    | string  | Filter by status      |
+
+### Create Product
+
+```http
+POST /products
+```
+
+**Body:**
+
+```json
+{
+    "name": "Product Name",
+    "description": "Product description",
+    "sku": "SKU-001",
+    "price": 29.99,
+    "compareAtPrice": 39.99,
+    "stockQuantity": 100,
+    "status": "active"
+}
+```
+
+### Update Product
+
+```http
+PATCH /products/:id
+```
+
+Update any field individually. Stock quantity can be adjusted:
+
+```json
+{
+    "stockQuantity": {
+        "adjustment": -5,
+        "reason": "sale"
+    }
+}
+```

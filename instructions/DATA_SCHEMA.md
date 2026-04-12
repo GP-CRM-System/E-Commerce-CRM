@@ -32,8 +32,8 @@ Define granular access control for organization members.
 - **Name**: Unique identifier (lowercase, numbers, and hyphens only).
 - **Description**: Optional text describing the role's purpose (max 200 chars).
 - **Permissions**: A record of resources and allowed actions:
-    - **Resources**: `organization`, `member`, `invitation`, `team`, `customers`, `orders`, `products`, `segments`, `campaigns`, `tags`, etc.
-    - **Actions**: `read`, `create`, `update`, `delete`, `write`.
+  - **Resources**: `organization`, `member`, `invitation`, `team`, `customers`, `orders`, `products`, `segments`, `campaigns`, `tags`, etc.
+  - **Actions**: `read`, `create`, `update`, `delete`, `write`.
 
 ---
 
@@ -42,25 +42,25 @@ Define granular access control for organization members.
 Detailed information about people who interact with the store.
 
 - **Basic Information**:
-    - **Name**: Full name (2-50 chars).
-    - **Email**: Contact email address.
-    - **Phone**: Contact phone number (11-13 digits).
-    - **City**: Physical city.
-    - **Address**: Full physical address.
+  - **Name**: Full name (2-50 chars).
+  - **Email**: Contact email address.
+  - **Phone**: Contact phone number (11-13 digits).
+  - **City**: Physical city.
+  - **Address**: Full physical address.
 - **CRM Fields**:
-    - **Source**: Where the customer came from (`WEBSITE`, `SOCIAL`, `REFERRAL`, `ORGANIC`, `EMAIL`, `CAMPAIGN`, `OTHER`).
-    - **Lifecycle Stage**: Current relationship status (`PROSPECT`, `ONE_TIME`, `RETURNING`, `LOYAL`, `VIP`, `AT_RISK`, `CHURNED`, `WINBACK`).
-    - **External ID**: ID from external platforms (e.g., Shopify).
-    - **Accepts Marketing**: Boolean flag for marketing consent.
+  - **Source**: Where the customer came from (`WEBSITE`, `SOCIAL`, `REFERRAL`, `ORGANIC`, `EMAIL`, `CAMPAIGN`, `OTHER`).
+  - **Lifecycle Stage**: Current relationship status (`PROSPECT`, `ONE_TIME`, `RETURNING`, `LOYAL`, `VIP`, `AT_RISK`, `CHURNED`, `WINBACK`).
+  - **External ID**: ID from external platforms (e.g., Shopify).
+  - **Accepts Marketing**: Boolean flag for marketing consent.
 - **Analytics Metrics** (Optional and can be calculated automatically):
-    - **Total Orders**: Count of successful orders.
-    - **Total Spent**: Sum of all order amounts.
-    - **Total Refunded**: Sum of all refunds.
-    - **Average Order Value (AOV)**: `Total Spent / Total Orders`.
-    - **First/Last Order Date**: Timestamps of activity.
-    - **RFM Metrics**: `rfmScore`, `rfmSegment` (e.g., "Champions", "About to Sleep").
-    - **Churn Risk Score**: Probability of churn (0.0 to 1.0).
-    - **Cohort Month**: The month the customer first made a purchase.
+  - **Total Orders**: Count of successful orders.
+  - **Total Spent**: Sum of all order amounts.
+  - **Total Refunded**: Sum of all refunds.
+  - **Average Order Value (AOV)**: `Total Spent / Total Orders`.
+  - **First/Last Order Date**: Timestamps of activity.
+  - **RFM Metrics**: `rfmScore`, `rfmSegment` (e.g., "Champions", "About to Sleep").
+  - **Churn Risk Score**: Probability of churn (0.0 to 1.0).
+  - **Cohort Month**: The month the customer first made a purchase.
 
 ---
 
@@ -121,26 +121,26 @@ Specific versions of a product (e.g., Size: Large, Color: Red).
 Transactions made by customers.
 
 - **Statuses**:
-    - **Shipping Status**: `PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`.
-    - **Payment Status**: `PENDING`, `PAID`, `FAILED`, `REFUNDED`.
-    - **Fulfillment Status**: `unfulfilled`, `partial`, `fulfilled`.
+  - **Shipping Status**: `PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`.
+  - **Payment Status**: `PENDING`, `PAID`, `FAILED`, `REFUNDED`.
+  - **Fulfillment Status**: `unfulfilled`, `partial`, `fulfilled`.
 - **Financials**:
-    - **Subtotal**: Total before discounts/taxes.
-    - **Discount Amount**: Value deducted from subtotal.
-    - **Tax Amount**: Calculated tax.
-    - **Shipping Amount**: Cost of delivery.
-    - **Total Amount**: Final amount paid by customer.
-    - **Refund Amount**: Amount returned to customer.
-    - **Currency**: Currency code (e.g., `USD`, `EGP`).
+  - **Subtotal**: Total before discounts/taxes.
+  - **Discount Amount**: Value deducted from subtotal.
+  - **Tax Amount**: Calculated tax.
+  - **Shipping Amount**: Cost of delivery.
+  - **Total Amount**: Final amount paid by customer.
+  - **Refund Amount**: Amount returned to customer.
+  - **Currency**: Currency code (e.g., `USD`, `EGP`).
 - **Additional Data**:
-    - **Note**: Customer or internal order note.
-    - **Tags**: Comma-separated labels.
-    - **Source**: Origin of the order (e.g., `web`, `pos`).
-    - **Referring Site**: URL where the customer came from.
+  - **Note**: Customer or internal order note.
+  - **Tags**: Comma-separated labels.
+  - **Source**: Origin of the order (e.g., `web`, `pos`).
+  - **Referring Site**: URL where the customer came from.
 - **Order Items**:
-    - **Product**: Reference to a Product.
-    - **Quantity**: Number of units.
-    - **Price**: Unit price at time of purchase.
+  - **Product**: Reference to a Product.
+  - **Quantity**: Number of units.
+  - **Price**: Unit price at time of purchase.
 
 ---
 
@@ -151,9 +151,9 @@ Dynamic groups of customers based on specific filters.
 - **Name**: Segment title.
 - **Description**: Optional summary of the segment's purpose.
 - **Filter**: A complex set of conditions using:
-    - **Fields**: Any Customer field or metric (e.g., `totalSpent`, `city`, `lastOrderAt`).
-    - **Operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`, `startsWith`, `endsWith`, `in`, `isNull`, etc.
-    - **Logic**: `AND` / `OR` groups for complex filtering (max depth 5).
+  - **Fields**: Any Customer field or metric (e.g., `totalSpent`, `city`, `lastOrderAt`).
+  - **Operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`, `startsWith`, `endsWith`, `in`, `isNull`, etc.
+  - **Logic**: `AND` / `OR` groups for complex filtering (max depth 5).
 
 ---
 

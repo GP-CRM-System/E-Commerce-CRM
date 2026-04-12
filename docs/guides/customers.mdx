@@ -1,0 +1,80 @@
+---
+title: Customer Management
+description: Manage customers, segments, and analytics in Briefly CRM.
+---
+
+# Customer Management
+
+## Customer Model
+
+Customers are the core entities in Briefly CRM. Each customer can have:
+
+- **Basic Info**: Name, email, phone
+- **Address**: City, country, postal code
+- **Source**: Origin of the customer (manual, import, shopify, etc.)
+- **RFM Scoring**: Recency, Frequency, Monetary analysis
+- **Lifecycle Stage**: prospect, new, active, at-risk, churned
+- **Churn Risk**: low, medium, high
+
+## Endpoints
+
+### List Customers
+
+```http
+GET /customers
+```
+
+**Query Parameters:**
+
+| Parameter   | Type    | Description                     |
+| ----------- | ------- | ------------------------------- |
+| `page`      | integer | Page number (default: 1)        |
+| `limit`     | integer | Items per page (default: 20)    |
+| `sortBy`    | string  | Sort field (default: createdAt) |
+| `sortOrder` | string  | asc or desc (default: desc)     |
+| `search`    | string  | Search by name or email         |
+| `city`      | string  | Filter by city                  |
+| `source`    | string  | Filter by source                |
+| `segmentId` | string  | Filter by segment               |
+
+### Create Customer
+
+```http
+POST /customers
+```
+
+**Body:**
+
+```json
+{
+    "email": "customer@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phone": "+1234567890",
+    "city": "New York",
+    "country": "USA",
+    "postalCode": "10001"
+}
+```
+
+### Get Customer Analytics
+
+```http
+GET /customers/:id/analytics
+```
+
+Returns RFM scores, lifecycle stage, churn risk, and order statistics.
+
+## Segments
+
+Group customers into dynamic segments for targeted campaigns:
+
+```http
+GET /segments
+POST /segments
+GET /segments/:id
+PATCH /segments/:id
+DELETE /segments/:id
+```
+
+Segments are defined by filter criteria and automatically update as customer data changes.

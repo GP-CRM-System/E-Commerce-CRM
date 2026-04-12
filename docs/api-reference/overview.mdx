@@ -1,0 +1,106 @@
+---
+title: API Reference Overview
+description: Interactive API documentation for Briefly CRM.
+---
+
+# API Reference
+
+The Briefly CRM API is documented using OpenAPI 3.1. The interactive reference below allows you to explore and test all endpoints.
+
+## Base URL
+
+```
+/api
+```
+
+## Available Endpoints
+
+### Customers
+
+- `GET /customers` - List all customers
+- `POST /customers` - Create a customer
+- `GET /customers/:id` - Get customer by ID
+- `PATCH /customers/:id` - Update customer
+- `DELETE /customers/:id` - Delete customer
+- `GET /customers/:id/analytics` - Get customer analytics
+
+### Products
+
+- `GET /products` - List all products
+- `POST /products` - Create a product
+- `GET /products/:id` - Get product by ID
+- `PATCH /products/:id` - Update product
+- `DELETE /products/:id` - Delete product
+
+### Orders
+
+- `GET /orders` - List all orders
+- `POST /orders` - Create an order
+- `GET /orders/:id` - Get order by ID
+- `PATCH /orders/:id` - Update order
+- `DELETE /orders/:id` - Delete order
+
+### Imports
+
+- `GET /imports` - List import jobs
+- `POST /imports` - Create import job
+- `GET /imports/:id` - Get import status
+- `GET /imports/:id/errors` - Get import errors
+
+### Exports
+
+- `GET /exports` - List export jobs
+- `POST /exports` - Create export job
+- `GET /exports/:id` - Get export status
+- `GET /exports/:id/download` - Download export file
+
+### Roles
+
+- `GET /roles` - List roles
+- `POST /roles` - Create role
+- `GET /roles/:id` - Get role
+- `PATCH /roles/:id` - Update role
+- `DELETE /roles/:id` - Delete role
+
+## Response Format
+
+All responses follow a consistent format:
+
+```json
+{
+    "message": "Success message",
+    "data": {},
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "path": "/api/endpoint"
+}
+```
+
+Paginated responses include:
+
+```json
+{
+    "success": true,
+    "message": "Success message",
+    "data": [],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 100,
+        "totalPages": 5
+    },
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "path": "/api/endpoint"
+}
+```
+
+## Error Responses
+
+```json
+{
+    "message": "Error description",
+    "code": "ERROR_CODE",
+    "status": 400,
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "path": "/api/endpoint"
+}
+```
