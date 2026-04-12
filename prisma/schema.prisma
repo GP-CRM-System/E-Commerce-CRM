@@ -1,0 +1,667 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String       @id @default(nanoid())
+  name          String
+  email         String
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+  auditLogs     AuditLog[]
+  notes         Note[]
+  importJobs    ImportJob[]
+  exportJobs    ExportJob[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id @default(nanoid())
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(nanoid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(nanoid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Organization {
+    id          String   @id @default(nanoid())
+    name        String
+    slug        String   @unique
+    logo        String?
+    settings    Json?    // { timezone, locale, currency, branding }
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt @default(now())
+    members     Member[]
+    invitations Invitation[]
+    customers   Customer[]
+    segments    Segment[]
+    campaigns   Campaign[]
+    products    Product[]
+    orders      Order[]
+    supportTickets SupportTicket[]
+    auditLogs   AuditLog[]
+    tags        Tag[]
+    integrations Integration[]
+    roles       OrganizationRole[]
+    importJobs  ImportJob[]
+    exportJobs  ExportJob[]
+
+    @@map("organization")
+}
+
+model OrganizationRole {
+    id             String       @id @default(nanoid())
+    organizationId String
+    organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    role           String       // role name (owner, admin, member, or custom)
+    permission    Json          // Better Auth stores as JSON string
+    description    String?
+    createdAt      DateTime     @default(now())
+
+    @@unique([organizationId, role])
+    @@index([organizationId])
+    @@map("organizationRole")
+}
+
+model Member {
+  id             String       @id @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+enum CustomerSource {
+  WEBSITE
+  SOCIAL
+  REFERRAL
+  ORGANIC
+  EMAIL
+  CAMPAIGN
+  OTHER
+}
+
+enum CustomerLifecycleStage {
+  PROSPECT // No Purchase Yet
+  LEAD // AI-identified potential customer
+  ONE_TIME // Only One Purchase
+  RETURNING // 2-4 Orders
+  LOYAL // 5+ Orders
+  VIP // Top 5% LTV
+  AT_RISK // No Purchase in more than their avg.
+  CHURNED // No Purchase in more than 2x their avg.
+  WINBACK // Previously churned but made a purchase
+}
+
+model Customer {
+  id    String  @id @default(nanoid())
+  name  String
+  phone String?
+  email String?
+
+  city    String?
+  address String?
+
+  source         CustomerSource         @default(OTHER)
+  lifecycleStage CustomerLifecycleStage @default(PROSPECT)
+  tags           Tag[]
+  notes          Note[]
+  organization   Organization           @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organizationId String
+  orders         Order[]
+  supportTickets SupportTicket[]
+
+  // E-Commerce Specific Fields
+  externalId           String?
+  totalOrders          Int             @default(0)
+  totalSpent           Decimal         @default(0)
+  totalRefunded        Decimal         @default(0)
+  avgOrderValue        Decimal         @default(0)
+  firstOrderAt         DateTime?
+  lastOrderAt          DateTime?
+  avgDaysBetweenOrders Float?
+  churnRiskScore       Float?
+  rfmScore             String?
+  rfmSegment           String?
+  rfmRecency           Int? // 1-5 score
+  rfmFrequency         Int? // 1-5 score
+  rfmMonetary          Int? // 1-5 score
+  lastScoredAt         DateTime?
+  cohortMonth          String? // '2024-03'
+  acceptsMarketing     Boolean         @default(false)
+  lastSyncedAt         DateTime?
+  customerEvents       CustomerEvent[]
+  metrics              CustomerMetric?
+  interactions         Interaction[]
+
+  // AI & Behavioral Fields
+  isLoyaltyMember       Boolean        @default(false)
+  accountAgeMonths      Int            @default(0)
+  engagementScore       Float?
+  satisfactionScore     Float?
+  browsingFrequency     Float?
+  cartAbandonmentRate   Float?
+  supportTicketsCount   Int            @default(0)
+  lastSentimentScore    Float?
+  priceSensitivityIndex Float?
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([lifecycleStage])
+  @@index([rfmSegment])
+  @@index([lastOrderAt])
+}
+
+model Note {
+  id         String   @id @default(nanoid())
+  customerId String
+  authorId   String
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  author   User     @relation(fields: [authorId], references: [id])
+}
+
+model Integration {
+  id           String       @id @default(nanoid())
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  provider     String // 'shopify'
+  name         String?
+  shopDomain   String?
+  accessToken  String // encrypted
+  refreshToken String? // encrypted, for OAuth refresh
+  apiKey       String? // encrypted
+  apiSecret    String? // encrypted
+  syncStatus   String       @default("pending")
+  syncMode     String       @default("webhook") // 'webhook', 'polling', 'manual'
+  lastSyncedAt DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  isActive     Boolean      @default(true)
+  metadata     Json? // Additional provider-specific config
+
+  webhookLogs WebhookLog[]
+  syncLogs    SyncLog[]
+
+  @@index([orgId])
+  @@index([provider])
+}
+
+model WebhookLog {
+  id            String      @id @default(nanoid())
+  integrationId String
+  integration   Integration @relation(fields: [integrationId], references: [id])
+  topic         String // 'orders/create', 'customers/update', etc.
+  shopDomain    String
+  webhookId     String?
+  payload       Json
+  headers       Json?
+  status        String      @default("received") // 'received', 'processing', 'completed', 'failed'
+  errorMessage  String?
+  retryCount    Int         @default(0)
+  processedAt   DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@index([integrationId])
+  @@index([topic])
+  @@index([status])
+  @@index([createdAt])
+  @@index([integrationId, webhookId])
+}
+
+model WebhookIdempotencyKey {
+  id             String   @id @default(nanoid())
+  integrationId  String
+  provider       String   @default("shopify") // 'shopify', 'meta', 'fawry'
+  key            String   // Unique key (webhookId, or content hash)
+  topic          String   // Event topic for additional context
+  expiresAt      DateTime // TTL for automatic cleanup
+  createdAt      DateTime @default(now())
+
+  @@unique([integrationId, provider, key])
+  @@index([integrationId])
+  @@index([expiresAt])
+}
+
+model SyncLog {
+  id             String      @id @default(nanoid())
+  integrationId  String
+  integration    Integration @relation(fields: [integrationId], references: [id])
+  syncType       String // 'full', 'incremental', 'manual'
+  entityType     String // 'customers', 'orders', 'products'
+  status         String      @default("started") // 'started', 'completed', 'failed'
+  itemsProcessed Int         @default(0)
+  itemsCreated   Int         @default(0)
+  itemsUpdated   Int         @default(0)
+  itemsFailed    Int         @default(0)
+  errorMessage   String?
+  startedAt      DateTime    @default(now())
+  completedAt    DateTime?
+
+  @@index([integrationId])
+  @@index([syncType])
+  @@index([status])
+}
+
+model CustomerEvent {
+  id          String   @id @default(nanoid())
+  customerId  String
+  eventType   String // 'order_placed', 'refund_issued', 'tag_added'
+  description String
+  metadata    Json?
+  source      String // 'shopify', 'manual'
+  occurredAt  DateTime @default(now())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([eventType])
+  @@index([occurredAt])
+}
+
+model CustomerMetric {
+  id                    String   @id @default(nanoid())
+  customerId            String   @unique
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  // Churn Prediction
+  churnProbability      Float?
+  
+  // Behavioral
+  avgOrderValue         Decimal  @default(0)
+  daysSinceLastPurchase Int      @default(0)
+  totalOrders           Int      @default(0)
+  returnRate            Float    @default(0)
+  
+  updatedAt             DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model Interaction {
+  id                String   @id @default(nanoid())
+  customerId        String
+  type              String   // "complaint", "inquiry", "feedback"
+  content           String   
+  sentiment         Float?   // Score from sentiment model (-1 to 1)
+  extractedInsights Json?    // AI-extracted data points
+  createdAt         DateTime @default(now())
+  
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([type])
+}
+
+model Tag {
+  id             String       @id @default(nanoid())
+  name           String
+  color          String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  customers      Customer[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Segment {
+  id             String       @id @default(nanoid())
+  name           String
+  filter         Json
+  description    String?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Campaign {
+  id             String       @id @default(nanoid())
+  name           String
+  description    String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  segmentId      String? // Targeted segment
+  type           String       @default("email") // email, sms
+  status         String       @default("draft") // draft, scheduled, active, paused, completed
+  content        Json? // { subject, body, templateId }
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  metrics        Json? // { sent: 0, delivered: 0, opened: 0, clicked: 0, converted: 0 }
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Product {
+  id             String           @id @default(nanoid())
+  name           String
+  price          Decimal
+  description    String?
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organizationId String
+  orderItems     OrderItem[]
+  variants       ProductVariant[]
+
+  externalId String?
+  sku        String?
+  category   String?
+  imageUrl   String?
+  barcode    String?
+  weight     Float?
+  weightUnit String? // 'kg', 'lb', 'oz', 'g'
+  inventory  Int     @default(0)
+  status     String  @default("active") // 'active', 'draft', 'archived'
+
+  // Shopify-specific
+  shopifyProductId String?
+  shopifyCreatedAt DateTime?
+  shopifyUpdatedAt DateTime?
+
+  @@index([organizationId])
+  @@index([externalId])
+  @@index([shopifyProductId])
+}
+
+model ProductVariant {
+  id               String  @id @default(nanoid())
+  productId        String
+  product          Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name             String // e.g., "Small / Blue"
+  sku              String?
+  price            Decimal
+  barcode          String?
+  weight           Float?
+  weightUnit       String?
+  inventory        Int     @default(0)
+  position         Int     @default(0)
+  imageUrl         String?
+  externalId       String?
+  options          Json? // e.g., {"size": "Small", "color": "Blue"}
+  // Shopify-specific
+  shopifyVariantId String?
+
+  @@index([productId])
+}
+
+enum ShippingStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id             String          @id @default(nanoid())
+  organizationId String
+  customerId     String
+  shippingStatus ShippingStatus  @default(PENDING)
+  paymentStatus  PaymentStatus   @default(PENDING)
+  orderItems     OrderItem[]
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  supportTickets SupportTicket[]
+
+  externalId        String?
+  discountAmount    Decimal   @default(0)
+  refundAmount      Decimal   @default(0)
+  subtotal          Decimal? // Before discounts
+  taxAmount         Decimal? // Tax amount
+  shippingAmount    Decimal? // Shipping cost
+  totalAmount       Decimal? // Final total
+  currency          String?   @default("USD")
+  fulfillmentStatus String? // 'unfulfilled', 'partial', 'fulfilled'
+  fulfillmentItems  Json? // Fulfillment details
+  // Shopify-specific
+  shopifyOrderId    String?
+  shopifyCreatedAt  DateTime?
+  shopifyUpdatedAt  DateTime?
+  tags              String? // Comma-separated tags
+  note              String?
+  source            String? // 'web', 'pos', 'shopify_draft_order', etc.
+  referringSite     String?
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([externalId])
+  @@index([shopifyOrderId])
+}
+
+model OrderItem {
+  id        String   @id @default(nanoid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+enum SupportTicketStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportTicket {
+  id             String                @id @default(nanoid())
+  organizationId String
+  customerId     String
+  orderId        String?
+  subject        String
+  description    String
+  status         SupportTicketStatus   @default(PENDING)
+  priority       SupportTicketPriority @default(MEDIUM)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  organization   Organization          @relation(fields: [organizationId], references: [id])
+  customer       Customer              @relation(fields: [customerId], references: [id])
+  order          Order?                @relation(fields: [orderId], references: [id])
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String @id @default(nanoid())
+  organizationId String
+  userId         String
+  action         String
+  targetId       String
+  targetType     String
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIALLY_FAILED
+  CANCELLED
+}
+
+enum ExportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImportJob {
+  id              String          @id @default(nanoid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  createdByUserId String
+  user            User            @relation(fields: [createdByUserId], references: [id])
+  entityType      String // 'customer', 'product', 'order'
+  fileName        String
+  fileType        String // 'csv', 'xlsx'
+  status          ImportJobStatus @default(PENDING)
+  mapping         Json?
+  summary         Json?
+  totalRows       Int             @default(0)
+  processedRows   Int             @default(0)
+  successfulRows  Int             @default(0)
+  failedRows      Int             @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  errors          ImportJobError[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
+model ImportJobError {
+  id          String   @id @default(nanoid())
+  importJobId String
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  rowNumber   Int
+  columnName  String?
+  errorCode   String
+  message     String
+  rawRow      Json?
+  createdAt   DateTime @default(now())
+
+  @@index([importJobId])
+}
+
+model ExportJob {
+  id              String          @id @default(nanoid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  createdByUserId String
+  user            User            @relation(fields: [createdByUserId], references: [id])
+  entityType      String
+  format          String // 'csv', 'xlsx'
+  status          ExportJobStatus @default(PENDING)
+  filters         Json?
+  selectedColumns String[]
+  totalRows       Int             @default(0)
+  fileName        String?
+  filePath        String?
+  createdAt       DateTime        @default(now())
+  completedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdAt])
+}
