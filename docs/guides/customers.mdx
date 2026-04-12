@@ -1,11 +1,9 @@
 ---
 title: Customer Management
-description: Manage customers, segments, and analytics in Briefly CRM.
+description: Manage customers, segments, analytics, lifecycle, and events in Briefly CRM.
 ---
 
 # Customer Management
-
-## Customer Model
 
 Customers are the core entities in Briefly CRM. Each customer can have:
 
@@ -13,61 +11,141 @@ Customers are the core entities in Briefly CRM. Each customer can have:
 - **Address**: City, country, postal code
 - **Source**: Origin of the customer (manual, import, shopify, etc.)
 - **RFM Scoring**: Recency, Frequency, Monetary analysis
-- **Lifecycle Stage**: prospect, new, active, at-risk, churned
-- **Churn Risk**: low, medium, high
+- **Lifecycle Stage**: Dynamic stage based on order behavior
+- **Churn Risk**: Score 0-100
+- **VIP Status**: Top 10% by lifetime value
 
 ## Endpoints
 
-### List Customers
+### Customer CRUD
 
-```http
-GET /customers
-```
+| Method   | Endpoint         | Description     |
+| -------- | ---------------- | --------------- |
+| `GET`    | `/customers`     | List customers  |
+| `POST`   | `/customers`     | Create customer |
+| `GET`    | `/customers/:id` | Get customer    |
+| `PUT`    | `/customers/:id` | Update customer |
+| `DELETE` | `/customers/:id` | Delete customer |
 
-**Query Parameters:**
+### Analytics
 
-| Parameter   | Type    | Description                     |
-| ----------- | ------- | ------------------------------- |
-| `page`      | integer | Page number (default: 1)        |
-| `limit`     | integer | Items per page (default: 20)    |
-| `sortBy`    | string  | Sort field (default: createdAt) |
-| `sortOrder` | string  | asc or desc (default: desc)     |
-| `search`    | string  | Search by name or email         |
-| `city`      | string  | Filter by city                  |
-| `source`    | string  | Filter by source                |
-| `segmentId` | string  | Filter by segment               |
+| Method | Endpoint                       | Description              |
+| ------ | ------------------------------ | ------------------------ |
+| `GET`  | `/customers/:id/analytics`     | Get RFM scores & metrics |
+| `POST` | `/customers/analytics/compute` | Trigger RFM calculation  |
+| `GET`  | `/customers/analytics/rfm`     | Get RFM distribution     |
 
-### Create Customer
+### Notes
 
-```http
-POST /customers
-```
+| Method   | Endpoint                       | Description |
+| -------- | ------------------------------ | ----------- |
+| `GET`    | `/customers/:id/notes`         | List notes  |
+| `POST`   | `/customers/:id/notes`         | Create note |
+| `PUT`    | `/customers/:id/notes/:noteId` | Update note |
+| `DELETE` | `/customers/:id/notes/:noteId` | Delete note |
 
-**Body:**
+### Events
+
+| Method   | Endpoint                         | Description  |
+| -------- | -------------------------------- | ------------ |
+| `GET`    | `/customers/:id/events`          | List events  |
+| `POST`   | `/customers/:id/events`          | Create event |
+| `PUT`    | `/customers/:id/events/:eventId` | Update event |
+| `DELETE` | `/customers/:id/events/:eventId` | Delete event |
+
+## Query Parameters
+
+| Parameter        | Type    | Description                        |
+| ---------------- | ------- | ---------------------------------- |
+| `page`           | integer | Page number                        |
+| `limit`          | integer | Items per page                     |
+| `sortBy`         | string  | Sort field                         |
+| `sortOrder`      | string  | asc or desc                        |
+| `search`         | string  | Search by name/email               |
+| `city`           | string  | Filter by city                     |
+| `source`         | string  | Filter by source                   |
+| `segmentId`      | string  | Filter by segment                  |
+| `lifecycleStage` | string  | Filter by stage                    |
+| `churnRisk`      | string  | Filter by risk (low, medium, high) |
+| `isVip`          | boolean | Filter by VIP status               |
+
+## Customer Events
+
+Track customer activities with custom events:
 
 ```json
 {
-    "email": "customer@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "phone": "+1234567890",
-    "city": "New York",
-    "country": "USA",
-    "postalCode": "10001"
+    "type": "order_placed",
+    "metadata": {
+        "orderId": "ord_123",
+        "amount": 99.99
+    }
 }
 ```
 
-### Get Customer Analytics
+**Event Types:**
 
-```http
-GET /customers/:id/analytics
+- `order_placed` - Order created
+- `refund_issued` - Refund processed
+- `tag_added` - Tag applied
+- `tag_removed` - Tag removed
+- `note_added` - Note created
+- `lifecycle_changed` - Stage changed
+
+## Lifecycle Stages
+
+Customers automatically move through stages based on order behavior:
+
+| Stage         | Criteria                              |
+| ------------- | ------------------------------------- |
+| **PROSPECT**  | New customer, no orders               |
+| **LEAD**      | First order placed                    |
+| **ONE_TIME**  | Exactly 1 order                       |
+| **RETURNING** | 2-4 orders                            |
+| **LOYAL**     | 5+ orders with consistent frequency   |
+| **VIP**       | Top 10% by lifetime value             |
+| **AT_RISK**   | No orders in 90+ days                 |
+| **CHURNED**   | No orders in 180+ days                |
+| **WINBACK**   | Churned customer who placed new order |
+
+Run `/cron/lifecycle` to recalculate all stages.
+
+## Churn Risk
+
+Churn risk is calculated from:
+
+- Days since last order
+- Order frequency decline
+- Average order value trend
+- RFM recency score
+
+Risk levels:
+
+- **Low**: Score 0-33
+- **Medium**: Score 34-66
+- **High**: Score 67-100
+
+## Customer Analytics Response
+
+```json
+{
+    "rfmScore": 75,
+    "rfmRecency": 80,
+    "rfmFrequency": 70,
+    "rfmMonetary": 75,
+    "lifecycleStage": "LOYAL",
+    "churnRisk": 25,
+    "isVip": true,
+    "totalSpent": 5420.5,
+    "orderCount": 23,
+    "averageOrderValue": 235.65,
+    "lastOrderDate": "2024-01-15T10:30:00Z"
+}
 ```
-
-Returns RFM scores, lifecycle stage, churn risk, and order statistics.
 
 ## Segments
 
-Group customers into dynamic segments for targeted campaigns:
+Group customers into dynamic segments:
 
 ```http
 GET /segments
@@ -75,6 +153,8 @@ POST /segments
 GET /segments/:id
 PATCH /segments/:id
 DELETE /segments/:id
+GET /segments/:id/customers
+POST /segments/:id/export
 ```
 
-Segments are defined by filter criteria and automatically update as customer data changes.
+See [Segments](/docs/guides/segments) for details.

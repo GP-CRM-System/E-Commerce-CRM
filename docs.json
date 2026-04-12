@@ -13,25 +13,30 @@
                 "tab": "Getting Started",
                 "icon": "rocket",
                 "pages": [
-                    "introduction",
-                    "getting-started/installation",
-                    "getting-started/configuration",
-                    "getting-started/authentication"
+                    "docs/introduction",
+                    "docs/getting-started/installation",
+                    "docs/getting-started/configuration",
+                    "docs/getting-started/authentication"
                 ]
             },
             {
                 "tab": "API Reference",
                 "icon": "book-open",
-                "pages": ["api-reference/overview"]
+                "pages": ["docs/api-reference/overview"]
             },
             {
                 "tab": "Guides",
                 "icon": "compass",
                 "pages": [
-                    "guides/customers",
-                    "guides/orders",
-                    "guides/products",
-                    "guides/imports-exports"
+                    "docs/guides/customers",
+                    "docs/guides/segments",
+                    "docs/guides/orders",
+                    "docs/guides/products",
+                    "docs/guides/imports-exports",
+                    "docs/guides/integrations",
+                    "docs/guides/webhooks",
+                    "docs/guides/jobs",
+                    "docs/guides/roles"
                 ]
             }
         ],
@@ -47,7 +52,7 @@
         "light": "/logo/light.svg",
         "dark": "/logo/dark.svg"
     },
-    "favicon": "/favicon.svg",
+    "favicon": "./public/favicon.svg",
     "api": {
         "openapi": "./src/openapi.json",
         "playground": {

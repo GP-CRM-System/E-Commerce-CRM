@@ -5,7 +5,11 @@ description: Interactive API documentation for Briefly CRM.
 
 # API Reference
 
-The Briefly CRM API is documented using OpenAPI 3.1. The interactive reference below allows you to explore and test all endpoints.
+The Briefly CRM API is documented using OpenAPI 3.1. The interactive playground below allows you to explore and test all endpoints.
+
+<Info>
+    All endpoints require authentication. Include your Bearer token in requests.
+</Info>
 
 ## Base URL
 
@@ -17,50 +21,117 @@ The Briefly CRM API is documented using OpenAPI 3.1. The interactive reference b
 
 ### Customers
 
-- `GET /customers` - List all customers
-- `POST /customers` - Create a customer
-- `GET /customers/:id` - Get customer by ID
-- `PATCH /customers/:id` - Update customer
-- `DELETE /customers/:id` - Delete customer
-- `GET /customers/:id/analytics` - Get customer analytics
+| Endpoint                       | Description              |
+| ------------------------------ | ------------------------ |
+| `GET /customers`               | List all customers       |
+| `POST /customers`              | Create a customer        |
+| `GET /customers/:id`           | Get customer by ID       |
+| `PUT /customers/:id`           | Update customer          |
+| `DELETE /customers/:id`        | Delete customer          |
+| `GET /customers/:id/analytics` | Get RFM scores & metrics |
+| `GET /customers/:id/notes`     | List customer notes      |
+| `POST /customers/:id/notes`    | Create note              |
+| `GET /customers/:id/events`    | List customer events     |
+| `POST /customers/:id/events`   | Create event             |
 
-### Products
+### Segments
 
-- `GET /products` - List all products
-- `POST /products` - Create a product
-- `GET /products/:id` - Get product by ID
-- `PATCH /products/:id` - Update product
-- `DELETE /products/:id` - Delete product
+| Endpoint                      | Description           |
+| ----------------------------- | --------------------- |
+| `GET /segments`               | List all segments     |
+| `POST /segments`              | Create a segment      |
+| `GET /segments/:id`           | Get segment           |
+| `PATCH /segments/:id`         | Update segment        |
+| `DELETE /segments/:id`        | Delete segment        |
+| `GET /segments/:id/customers` | Get segment customers |
+| `GET /segments/:id/count`     | Get customer count    |
+| `POST /segments/:id/export`   | Export segment        |
 
 ### Orders
 
-- `GET /orders` - List all orders
-- `POST /orders` - Create an order
-- `GET /orders/:id` - Get order by ID
-- `PATCH /orders/:id` - Update order
-- `DELETE /orders/:id` - Delete order
+| Endpoint             | Description     |
+| -------------------- | --------------- |
+| `GET /orders`        | List all orders |
+| `POST /orders`       | Create an order |
+| `GET /orders/:id`    | Get order by ID |
+| `PUT /orders/:id`    | Update order    |
+| `DELETE /orders/:id` | Delete order    |
+
+### Products
+
+| Endpoint               | Description       |
+| ---------------------- | ----------------- |
+| `GET /products`        | List all products |
+| `POST /products`       | Create a product  |
+| `GET /products/:id`    | Get product by ID |
+| `PATCH /products/:id`  | Update product    |
+| `DELETE /products/:id` | Delete product    |
 
 ### Imports
 
-- `GET /imports` - List import jobs
-- `POST /imports` - Create import job
-- `GET /imports/:id` - Get import status
-- `GET /imports/:id/errors` - Get import errors
+| Endpoint                  | Description       |
+| ------------------------- | ----------------- |
+| `GET /imports`            | List import jobs  |
+| `POST /imports`           | Create import job |
+| `GET /imports/:id`        | Get import status |
+| `GET /imports/:id/errors` | Get import errors |
 
 ### Exports
 
-- `GET /exports` - List export jobs
-- `POST /exports` - Create export job
-- `GET /exports/:id` - Get export status
-- `GET /exports/:id/download` - Download export file
+| Endpoint                    | Description          |
+| --------------------------- | -------------------- |
+| `GET /exports`              | List export jobs     |
+| `POST /exports`             | Create export job    |
+| `GET /exports/:id`          | Get export status    |
+| `GET /exports/:id/download` | Download export file |
 
-### Roles
+### Roles & Permissions
 
-- `GET /roles` - List roles
-- `POST /roles` - Create role
-- `GET /roles/:id` - Get role
-- `PATCH /roles/:id` - Update role
-- `DELETE /roles/:id` - Delete role
+| Endpoint                 | Description                |
+| ------------------------ | -------------------------- |
+| `GET /roles`             | List roles                 |
+| `GET /roles/:id`         | Get role details           |
+| `POST /roles`            | Create role                |
+| `PATCH /roles/:id`       | Update role                |
+| `DELETE /roles/:id`      | Delete role                |
+| `GET /roles/permissions` | List available permissions |
+
+### Integrations
+
+| Endpoint                                   | Description            |
+| ------------------------------------------ | ---------------------- |
+| `POST /integrations/shopify/connect`       | Connect Shopify store  |
+| `GET /integrations`                        | List integrations      |
+| `GET /integrations/:id`                    | Get integration        |
+| `PATCH /integrations/:id`                  | Update integration     |
+| `DELETE /integrations/:id`                 | Disconnect integration |
+| `POST /integrations/:id/test-connection`   | Test connection        |
+| `POST /integrations/:id/webhooks/register` | Register webhooks      |
+
+### Sync
+
+| Endpoint                                | Description    |
+| --------------------------------------- | -------------- |
+| `POST /integrations/:id/sync/full`      | Full sync      |
+| `POST /integrations/:id/sync/customers` | Sync customers |
+| `POST /integrations/:id/sync/orders`    | Sync orders    |
+| `POST /integrations/:id/sync/products`  | Sync products  |
+| `GET /integrations/:id/sync/logs`       | View sync logs |
+
+### Webhooks
+
+| Endpoint                     | Description             |
+| ---------------------------- | ----------------------- |
+| `POST /webhooks/shopify/:id` | Receive Shopify webhook |
+| `GET /webhooks/:id/logs`     | View webhook logs       |
+
+### Jobs
+
+| Endpoint               | Description                 |
+| ---------------------- | --------------------------- |
+| `POST /cron/rfm`       | Run RFM scoring             |
+| `POST /cron/lifecycle` | Run lifecycle recalculation |
+| `POST /cron/vip`       | Run VIP identification      |
 
 ## Response Format
 
@@ -101,6 +172,7 @@ Paginated responses include:
     "code": "ERROR_CODE",
     "status": 400,
     "timestamp": "2024-01-01T00:00:00.000Z",
-    "path": "/api/endpoint"
+    "path": "/api/endpoint",
+    "details": {}
 }
 ```

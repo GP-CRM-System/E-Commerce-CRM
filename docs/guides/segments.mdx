@@ -1,0 +1,146 @@
+---
+title: Segments
+description: Create and manage customer segments with dynamic filters.
+---
+
+# Customer Segments
+
+Segments let you group customers based on dynamic criteria. Unlike static lists, segments automatically update as customer data changes.
+
+## Endpoints
+
+| Method   | Endpoint                  | Description                |
+| -------- | ------------------------- | -------------------------- |
+| `GET`    | `/segments`               | List all segments          |
+| `POST`   | `/segments`               | Create a segment           |
+| `GET`    | `/segments/:id`           | Get segment details        |
+| `PATCH`  | `/segments/:id`           | Update a segment           |
+| `DELETE` | `/segments/:id`           | Delete a segment           |
+| `GET`    | `/segments/:id/customers` | Get customers in segment   |
+| `GET`    | `/segments/:id/count`     | Get customer count         |
+| `GET`    | `/segments/:id/preview`   | Preview segment customers  |
+| `POST`   | `/segments/:id/export`    | Export segment to CSV/XLSX |
+
+## Create a Segment
+
+```http
+POST /segments
+```
+
+```json
+{
+    "name": "High-Value Customers",
+    "description": "Customers with lifetime value over $1000",
+    "criteria": {
+        "totalSpent": { "gte": 1000 }
+    }
+}
+```
+
+### Filter Criteria
+
+Build dynamic segments using these filter operators:
+
+| Operator   | Description           | Example                                        |
+| ---------- | --------------------- | ---------------------------------------------- |
+| `eq`       | Equal to              | `"email": { "eq": "test@example.com" }`        |
+| `neq`      | Not equal             | `"source": { "neq": "import" }`                |
+| `gt`       | Greater than          | `"totalSpent": { "gt": 500 }`                  |
+| `gte`      | Greater than or equal | `"orderCount": { "gte": 5 }`                   |
+| `lt`       | Less than             | `"churnRisk": { "lt": 50 }`                    |
+| `lte`      | Less than or equal    | `"rfmScore": { "lte": 30 }`                    |
+| `in`       | In array              | `"lifecycleStage": { "in": ["LOYAL", "VIP"] }` |
+| `contains` | String contains       | `"city": { "contains": "New" }`                |
+
+### Available Filter Fields
+
+- `email` - Customer email
+- `firstName` - First name
+- `lastName` - Last name
+- `city` - City
+- `country` - Country
+- `source` - Customer source (manual, import, shopify)
+- `lifecycleStage` - PROSPECT, LEAD, ONE_TIME, RETURNING, LOYAL, VIP, AT_RISK, CHURNED, WINBACK
+- `churnRisk` - Churn risk score (0-100)
+- `totalSpent` - Lifetime value
+- `orderCount` - Total orders
+- `averageOrderValue` - Average order value
+- `lastOrderDate` - Date of last order
+- `rfmScore` - Combined RFM score (0-100)
+- `rfmRecency` - Recency score (0-100)
+- `rfmFrequency` - Frequency score (0-100)
+- `rfmMonetary` - Monetary score (0-100)
+- `isVip` - VIP status boolean
+- `createdAt` - Account creation date
+
+## List Segments
+
+```http
+GET /segments
+```
+
+**Query Parameters:**
+
+| Parameter   | Type    | Description                                 |
+| ----------- | ------- | ------------------------------------------- |
+| `page`      | integer | Page number (default: 1)                    |
+| `limit`     | integer | Items per page (default: 20)                |
+| `sortBy`    | string  | Sort field (name, createdAt, customerCount) |
+| `sortOrder` | string  | asc or desc                                 |
+
+## Get Segment Customers
+
+```http
+GET /segments/:id/customers
+```
+
+Returns paginated customers matching the segment criteria.
+
+**Query Parameters:**
+
+| Parameter   | Type    | Description    |
+| ----------- | ------- | -------------- |
+| `page`      | integer | Page number    |
+| `limit`     | integer | Items per page |
+| `sortBy`    | string  | Sort field     |
+| `sortOrder` | string  | asc or desc    |
+
+## Preview Segment
+
+```http
+GET /segments/:id/preview
+```
+
+Returns the first 100 customers matching the segment criteria without pagination. Useful for quickly validating segment logic.
+
+## Export Segment
+
+```http
+POST /segments/:id/export
+```
+
+**Body:**
+
+```json
+{
+    "format": "csv" // or "xlsx"
+}
+```
+
+Creates an export job and returns the export ID. Poll `/exports/:id` to check status and download when ready.
+
+## Example: Multi-Criteria Segment
+
+```json
+{
+    "name": "At-Risk VIPs",
+    "description": "VIP customers with declining engagement",
+    "criteria": {
+        "isVip": true,
+        "churnRisk": { "gte": 60 },
+        "rfmRecency": { "lt": 40 }
+    }
+}
+```
+
+This finds VIP customers who haven't ordered recently and show high churn risk - ideal for targeted retention campaigns.

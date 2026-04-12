@@ -1,0 +1,179 @@
+---
+title: Roles & Permissions
+description: Role-based access control and custom roles in Briefly CRM.
+---
+
+# Roles & Permissions
+
+Briefly CRM uses Better Auth's organization plugin with custom role-based access control (RBAC).
+
+## Endpoints
+
+| Method   | Endpoint             | Description                |
+| -------- | -------------------- | -------------------------- |
+| `GET`    | `/roles`             | List all roles             |
+| `GET`    | `/roles/:id`         | Get role details           |
+| `POST`   | `/roles`             | Create a role              |
+| `PATCH`  | `/roles/:id`         | Update a role              |
+| `DELETE` | `/roles/:id`         | Delete a role              |
+| `GET`    | `/roles/permissions` | List available permissions |
+
+## Default Roles
+
+Three default roles are provided:
+
+| Role     | Description                                   |
+| -------- | --------------------------------------------- |
+| `root`   | Full access to all features                   |
+| `admin`  | Administrative access without role management |
+| `member` | Read-only access to most resources            |
+
+### Root Role
+
+Full permissions across all resources:
+
+- All `organization`, `member`, `invitation`, `team` permissions
+- All `ac` (access control) permissions
+- Full `customers`, `orders`, `products` permissions
+- `imports`, `exports`, `integrations`, `webhooks`, `sync`
+- `segments`, `campaigns`, `supportTickets`, `tags`
+- `reports:read`
+
+### Admin Role
+
+Same as root except:
+
+- No `organization:delete`
+- No `ac:create`, `ac:update`, `ac:delete`
+- No role management permissions
+
+### Member Role
+
+Read-only access:
+
+- `customers:read`, `orders:read`, `products:read`
+- `integrations:read`, `segments:read`
+- `supportTickets:read`, `supportTickets:write`
+- `tags:read`
+
+No access to: imports, exports, webhooks, sync, roles, campaigns.
+
+## Available Permissions
+
+```http
+GET /roles/permissions
+```
+
+Returns all available permissions and their allowed actions:
+
+```json
+{
+    "organization": ["read", "update", "delete"],
+    "member": ["read", "create", "update", "delete"],
+    "invitation": ["read", "create", "cancel"],
+    "team": ["read", "create", "update", "delete"],
+    "ac": ["read", "create", "update", "delete"],
+    "customers": ["read", "write", "delete"],
+    "orders": ["read", "write", "delete"],
+    "products": ["read", "write", "delete"],
+    "imports": ["read", "write"],
+    "exports": ["read", "write"],
+    "integrations": ["read", "write", "delete"],
+    "webhooks": ["read", "write", "delete"],
+    "sync": ["read", "write"],
+    "segments": ["read", "write", "delete"],
+    "campaigns": ["read", "write", "delete"],
+    "supportTickets": ["read", "write", "delete"],
+    "tags": ["read", "write", "delete"],
+    "reports": ["read"]
+}
+```
+
+## List Roles
+
+```http
+GET /roles
+```
+
+Returns all roles in your organization.
+
+## Get Role
+
+```http
+GET /roles/:id
+```
+
+Returns role details including permissions.
+
+## Create Role
+
+<Warning> Only root role can create or manage roles.</Warning>
+
+```http
+POST /roles
+```
+
+```json
+{
+    "name": "Sales Manager",
+    "description": "Can manage customers and view reports",
+    "permissions": {
+        "customers": ["read", "write"],
+        "orders": ["read", "write"],
+        "reports": ["read"]
+    }
+}
+```
+
+## Update Role
+
+```http
+PATCH /roles/:id
+```
+
+```json
+{
+    "name": "Sales Lead",
+    "permissions": {
+        "customers": ["read", "write", "delete"],
+        "orders": ["read", "write", "delete"]
+    }
+}
+```
+
+## Delete Role
+
+<Warning> Cannot delete default roles (root, admin, member).</Warning>
+
+```http
+DELETE /roles/:id
+```
+
+## Permission Structure
+
+Permissions follow the format `{resource}:{action}`:
+
+| Resource         | Actions                      |
+| ---------------- | ---------------------------- |
+| `customers`      | read, write, delete          |
+| `orders`         | read, write, delete          |
+| `products`       | read, write, delete          |
+| `imports`        | read, write                  |
+| `exports`        | read, write                  |
+| `segments`       | read, write, delete          |
+| `integrations`   | read, write, delete          |
+| `webhooks`       | read, write, delete          |
+| `sync`           | read, write                  |
+| `ac`             | read, create, update, delete |
+| `organization`   | read, update, delete         |
+| `member`         | read, create, update, delete |
+| `invitation`     | read, create, cancel         |
+| `team`           | read, create, update, delete |
+| `campaigns`      | read, write, delete          |
+| `supportTickets` | read, write, delete          |
+| `tags`           | read, write, delete          |
+| `reports`        | read                         |
+
+## Assigning Roles
+
+Roles are assigned through Better Auth's organization system. See [Authentication](/docs/getting-started/authentication) for details.

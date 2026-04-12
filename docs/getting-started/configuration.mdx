@@ -55,14 +55,42 @@ Create a `.env` file based on `.env.example`:
 ```text
 src/
 ├── api/             # Route handlers and controllers
-│   ├── auth/        # Authentication (Better Auth)
-│   ├── customers/   # Customer CRUD & Analytics
+│   ├── auth/        # Authentication (Better Auth), roles
+│   ├── customers/   # Customer CRUD, analytics, lifecycle
+│   ├── segments/    # Customer segmentation
 │   ├── orders/      # Order management
 │   ├── products/    # Product management
-│   └── imports/     # CSV/XLSX import jobs
+│   ├── imports/     # CSV/XLSX import jobs
+│   ├── exports/     # Export jobs
+│   ├── integrations/# Shopify integration, sync, webhooks
+│   └── cron/        # Background job triggers
 ├── config/          # Configuration (env, prisma, roles)
 ├── middlewares/     # Auth, validation, and error handling
 ├── queues/          # BullMQ background workers
 ├── scripts/        # Seeding and utility scripts
-└── utils/           # Shared utilities (logger, parser)
+├── utils/           # Shared utilities (logger, parser)
+└── types/          # TypeScript type definitions
 ```
+
+## Rate Limiting
+
+Rate limiting is enabled via Redis:
+
+| Endpoint        | Limit   |
+| --------------- | ------- |
+| Auth endpoints  | 10/min  |
+| API endpoints   | 100/min |
+| Bulk operations | 20/min  |
+
+## Sentry Integration
+
+Set `SENTRY_DSN` environment variable to enable error tracking.
+
+## Redis
+
+Redis is required for:
+
+- Session storage (Better Auth)
+- Rate limiting
+- Background job queues (BullMQ)
+- Webhook idempotency keys

@@ -256,7 +256,7 @@ Customer segments with filter rules.
 | :--------------- | :------- | :---------------------------------------------------------------------- |
 | `id`             | String   | Unique identifier                                                       |
 | `name`           | String   | Segment name                                                            |
-| `filter`         | JSON     | Filter rules (e.g., {field: "totalSpent", operator: "gt", value: 1000}) |
+| `filter`         | JSON     | Filter rules (e.g., field: "totalSpent", operator: "gt", value: 1000)   |
 | `description`    | String?  | Segment description                                                     |
 | `organizationId` | String   | Owning organization                                                     |
 | `createdAt`      | DateTime | Creation date                                                           |
@@ -319,7 +319,7 @@ Product variations (size, color, etc.).
 | `position`         | Int     | Display order                                  |
 | `imageUrl`         | String? | Variant image                                  |
 | `externalId`       | String? | External ID                                    |
-| `options`          | JSON?   | Options (e.g., {size: "Small", color: "Blue"}) |
+| `options`          | JSON?   | Options (e.g., (size: "Small", color: "Blue")) |
 | `shopifyVariantId` | String? | Shopify variant ID                             |
 
 ---
@@ -573,7 +573,7 @@ Tracks user actions for compliance.
 
 ## Relationships Overview
 
-```
+```md
 Organization
 ├── Members (User ↔ Organization)
 ├── Roles (OrganizationRole)

@@ -1,0 +1,140 @@
+---
+title: Jobs & Cron
+description: Background jobs for RFM scoring, lifecycle management, and VIP identification.
+---
+
+# Background Jobs & Cron
+
+Briefly CRM runs background jobs to calculate customer metrics, update lifecycle stages, and identify VIP customers.
+
+## Endpoints
+
+| Method | Endpoint                    | Description                 |
+| ------ | --------------------------- | --------------------------- |
+| `POST` | `/cron/rfm`                 | Run RFM scoring job         |
+| `POST` | `/cron/lifecycle`           | Run lifecycle recalculation |
+| `POST` | `/cron/vip`                 | Run VIP identification      |
+| `POST` | `/cron/cleanup/idempotency` | Cleanup webhook keys        |
+
+## RFM Scoring
+
+```http
+POST /cron/rfm
+```
+
+Calculates Recency, Frequency, and Monetary scores for all customers:
+
+- **Recency** - How recently a customer last ordered
+- **Frequency** - How often they order
+- **Monetary** - How much they spend
+
+Each score ranges from 0-100. Combined RFM score = average of the three.
+
+```json
+{
+    "organizationId": "org_xxx"
+}
+```
+
+### RFM Score Ranges
+
+| Score Range | Label     | Description        |
+| ----------- | --------- | ------------------ |
+| 80-100      | Champions | Best customers     |
+| 60-79       | Loyal     | Regular buyers     |
+| 40-59       | Potential | Some engagement    |
+| 20-39       | At Risk   | Declining activity |
+| 0-19        | Lost      | No recent activity |
+
+## Lifecycle Recalculation
+
+```http
+POST /cron/lifecycle
+```
+
+Updates customer lifecycle stages based on order history:
+
+| Stage     | Criteria                                |
+| --------- | --------------------------------------- |
+| PROSPECT  | New customer, no orders                 |
+| LEAD      | Has placed first order                  |
+| ONE_TIME  | Has 1 order                             |
+| RETURNING | Has 2-4 orders                          |
+| LOYAL     | Has 5+ orders with consistent frequency |
+| VIP       | Top 10% by lifetime value               |
+| AT_RISK   | No orders in 90+ days                   |
+| CHURNED   | No orders in 180+ days                  |
+| WINBACK   | Previously churned, placed new order    |
+
+```json
+{
+    "organizationId": "org_xxx"
+}
+```
+
+## VIP Identification
+
+```http
+POST /cron/vip
+```
+
+Identifies VIP customers based on lifetime value. VIPs are the top 10% of customers by total spending.
+
+```json
+{
+    "organizationId": "org_xxx",
+    "percentile": 10 // Optional: default is 10%
+}
+```
+
+VIP status is recalculated automatically. Use this to manually trigger recalculation.
+
+## Idempotency Cleanup
+
+```http
+POST /cron/cleanup/idempotency
+```
+
+Cleans up old webhook idempotency keys from the database. Keys older than 7 days are removed.
+
+```json
+{
+    "daysOld": 7
+}
+```
+
+## Scheduling
+
+These jobs are typically run on a schedule:
+
+| Job                 | Recommended Frequency |
+| ------------------- | --------------------- |
+| RFM Scoring         | Daily or weekly       |
+| Lifecycle           | Daily                 |
+| VIP                 | Weekly                |
+| Idempotency Cleanup | Weekly                |
+
+### Example Cron Expression (weekly Sunday at 2am)
+
+```text
+0 2 * * 0
+```
+
+## Manual Trigger
+
+You can trigger jobs manually for testing or one-off recalculations:
+
+```bash
+curl -X POST http://localhost:3000/cron/rfm \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"organizationId": "org_xxx"}'
+```
+
+## Job Processing
+
+Jobs are processed via BullMQ with Redis. Check queue status:
+
+- `rfm:jobs` - RFM scoring queue
+- `lifecycle:jobs` - Lifecycle updates queue
+- `vip:jobs` - VIP identification queue

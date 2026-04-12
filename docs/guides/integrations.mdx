@@ -1,0 +1,133 @@
+---
+title: Integrations
+description: Connect and manage Shopify stores.
+---
+
+# Shopify Integration
+
+Briefly CRM integrates with Shopify to sync customers, orders, and products automatically.
+
+## Endpoints
+
+| Method   | Endpoint                                         | Description             |
+| -------- | ------------------------------------------------ | ----------------------- |
+| `POST`   | `/integrations/shopify/connect`                  | Connect a Shopify store |
+| `GET`    | `/integrations`                                  | List all integrations   |
+| `GET`    | `/integrations/:integrationId`                   | Get integration details |
+| `PATCH`  | `/integrations/:integrationId`                   | Update integration      |
+| `DELETE` | `/integrations/:integrationId`                   | Disconnect integration  |
+| `POST`   | `/integrations/:integrationId/test-connection`   | Test connection         |
+| `POST`   | `/integrations/:integrationId/webhooks/register` | Register webhooks       |
+
+## Connect Shopify Store
+
+```http
+POST /integrations/shopify/connect
+```
+
+```json
+{
+    "shopifyDomain": "your-store.myshopify.com",
+    "shopifyAccessToken": "shpat_xxxxxxxxxxxxx"
+}
+```
+
+- `shopifyDomain` - Your Shopify store domain (e.g., `mystore.myshopify.com`)
+- `shopifyAccessToken` - Shopify Admin API access token
+
+### Getting the Access Token
+
+1. Go to your Shopify admin → Settings → Apps and sales channels
+2. Develop apps → Create an app
+3. Admin API scopes: `read_customers`, `write_customers`, `read_orders`, `write_orders`, `read_products`, `write_products`
+4. Install app and copy the access token
+
+## List Integrations
+
+```http
+GET /integrations
+```
+
+Returns all connected integrations for your organization.
+
+## Get Integration
+
+```http
+GET /integrations/:integrationId
+```
+
+Returns integration details including sync status and last sync time.
+
+## Update Integration
+
+```http
+PATCH /integrations/:integrationId
+```
+
+```json
+{
+    "name": "My Store",
+    "syncEnabled": true,
+    "autoSync": true
+}
+```
+
+## Test Connection
+
+```http
+POST /integrations/:integrationId/test-connection
+```
+
+Verifies the Shopify connection is working. Returns store info on success.
+
+## Register Webhooks
+
+```http
+POST /integrations/:integrationId/webhooks/register
+```
+
+```json
+{
+    "topics": [
+        "customers/create",
+        "customers/update",
+        "orders/create",
+        "orders/updated",
+        "products/create",
+        "products/update"
+    ]
+}
+```
+
+Registers Shopify webhooks for real-time sync. Topics available:
+
+- `customers/create`
+- `customers/update`
+- `customers/delete`
+- `orders/create`
+- `orders/updated`
+- `orders/paid`
+- `orders/fulfilled`
+- `orders/cancelled`
+- `products/create`
+- `products/update`
+- `products/delete`
+
+## Disconnect Integration
+
+```http
+DELETE /integrations/:integrationId
+```
+
+Removes the integration and optionally removes registered webhooks.
+
+## Sync Endpoints
+
+| Method | Endpoint                           | Description           |
+| ------ | ---------------------------------- | --------------------- |
+| `POST` | `/integrations/:id/sync/full`      | Full sync             |
+| `POST` | `/integrations/:id/sync/customers` | Sync customers only   |
+| `POST` | `/integrations/:id/sync/orders`    | Sync orders only      |
+| `POST` | `/integrations/:id/sync/products`  | Sync products only    |
+| `POST` | `/integrations/:id/sync/cleanup`   | Cleanup deleted items |
+| `GET`  | `/integrations/:id/sync/logs`      | View sync history     |

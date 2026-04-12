@@ -1,0 +1,128 @@
+---
+title: Webhooks
+description: Configure and manage Shopify webhooks.
+---
+
+# Webhooks
+
+Briefly CRM receives webhooks from Shopify for real-time customer, order, and product sync.
+
+## Endpoints
+
+| Method | Endpoint                           | Description              |
+| ------ | ---------------------------------- | ------------------------ |
+| `POST` | `/webhooks/shopify/:integrationId` | Receive Shopify webhooks |
+| `GET`  | `/webhooks/:integrationId/logs`    | View webhook logs        |
+
+## Webhook Endpoint
+
+```http
+POST /webhooks/shopify/:integrationId
+```
+
+This endpoint is called by Shopify when events occur. It handles:
+
+- Customer creates/updates/deletes
+- Order creates/updates/paid/fulfilled/cancelled
+- Product creates/updates/deletes
+
+Requests are validated using Shopify's HMAC signature in the `X-Shopify-Hmac-Sha256` header.
+
+## Webhook Topics
+
+Shopify sends webhooks for these topics:
+
+### Customers
+
+- `customers/create` - New customer created
+- `customer/update` - Customer updated
+- `customer/delete` - Customer deleted
+
+### Orders
+
+- `orders/create` - Order created
+- `orders/updated` - Order updated
+- `orders/paid` - Order paid
+- `orders/fulfilled` - Order fulfilled
+- `orders/cancelled` - Order cancelled
+
+### Products
+
+- `products/create` - Product created
+- `products/update` - Product updated
+- `products/delete` - Product deleted
+
+## Idempotency
+
+Each webhook is processed once using an idempotency key. Duplicate deliveries within 24 hours are ignored.
+
+The idempotency key is generated from: `{integrationId}:{shopifyId}:{topic}`
+
+## Webhook Logs
+
+```http
+GET /webhooks/:integrationId/logs
+```
+
+View webhook processing history:
+
+**Query Parameters:**
+
+| Parameter   | Type    | Description                        |
+| ----------- | ------- | ---------------------------------- |
+| `page`      | integer | Page number                        |
+| `limit`     | integer | Items per page                     |
+| `topic`     | string  | Filter by topic                    |
+| `status`    | string  | Filter by status (success, failed) |
+| `startDate` | string  | Filter by date (ISO)               |
+| `endDate`   | string  | Filter by date (ISO)               |
+
+**Response:**
+
+```json
+{
+    "data": [
+        {
+            "id": "wh_xxx",
+            "topic": "orders/create",
+            "shopifyOrderId": "1234",
+            "status": "success",
+            "processedAt": "2024-01-15T10:30:00Z",
+            "error": null
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150
+    }
+}
+```
+
+## Registering Webhooks
+
+Use the `/integrations/:integrationId/webhooks/register` endpoint to register webhooks. See [Integrations](/docs/guides/integrations).
+
+## Error Handling
+
+Failed webhooks are retried by Shopify up to 3 times with exponential backoff.
+
+If processing fails:
+
+1. Log entry is created with error details
+2. Webhook is NOT retried by Briefly CRM
+3. Check logs for error details
+
+## Testing Webhooks
+
+You can test webhook processing by manually triggering a sync after a webhook failure:
+
+```http
+POST /integrations/:integrationId/sync/full
+```
+
+Or trigger a specific sync:
+
+```http
+POST /integrations/:integrationId/sync/customers
+```
