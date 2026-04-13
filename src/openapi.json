@@ -2,8 +2,16 @@
     "openapi": "3.1.0",
     "info": {
         "title": "E-Commerce CRM API",
-        "description": "API for E-Commerce CRM with authentication, organization management, and Shopify integration support",
-        "version": "2.0.0"
+        "description": "High-performance, multi-tenant CRM backend for e-commerce businesses.\n\n## Features\n- Customer management with RFM scoring and lifecycle tracking\n- Order and product catalog management\n- CSV/XLSX import/export with field mapping\n- Shopify integration with webhook sync\n- Role-based access control (RBAC)\n- Background job processing with BullMQ\n\n## Authentication\nAll endpoints require Bearer token authentication. Get a token from `/api/auth/sign-in/email`.\n\n## Rate Limits\n- Auth endpoints: 10 requests/minute\n- API endpoints: 100 requests/minute\n- Bulk operations: 20 requests/minute",
+        "version": "2.0.0",
+        "contact": {
+            "name": "API Support",
+            "url": "https://github.com/seifsheikhelarab/E-Commerce-CRM"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        }
     },
     "servers": [
         {
@@ -13,20 +21,20 @@
     ],
     "tags": [
         {
-            "name": "Roles",
-            "description": "Custom role and permission management"
-        },
-        {
             "name": "Customers",
-            "description": "Customer management"
+            "description": "Customer management, notes, events, and RFM analytics"
         },
         {
             "name": "Products",
-            "description": "Product catalog"
+            "description": "Product catalog management"
         },
         {
             "name": "Orders",
-            "description": "Order management"
+            "description": "Order management and fulfillment"
+        },
+        {
+            "name": "Segments",
+            "description": "Customer segmentation and grouping"
         },
         {
             "name": "Imports",
@@ -37,12 +45,24 @@
             "description": "CSV/XLSX export jobs"
         },
         {
-            "name": "Cron",
-            "description": "Manual triggers for RFM and lifecycle recalculations"
+            "name": "Roles",
+            "description": "Custom role and permission management"
         },
         {
-            "name": "Segments",
-            "description": "Customer segmentation and grouping"
+            "name": "Integrations",
+            "description": "Shopify store connections"
+        },
+        {
+            "name": "Sync",
+            "description": "Data synchronization operations"
+        },
+        {
+            "name": "Webhooks",
+            "description": "Webhook handling and logging"
+        },
+        {
+            "name": "Cron",
+            "description": "Manual triggers for RFM and lifecycle recalculations"
         }
     ],
     "paths": {
@@ -1790,10 +1810,269 @@
             "bearerAuth": {
                 "type": "http",
                 "scheme": "bearer",
-                "bearerFormat": "JWT"
+                "bearerFormat": "JWT",
+                "description": "JWT token from Better Auth sign-in endpoint"
             }
         },
         "schemas": {
+            "Error": {
+                "type": "object",
+                "required": ["message", "code"],
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Human-readable error message"
+                    },
+                    "code": {
+                        "type": "string",
+                        "description": "Error code for programmatic handling"
+                    },
+                    "details": {
+                        "type": "object",
+                        "description": "Field-specific validation errors",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Request path that caused the error"
+                    }
+                }
+            },
+            "SuccessResponse": {
+                "type": "object",
+                "required": ["message", "data"],
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Pagination": {
+                "type": "object",
+                "required": ["page", "limit", "total"],
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "default": 1
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "default": 20
+                    },
+                    "total": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                }
+            },
+            "Customer": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "email": { "type": "string", "format": "email" },
+                    "phone": { "type": "string" },
+                    "city": { "type": "string" },
+                    "address": { "type": "string" },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "WEBSITE",
+                            "SOCIAL",
+                            "REFERRAL",
+                            "ORGANIC",
+                            "EMAIL",
+                            "CAMPAIGN",
+                            "OTHER"
+                        ]
+                    },
+                    "lifecycleStage": {
+                        "type": "string",
+                        "enum": [
+                            "PROSPECT",
+                            "LEAD",
+                            "ONE_TIME",
+                            "RETURNING",
+                            "LOYAL",
+                            "VIP",
+                            "AT_RISK",
+                            "CHURNED",
+                            "WINBACK"
+                        ]
+                    },
+                    "rfmScore": { "type": "string" },
+                    "rfmSegment": { "type": "string" },
+                    "churnRiskScore": { "type": "number" },
+                    "totalOrders": { "type": "integer" },
+                    "totalSpent": { "type": "number" },
+                    "avgOrderValue": { "type": "number" },
+                    "lastOrderAt": { "type": "string", "format": "date-time" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "CustomerAnalytics": {
+                "type": "object",
+                "properties": {
+                    "rfmScore": { "type": "integer" },
+                    "rfmRecency": { "type": "integer" },
+                    "rfmFrequency": { "type": "integer" },
+                    "rfmMonetary": { "type": "integer" },
+                    "lifecycleStage": { "type": "string" },
+                    "churnRisk": { "type": "number" },
+                    "isVip": { "type": "boolean" },
+                    "totalSpent": { "type": "number" },
+                    "orderCount": { "type": "integer" },
+                    "averageOrderValue": { "type": "number" },
+                    "lastOrderDate": { "type": "string", "format": "date-time" }
+                }
+            },
+            "Order": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "customerId": { "type": "string" },
+                    "externalId": { "type": "string" },
+                    "subtotal": { "type": "number" },
+                    "taxAmount": { "type": "number" },
+                    "shippingAmount": { "type": "number" },
+                    "totalAmount": { "type": "number" },
+                    "currency": { "type": "string", "default": "USD" },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": ["PENDING", "PAID", "FAILED", "REFUNDED"]
+                    },
+                    "shippingStatus": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "PROCESSING",
+                            "SHIPPED",
+                            "DELIVERED",
+                            "CANCELLED"
+                        ]
+                    },
+                    "fulfillmentStatus": { "type": "string" },
+                    "source": { "type": "string" },
+                    "note": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "sku": { "type": "string" },
+                    "price": { "type": "number" },
+                    "compareAtPrice": { "type": "number" },
+                    "category": { "type": "string" },
+                    "inventory": { "type": "integer" },
+                    "status": {
+                        "type": "string",
+                        "enum": ["active", "draft", "archived"]
+                    },
+                    "imageUrl": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "ImportJob": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "entityType": { "type": "string" },
+                    "fileName": { "type": "string" },
+                    "fileType": { "type": "string" },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "PROCESSING",
+                            "COMPLETED",
+                            "FAILED",
+                            "PARTIALLY_FAILED",
+                            "CANCELLED"
+                        ]
+                    },
+                    "totalRows": { "type": "integer" },
+                    "processedRows": { "type": "integer" },
+                    "successfulRows": { "type": "integer" },
+                    "failedRows": { "type": "integer" },
+                    "startedAt": { "type": "string", "format": "date-time" },
+                    "completedAt": { "type": "string", "format": "date-time" },
+                    "createdAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "ExportJob": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "entityType": { "type": "string" },
+                    "format": {
+                        "type": "string",
+                        "enum": ["csv", "xlsx"]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]
+                    },
+                    "totalRows": { "type": "integer" },
+                    "fileName": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "completedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "Segment": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "filter": { "$ref": "#/components/schemas/SegmentFilter" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "Integration": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "provider": { "type": "string" },
+                    "name": { "type": "string" },
+                    "shopDomain": { "type": "string" },
+                    "syncStatus": { "type": "string" },
+                    "syncMode": {
+                        "type": "string",
+                        "enum": ["webhook", "polling", "manual"]
+                    },
+                    "isActive": { "type": "boolean" },
+                    "lastSyncedAt": { "type": "string", "format": "date-time" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                }
+            },
             "Role": {
                 "type": "object",
                 "properties": {
@@ -1807,124 +2086,8 @@
                             "items": { "type": "string" }
                         }
                     },
-                    "isDefault": { "type": "boolean" }
-                }
-            },
-            "CreateRoleRequest": {
-                "type": "object",
-                "required": ["name", "permissions"],
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Role name (lowercase, alphanumeric, hyphens)"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Optional role description"
-                    },
-                    "permissions": {
-                        "type": "object",
-                        "description": "Permission key-value pairs",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": { "type": "string" }
-                        }
-                    }
-                }
-            },
-            "UpdateRoleRequest": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "New role name"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "New role description"
-                    },
-                    "permissions": {
-                        "type": "object",
-                        "description": "Updated permissions",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": { "type": "string" }
-                        }
-                    }
-                }
-            },
-            "User": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "email": { "type": "string" },
-                    "emailVerified": { "type": "boolean" },
-                    "image": { "type": "string" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
-                }
-            },
-            "Session": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "userId": { "type": "string" },
-                    "expiresAt": { "type": "string", "format": "date-time" },
-                    "activeOrganizationId": { "type": "string" }
-                }
-            },
-            "TriggerRFMJobRequest": {
-                "type": "object",
-                "required": ["organizationId"],
-                "properties": {
-                    "organizationId": {
-                        "type": "string",
-                        "description": "Organization ID"
-                    },
-                    "customerId": {
-                        "type": "string",
-                        "description": "Optional: specific customer ID"
-                    },
-                    "daysWindow": {
-                        "type": "integer",
-                        "description": "Optional: analysis window in days (1-365)"
-                    }
-                }
-            },
-            "TriggerLifecycleJobRequest": {
-                "type": "object",
-                "required": ["organizationId"],
-                "properties": {
-                    "organizationId": {
-                        "type": "string",
-                        "description": "Organization ID"
-                    },
-                    "customerId": {
-                        "type": "string",
-                        "description": "Optional: specific customer ID"
-                    }
-                }
-            },
-            "TriggerVipJobRequest": {
-                "type": "object",
-                "required": ["organizationId"],
-                "properties": {
-                    "organizationId": {
-                        "type": "string",
-                        "description": "Organization ID"
-                    }
-                }
-            },
-            "Segment": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "filter": { "$ref": "#/components/schemas/SegmentFilter" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "isDefault": { "type": "boolean" },
+                    "createdAt": { "type": "string", "format": "date-time" }
                 }
             },
             "CreateSegmentRequest": {
@@ -1978,13 +2141,121 @@
                 "required": ["field", "operator"],
                 "properties": {
                     "field": { "type": "string" },
-                    "operator": { "type": "string" },
+                    "operator": {
+                        "type": "string",
+                        "enum": [
+                            "eq",
+                            "ne",
+                            "gt",
+                            "gte",
+                            "lt",
+                            "lte",
+                            "in",
+                            "contains"
+                        ]
+                    },
                     "value": {
                         "oneOf": [
                             { "type": "string" },
                             { "type": "number" },
-                            { "type": "boolean" }
+                            { "type": "boolean" },
+                            { "type": "array" }
                         ]
+                    }
+                }
+            },
+            "TriggerRFMJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": { "type": "string" },
+                    "customerId": { "type": "string" },
+                    "daysWindow": { "type": "integer", "default": 90 }
+                }
+            },
+            "TriggerLifecycleJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": { "type": "string" }
+                }
+            },
+            "TriggerVipJobRequest": {
+                "type": "object",
+                "required": ["organizationId"],
+                "properties": {
+                    "organizationId": { "type": "string" },
+                    "percentile": { "type": "number", "default": 10 }
+                }
+            },
+            "CreateRoleRequest": {
+                "type": "object",
+                "required": ["name", "permissions"],
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "permissions": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                }
+            },
+            "UpdateRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string" },
+                    "description": { "type": "string" },
+                    "permissions": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    }
+                }
+            }
+        },
+        "responses": {
+            "BadRequest": {
+                "description": "Invalid request parameters",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/Error" }
+                    }
+                }
+            },
+            "Unauthorized": {
+                "description": "Authentication required",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/Error" }
+                    }
+                }
+            },
+            "Forbidden": {
+                "description": "Insufficient permissions",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/Error" }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/Error" }
+                    }
+                }
+            },
+            "InternalServerError": {
+                "description": "Internal server error",
+                "content": {
+                    "application/json": {
+                        "schema": { "$ref": "#/components/schemas/Error" }
                     }
                 }
             }
