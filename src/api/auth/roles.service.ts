@@ -21,7 +21,12 @@ import {
     DEFAULT_ROLES,
     AVAILABLE_PERMISSIONS
 } from '../../config/roles.config.js';
-import { NotFoundError, BadRequestError } from '../../utils/response.util.js';
+import {
+    NotFoundError,
+    BadRequestError,
+    AppError,
+    ErrorCode
+} from '../../utils/response.util.js';
 import type { OrganizationRole } from '../../generated/prisma/client.js';
 
 const DEFAULT_ROLE_NAMES = Object.keys(DEFAULT_ROLES) as [string, ...string[]];
@@ -31,20 +36,28 @@ function isDefaultRole(roleName: string): boolean {
 }
 
 function validatePermissions(permissions: Record<string, string[]>): void {
+    if (!permissions || Object.keys(permissions).length === 0) return;
+
     for (const [resource, actions] of Object.entries(permissions)) {
         if (!(resource in AVAILABLE_PERMISSIONS)) {
-            throw new BadRequestError(
-                `Invalid resource '${resource}'. Available resources: ${Object.keys(AVAILABLE_PERMISSIONS).join(', ')}`
+            const error = new AppError(
+                `Invalid resource '${resource}'. Available resources: ${Object.keys(AVAILABLE_PERMISSIONS).join(', ')}`,
+                400,
+                ErrorCode.VALIDATION_ERROR
             );
+            throw error;
         }
         const allowedActions = AVAILABLE_PERMISSIONS[
             resource as keyof typeof AVAILABLE_PERMISSIONS
         ] as readonly string[];
         for (const action of actions) {
             if (!allowedActions.includes(action)) {
-                throw new BadRequestError(
-                    `Invalid action '${action}' for resource '${resource}'. Allowed actions: ${allowedActions.join(', ')}`
+                const error = new AppError(
+                    `Invalid action '${action}' for resource '${resource}'. Allowed actions: ${allowedActions.join(', ')}`,
+                    400,
+                    ErrorCode.VALIDATION_ERROR
                 );
+                throw error;
             }
         }
     }
@@ -77,6 +90,9 @@ export const listRoles = async (organizationId: string) => {
         isDefault: isDefaultRole(role.role)
     }));
 
+    const defaultRolesInDB = formattedRoles.filter((r) => r.isDefault);
+    const customRolesInDB = formattedRoles.filter((r) => !r.isDefault);
+
     // If no roles in DB, return default roles from config
     if (formattedRoles.length === 0) {
         const defaultRolesList = Object.entries(DEFAULT_ROLES).map(
@@ -96,10 +112,25 @@ export const listRoles = async (organizationId: string) => {
         };
     }
 
+    // Always ensure all default roles are included, even if some aren't in DB yet
+    const missingDefaultRoles = (
+        Object.keys(DEFAULT_ROLES) as Array<keyof typeof DEFAULT_ROLES>
+    )
+        .filter((name) => !defaultRolesInDB.some((r) => r.name === name))
+        .map((name) => ({
+            id: `default-${name}`,
+            name: name as string,
+            description: undefined,
+            permissions: DEFAULT_ROLES[name],
+            isDefault: true
+        }));
+
+    const allDefaultRoles = [...defaultRolesInDB, ...missingDefaultRoles];
+
     return {
-        default: formattedRoles.filter((r) => r.isDefault),
-        custom: formattedRoles.filter((r) => !r.isDefault),
-        all: formattedRoles
+        default: allDefaultRoles,
+        custom: customRolesInDB,
+        all: [...allDefaultRoles, ...customRolesInDB]
     };
 };
 
@@ -226,14 +257,16 @@ export const updateRole = async (
         }
     });
 
+    const parsedPermissions =
+        typeof updatedRole.permission === 'string'
+            ? JSON.parse(updatedRole.permission)
+            : (updatedRole.permission as unknown as RolePermissions);
+
     return {
         id: updatedRole.id,
         name: updatedRole.role,
         description: updatedRole.description || undefined,
-        permissions:
-            typeof updatedRole.permission === 'string'
-                ? JSON.parse(updatedRole.permission)
-                : (updatedRole.permission as unknown as RolePermissions),
+        permissions: parsedPermissions,
         isDefault: isDefaultRole(updatedRole.role)
     };
 };

@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -79,43 +78,44 @@ model Verification {
 }
 
 model Organization {
-    id          String   @id @default(nanoid())
-    name        String
-    slug        String   @unique
-    logo        String?
-    settings    Json?    // { timezone, locale, currency, branding }
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt @default(now())
-    members     Member[]
-    invitations Invitation[]
-    customers   Customer[]
-    segments    Segment[]
-    campaigns   Campaign[]
-    products    Product[]
-    orders      Order[]
-    supportTickets SupportTicket[]
-    auditLogs   AuditLog[]
-    tags        Tag[]
-    integrations Integration[]
-    roles       OrganizationRole[]
-    importJobs  ImportJob[]
-    exportJobs  ExportJob[]
+  id             String             @id @default(nanoid())
+  name           String
+  slug           String             @unique
+  logo           String?
+  settings       Json? // { timezone, locale, currency, branding }
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  members        Member[]
+  invitations    Invitation[]
+  customers      Customer[]
+  segments       Segment[]
+  campaigns      Campaign[]
+  products       Product[]
+  orders         Order[]
+  supportTickets SupportTicket[]
+  auditLogs      AuditLog[]
+  tags           Tag[]
+  integrations   Integration[]
+  roles          OrganizationRole[]
+  importJobs     ImportJob[]
+  exportJobs     ExportJob[]
+  notifications  Notification[]
 
-    @@map("organization")
+  @@map("organization")
 }
 
 model OrganizationRole {
-    id             String       @id @default(nanoid())
-    organizationId String
-    organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-    role           String       // role name (owner, admin, member, or custom)
-    permission    Json          // Better Auth stores as JSON string
-    description    String?
-    createdAt      DateTime     @default(now())
+  id             String       @id @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String // role name (owner, admin, member, or custom)
+  permission     Json // Better Auth stores as JSON string
+  description    String?
+  createdAt      DateTime     @default(now())
 
-    @@unique([organizationId, role])
-    @@index([organizationId])
-    @@map("organizationRole")
+  @@unique([organizationId, role])
+  @@index([organizationId])
+  @@map("organizationRole")
 }
 
 model Member {
@@ -216,13 +216,13 @@ model Customer {
   interactions         Interaction[]
 
   // AI & Behavioral Fields
-  isLoyaltyMember       Boolean        @default(false)
-  accountAgeMonths      Int            @default(0)
+  isLoyaltyMember       Boolean @default(false)
+  accountAgeMonths      Int     @default(0)
   engagementScore       Float?
   satisfactionScore     Float?
   browsingFrequency     Float?
   cartAbandonmentRate   Float?
-  supportTicketsCount   Int            @default(0)
+  supportTicketsCount   Int     @default(0)
   lastSentimentScore    Float?
   priceSensitivityIndex Float?
 
@@ -294,13 +294,13 @@ model WebhookLog {
 }
 
 model WebhookIdempotencyKey {
-  id             String   @id @default(nanoid())
-  integrationId  String
-  provider       String   @default("shopify") // 'shopify', 'meta', 'fawry'
-  key            String   // Unique key (webhookId, or content hash)
-  topic          String   // Event topic for additional context
-  expiresAt      DateTime // TTL for automatic cleanup
-  createdAt      DateTime @default(now())
+  id            String   @id @default(nanoid())
+  integrationId String
+  provider      String   @default("shopify") // 'shopify', 'meta', 'fawry'
+  key           String // Unique key (webhookId, or content hash)
+  topic         String // Event topic for additional context
+  expiresAt     DateTime // TTL for automatic cleanup
+  createdAt     DateTime @default(now())
 
   @@unique([integrationId, provider, key])
   @@index([integrationId])
@@ -343,20 +343,20 @@ model CustomerEvent {
 }
 
 model CustomerMetric {
-  id                    String   @id @default(nanoid())
-  customerId            String   @unique
-  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
+  id         String   @id @default(nanoid())
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
   // Churn Prediction
-  churnProbability      Float?
-  
+  churnProbability Float?
+
   // Behavioral
-  avgOrderValue         Decimal  @default(0)
-  daysSinceLastPurchase Int      @default(0)
-  totalOrders           Int      @default(0)
-  returnRate            Float    @default(0)
-  
-  updatedAt             DateTime @updatedAt
+  avgOrderValue         Decimal @default(0)
+  daysSinceLastPurchase Int     @default(0)
+  totalOrders           Int     @default(0)
+  returnRate            Float   @default(0)
+
+  updatedAt DateTime @updatedAt
 
   @@index([customerId])
 }
@@ -364,13 +364,13 @@ model CustomerMetric {
 model Interaction {
   id                String   @id @default(nanoid())
   customerId        String
-  type              String   // "complaint", "inquiry", "feedback"
-  content           String   
-  sentiment         Float?   // Score from sentiment model (-1 to 1)
-  extractedInsights Json?    // AI-extracted data points
+  type              String // "complaint", "inquiry", "feedback"
+  content           String
+  sentiment         Float? // Score from sentiment model (-1 to 1)
+  extractedInsights Json? // AI-extracted data points
   createdAt         DateTime @default(now())
-  
-  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([customerId])
   @@index([type])
@@ -602,25 +602,25 @@ enum ExportJobStatus {
 }
 
 model ImportJob {
-  id              String          @id @default(nanoid())
+  id              String           @id @default(nanoid())
   organizationId  String
-  organization    Organization    @relation(fields: [organizationId], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id])
   createdByUserId String
-  user            User            @relation(fields: [createdByUserId], references: [id])
+  user            User             @relation(fields: [createdByUserId], references: [id])
   entityType      String // 'customer', 'product', 'order'
   fileName        String
   fileType        String // 'csv', 'xlsx'
-  status          ImportJobStatus @default(PENDING)
+  status          ImportJobStatus  @default(PENDING)
   mapping         Json?
   summary         Json?
-  totalRows       Int             @default(0)
-  processedRows   Int             @default(0)
-  successfulRows  Int             @default(0)
-  failedRows      Int             @default(0)
+  totalRows       Int              @default(0)
+  processedRows   Int              @default(0)
+  successfulRows  Int              @default(0)
+  failedRows      Int              @default(0)
   startedAt       DateTime?
   completedAt     DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   errors          ImportJobError[]
 
   @@index([organizationId])
@@ -629,8 +629,25 @@ model ImportJob {
   @@index([createdAt])
 }
 
+model Notification {
+  id             String       @id @default(cuid())
+  type           String
+  title          String
+  message        String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  read           Boolean      @default(false)
+  actionUrl      String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, read])
+}
+
 model ImportJobError {
-  id          String   @id @default(nanoid())
+  id          String    @id @default(nanoid())
   importJobId String
   importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
   rowNumber   Int
@@ -638,7 +655,7 @@ model ImportJobError {
   errorCode   String
   message     String
   rawRow      Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([importJobId])
 }

@@ -4,6 +4,8 @@ import {
     requirePermission
 } from '../../middlewares/auth.middleware.js';
 import * as RolesController from './roles.controller.js';
+import { validateRequest } from '../../middlewares/validation.middleware.js';
+import { createRoleSchema, updateRoleSchema } from './roles.schemas.js';
 
 const rolesRouter = Router();
 
@@ -32,6 +34,7 @@ rolesRouter.post(
     '/',
     protect,
     requirePermission('ac:create'),
+    validateRequest(createRoleSchema),
     RolesController.createRole
 );
 
@@ -39,6 +42,7 @@ rolesRouter.patch(
     '/:id',
     protect,
     requirePermission('ac:update'),
+    validateRequest(updateRoleSchema),
     RolesController.updateRole
 );
 

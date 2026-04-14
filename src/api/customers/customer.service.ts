@@ -102,7 +102,7 @@ export async function createCustomer(
 
 export async function getCustomerDetails(id: string, organizationId: string) {
     try {
-        const customer = await prisma.customer.findUnique({
+        const customer = await prisma.customer.findFirst({
             where: {
                 id,
                 organizationId
@@ -129,10 +129,18 @@ export async function updateCustomer(
     organizationId: string
 ) {
     try {
-        const customer = await prisma.customer.update({
+        const customer = await prisma.customer.findFirst({
             where: {
                 id,
                 organizationId
+            }
+        });
+
+        if (!customer) return null;
+
+        const updatedCustomer = await prisma.customer.update({
+            where: {
+                id
             },
             data: {
                 ...data,
@@ -140,7 +148,7 @@ export async function updateCustomer(
             }
         });
 
-        return customer;
+        return updatedCustomer;
     } catch (error) {
         logger.error(`Error updating customer: ${error}`);
         throw error;
@@ -149,12 +157,24 @@ export async function updateCustomer(
 
 export async function deleteCustomer(id: string, organizationId: string) {
     try {
-        const customer = await prisma.customer.delete({
+        const customer = await prisma.customer.findFirst({
             where: {
                 id,
                 organizationId
             }
         });
+
+        if (!customer) return null;
+
+        await prisma.$transaction([
+            prisma.note.deleteMany({ where: { customerId: id } }),
+            prisma.customerEvent.deleteMany({ where: { customerId: id } }),
+            prisma.customer.delete({
+                where: {
+                    id
+                }
+            })
+        ]);
 
         return customer;
     } catch (error) {

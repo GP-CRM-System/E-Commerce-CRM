@@ -1,0 +1,411 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .root { padding: 1rem 0; }
+  .section { margin-bottom: 2rem; }
+  .section-header { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.75rem; padding-bottom: 6px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+  .badge-gap { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .badge-weak { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge-good { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-missing { background: var(--color-background-info); color: var(--color-text-info); }
+  .items { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .item { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; padding-left: 14px; position: relative; }
+  .item::before { content: '—'; position: absolute; left: 0; color: var(--color-text-tertiary); }
+  .item.add::before { content: '+'; color: var(--color-text-success); }
+  .item.fix::before { content: '!'; color: var(--color-text-warning); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .tab { font-size: 13px; font-weight: 400; padding: 6px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: all 0.12s; }
+  .tab:hover { background: var(--color-background-secondary); }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.75rem; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-val.red { color: var(--color-text-danger); }
+  .stat-val.amber { color: var(--color-text-warning); }
+  .stat-val.green { color: var(--color-text-success); }
+  .global-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; margin-bottom: 10px; }
+  .global-card .card-title { margin-bottom: 8px; }
+  hr-light { display: block; height: 0.5px; background: var(--color-border-tertiary); margin: 1.25rem 0; }
+</style>
+
+<div class="root">
+  <div class="tabs">
+    <button class="tab active" onclick="show('overview')">Overview</button>
+    <button class="tab" onclick="show('customer')">customer.test</button>
+    <button class="tab" onclick="show('analytics')">analytics.test</button>
+    <button class="tab" onclick="show('lifecycle')">lifecycle.test</button>
+    <button class="tab" onclick="show('roles')">roles.test</button>
+    <button class="tab" onclick="show('infra')">Infrastructure</button>
+  </div>
+
+  <div id="pane-overview" class="pane active">
+    <div class="summary-grid">
+      <div class="stat"><div class="stat-label">Critical gaps</div><div class="stat-val red">6</div></div>
+      <div class="stat"><div class="stat-label">Weak assertions</div><div class="stat-val amber">11</div></div>
+      <div class="stat"><div class="stat-label">Missing test areas</div><div class="stat-val amber">8</div></div>
+      <div class="stat"><div class="stat-label">Tests with no issues</div><div class="stat-val green">4</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">Top priorities</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">No response body validation</span><span class="badge badge-gap">critical</span></div>
+          <ul class="items">
+            <li class="item">Most tests only check <code>response.status</code>, not the shape or values in <code>response.body</code></li>
+            <li class="item">e.g. RFM compute returns 200 but nothing in the body is verified</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No input validation tests</span><span class="badge badge-gap">critical</span></div>
+          <ul class="items">
+            <li class="item">No test sends a payload with missing required fields (e.g. no <code>name</code> on customer create)</li>
+            <li class="item">No test sends a payload with invalid types or formats</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Silent test skips</span><span class="badge badge-gap">critical</span></div>
+          <ul class="items">
+            <li class="item">Several tests have <code>if (!id) return;</code> — they pass silently when setup failed</li>
+            <li class="item">Should use <code>expect(customRoleId).toBeDefined()</code> at the top of the test instead</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Cross-tenant data leak</span><span class="badge badge-gap">critical</span></div>
+          <ul class="items">
+            <li class="item">No test verifies that user A cannot read user B's customers, orders, or notes</li>
+            <li class="item">Roles test does isolation for roles list but no other module does this</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">DB state not verified after mutation</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item">Update tests check the response body but not the actual DB record</li>
+            <li class="item">Delete tests sometimes do DB verify (notes ✓, events ✓) but not consistently</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">VIP recalculation under-tested</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item">Only one test, and it uses <code>promoted + demoted >= 0</code> — always passes</li>
+            <li class="item">No test for demotion, no threshold boundary cases</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-customer" class="pane">
+    <div class="section">
+      <div class="section-header">What's good</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Full CRUD covered</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">Create, list, get, update for customers, notes, and events</li>
+            <li class="item">Delete with DB verification for notes and events</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Filter/sort coverage</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">Tests for search, city, source, lifecycleStage, sortBy, sortOrder</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Gaps & improvements</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Validation tests missing</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item add">Add: create customer without <code>name</code> → expect 400</li>
+            <li class="item add">Add: create customer with invalid <code>email</code> format → expect 400</li>
+            <li class="item add">Add: create customer with phone longer than 11 chars → expect 400</li>
+            <li class="item add">Add: invalid <code>source</code> or <code>lifecycleStage</code> enum → expect 400</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Update test is shallow</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item add">Add: verify <code>updatedAt</code> changed in DB after update</li>
+            <li class="item add">Add: partial update (only one field) leaves other fields unchanged</li>
+            <li class="item add">Add: update with unknown field is ignored (no extra fields in response)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No 404 or conflict tests</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item add">Add: GET /api/customers/non-existent-id → expect 404</li>
+            <li class="item add">Add: PUT /api/customers/non-existent-id → expect 404</li>
+            <li class="item add">Add: create customer with duplicate email in same org → expect 409</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Filter assertions are empty</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix">Filter tests only check <code>status 200</code> and <code>Array.isArray</code></li>
+            <li class="item add">Add: verify filtered results actually match the filter value</li>
+            <li class="item add">e.g. <code>every(c => c.city === 'Test City')</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Delete customer missing</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: DELETE /api/customers/:id → expect 200</li>
+            <li class="item add">Add: verify customer no longer appears in list</li>
+            <li class="item add">Add: verify cascading deletes (notes, events) if applicable</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Note/event auth not tested</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item add">Add: unauthenticated POST to /notes → expect 401</li>
+            <li class="item add">Add: unauthenticated DELETE to /events → expect 401</li>
+            <li class="item add">Add: note CRUD on a customer from another org → expect 403 or 404</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-analytics" class="pane">
+    <div class="section">
+      <div class="section-header">What's good</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Auth rejection coverage</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">All three endpoints tested for unauthenticated access</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Gaps & improvements</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Compute returns anything ≥200</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix"><code>toBeGreaterThanOrEqual(200)</code> + <code>toBeLessThan(300)</code> — too loose</li>
+            <li class="item add">Decide: is this 200 (sync) or 202 (async job queued)? Assert exact status</li>
+            <li class="item add">Add: verify response body contains <code>jobId</code> or <code>queued: true</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">RFM distribution not validated</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix">Checks for property existence only — no value checks</li>
+            <li class="item add">Add: <code>total</code> is a non-negative number</li>
+            <li class="item add">Add: <code>distribution</code> sums to <code>total</code></li>
+            <li class="item add">Add: <code>lastUpdated</code> is a valid ISO date string</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Customer analytics values unchecked</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix">Only checks property names exist, not values</li>
+            <li class="item add">Add: <code>rfm.score</code> is a number in valid range (e.g. 0–100)</li>
+            <li class="item add">Add: <code>rfm.segment</code> is a known enum string</li>
+            <li class="item add">Add: <code>churnRisk</code> is between 0 and 1</li>
+            <li class="item add">Add: <code>metrics.totalOrders</code> matches what was seeded (15)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No idempotency test</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: trigger compute twice, verify second call doesn't error or duplicate jobs</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No cross-org isolation</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item add">Add: user from org B requesting analytics for a customer in org A → expect 404</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-lifecycle" class="pane">
+    <div class="section">
+      <div class="section-header">What's good</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Transition logic well covered</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">PROSPECT→ONE_TIME, RETURNING→LOYAL, LOYAL→AT_RISK, CHURNED→WINBACK all tested at service level</li>
+            <li class="item">The "no transition" case is explicitly covered</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Gaps & improvements</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">VIP test always passes</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item fix"><code>promoted + demoted >= 0</code> is vacuously true</li>
+            <li class="item add">Add: verify <code>lifecycleStage</code> of the seeded customer is now 'VIP'</li>
+            <li class="item add">Add: seed a VIP customer below threshold, verify they get demoted</li>
+            <li class="item add">Add: <code>promoted</code> and <code>demoted</code> are exact counts matching seeded data</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Cron endpoint body not verified</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix">Only checks <code>response.body.data</code> exists, not its shape</li>
+            <li class="item add">Add: for single-customer trigger, verify <code>data.customerId</code> and <code>data.triggered</code></li>
+            <li class="item add">Add: for all-customers trigger, verify <code>data.processed</code> count > 0</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Missing transition cases</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: ONE_TIME → RETURNING (second order)</li>
+            <li class="item add">Add: AT_RISK → CHURNED (time-based, e.g. days since last order past threshold)</li>
+            <li class="item add">Add: WINBACK → RETURNING (subsequent order after winback)</li>
+            <li class="item add">Add: boundary value — totalOrders = LOYAL_THRESHOLD - 1 should NOT trigger</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No event emission test</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: after a lifecycle transition, verify a <code>CustomerEvent</code> row was created in DB</li>
+            <li class="item add">Add: event has correct <code>eventType</code>, <code>description</code>, and <code>customerId</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-roles" class="pane">
+    <div class="section">
+      <div class="section-header">What's good</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Permission enforcement solid</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">Member role blocked from all 5 role operations (403)</li>
+            <li class="item">Reserved role names (admin, root, member) blocked on create</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Cross-org isolation covered</span><span class="badge badge-good">good</span></div>
+          <ul class="items">
+            <li class="item">Cross-org user sees only their own org's roles</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Gaps & improvements</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-top"><span class="card-title">Silent skips on PATCH & DELETE</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item fix">PATCH and DELETE tests do <code>if (!id) return</code> — silently pass if setup failed</li>
+            <li class="item add">Replace with: <code>expect(customRoleId).toBeDefined()</code> at test start, then proceed</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">PATCH response not fully checked</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix">Only verifies <code>data.name</code> after update</li>
+            <li class="item add">Add: verify permissions were updated to the new value</li>
+            <li class="item add">Add: verify <code>isDefault</code> is still false after update</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">PATCH/DELETE auth not tested</span><span class="badge badge-gap">gap</span></div>
+          <ul class="items">
+            <li class="item add">Add: PATCH /api/roles/:id without auth → expect 401</li>
+            <li class="item add">Currently only GET and POST have 401 coverage</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">No 404 test</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: PATCH /api/roles/non-existent-id → expect 404</li>
+            <li class="item add">Add: DELETE /api/roles/non-existent-id → expect 404</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">adminOrgId created but unused</span><span class="badge badge-weak">weak</span></div>
+          <ul class="items">
+            <li class="item fix"><code>adminToken</code> / <code>adminOrgId</code> set up in beforeAll but never used in any test</li>
+            <li class="item add">Either add tests using them, or remove the setup to reduce noise</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Permissions schema not validated</span><span class="badge badge-missing">missing</span></div>
+          <ul class="items">
+            <li class="item add">Add: create role with invalid permission key → expect 400</li>
+            <li class="item add">Add: create role with invalid action string (e.g. <code>"superwrite"</code>) → expect 400</li>
+            <li class="item add">Add: create role with empty permissions object → clarify behavior (400 or allowed?)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-infra" class="pane">
+    <div class="section">
+      <div class="section-header">Setup & teardown issues (all files)</div>
+      <div class="cards">
+        <div class="global-card">
+          <div class="card-title">Order-dependent test state</div>
+          <ul class="items" style="margin-top:8px;">
+            <li class="item fix">Tests in customer.test share mutable vars (<code>testCustomerId</code>, <code>testNoteId</code>) across describes — a failing create test breaks every test after it</li>
+            <li class="item add">Add: explicit guard at the top of each dependent test: <code>expect(testCustomerId).toBeDefined()</code></li>
+            <li class="item add">Consider: each describe creates its own customer to be independent</li>
+          </ul>
+        </div>
+        <div class="global-card">
+          <div class="card-title">Incomplete teardown</div>
+          <ul class="items" style="margin-top:8px;">
+            <li class="item fix">analytics.test afterAll deletes customers/orders but not the user, session, member, or org created in beforeAll — leaves DB dirty</li>
+            <li class="item fix">lifecycle.test afterAll does not delete the org or user</li>
+            <li class="item add">Mirror the cleanup in afterAll exactly against what was created in beforeAll</li>
+          </ul>
+        </div>
+        <div class="global-card">
+          <div class="card-title">No shared test helpers</div>
+          <ul class="items" style="margin-top:8px;">
+            <li class="item fix">The signup → org create → setActiveOrganization → signin pattern is copy-pasted across all 4 files (~40 lines each)</li>
+            <li class="item add">Extract to <code>test/helpers/auth.ts</code> — e.g. <code>createTestUser(email, orgSlug)</code> returning <code>{ token, orgId, userId }</code></li>
+            <li class="item add">Extract cleanup to <code>cleanupTestOrg(orgSlug, email)</code></li>
+          </ul>
+        </div>
+        <div class="global-card">
+          <div class="card-title">Missing test categories globally</div>
+          <ul class="items" style="margin-top:8px;">
+            <li class="item add">Pagination: verify <code>page</code>, <code>limit</code>, <code>total</code>, and <code>hasNextPage</code> fields in list responses</li>
+            <li class="item add">Rate limiting: if limits exist, add tests that hit them</li>
+            <li class="item add">Concurrent writes: two requests creating the same unique resource simultaneously</li>
+            <li class="item add">Large payloads: oversized <code>metadata</code> or description fields</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(tab) {
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('pane-' + tab).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>

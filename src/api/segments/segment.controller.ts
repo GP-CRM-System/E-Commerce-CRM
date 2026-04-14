@@ -1,6 +1,10 @@
 import type { Response } from 'express';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
-import { ResponseHandler, HttpStatus } from '../../utils/response.util.js';
+import {
+    ResponseHandler,
+    HttpStatus,
+    NotFoundError
+} from '../../utils/response.util.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import * as segmentService from './segment.service.js';
 import prisma from '../../config/prisma.config.js';
@@ -104,6 +108,15 @@ export const deleteSegment = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
         const segmentId = req.params.id as string;
+
+        const segment = await segmentService.getSegmentById(
+            segmentId,
+            organizationId
+        );
+
+        if (!segment) {
+            throw new NotFoundError('Segment not found');
+        }
 
         await segmentService.deleteSegment(segmentId, organizationId);
 

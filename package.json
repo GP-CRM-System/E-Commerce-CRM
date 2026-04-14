@@ -35,7 +35,6 @@
         "seed": "bun src/scripts/seed.script.ts"
     },
     "devDependencies": {
-        "mintlify": "^4.2.507",
         "@eslint/js": "^10.0.1",
         "@types/bcrypt": "^6.0.0",
         "@types/bun": "^1.3.12",
@@ -52,26 +51,26 @@
         "globals": "^17.5.0",
         "prettier": "^3.8.2",
         "supertest": "^7.2.2",
-        "typescript-eslint": "^8.58.1"
+        "typescript-eslint": "^8.58.2"
     },
     "peerDependencies": {
         "typescript": "^6.0.2"
     },
     "dependencies": {
-        "@better-auth/prisma-adapter": "^1.6.2",
+        "@better-auth/prisma-adapter": "^1.6.3",
         "@faker-js/faker": "^10.4.0",
         "@prisma/adapter-pg": "^7.7.0",
         "@prisma/client": "^7.7.0",
         "@scalar/express-api-reference": "^0.9.7",
         "@sentry/bun": "^10.48.0",
         "bcrypt": "^6.0.0",
-        "better-auth": "^1.6.2",
-        "bullmq": "^5.73.4",
+        "better-auth": "^1.6.3",
+        "bullmq": "^5.73.5",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.6",
         "csv-parse": "^6.2.1",
         "csv-stringify": "^6.7.0",
-        "dotenv": "^17.4.1",
+        "dotenv": "^17.4.2",
         "express": "^5.2.1",
         "express-rate-limit": "^8.3.2",
         "helmet": "^8.1.0",

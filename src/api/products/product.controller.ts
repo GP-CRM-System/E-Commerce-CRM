@@ -139,9 +139,24 @@ export const update = asyncHandler(
             );
         }
 
+        const productId = req.params.id as string;
+        const existing = await productService.getProductDetails(
+            productId,
+            organizationId
+        );
+
+        if (!existing) {
+            return ResponseHandler.error(
+                res,
+                'Product not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
         const data = productSchema.updateProduct.parse(req.body);
         const product = await productService.updateProduct(
-            req.params.id as string,
+            productId,
             data,
             organizationId
         );
@@ -167,16 +182,28 @@ export const remove = asyncHandler(
             );
         }
 
-        const product = await productService.deleteProduct(
-            req.params.id as string,
+        const productId = req.params.id as string;
+        const existing = await productService.getProductDetails(
+            productId,
             organizationId
         );
+
+        if (!existing) {
+            return ResponseHandler.error(
+                res,
+                'Product not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        await productService.deleteProduct(productId, organizationId);
 
         return ResponseHandler.success(
             res,
             'Product deleted successfully',
-            HttpStatus.OK,
-            product
+            HttpStatus.NO_CONTENT,
+            null
         );
     }
 );

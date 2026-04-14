@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
+import { env } from '../../config/env.config.js';
 import {
     IMPORT_CONFIG,
     IMPORT_JOB_STATUS
@@ -199,19 +200,94 @@ async function processImportJob(
             }
         });
 
+        const jobDetails = await prisma.importJob.findUnique({
+            where: { id: jobId },
+            select: { fileName: true, createdByUserId: true }
+        });
+
+        const { createImportNotification } =
+            await import('../notifications/notification.service.js');
+
+        if (jobDetails) {
+            await createImportNotification({
+                organizationId,
+                userId: jobDetails.createdByUserId,
+                jobId,
+                fileName: jobDetails.fileName,
+                status:
+                    finalStatus === 'COMPLETED'
+                        ? 'completed'
+                        : finalStatus === 'PARTIALLY_FAILED'
+                          ? 'partial'
+                          : 'failed',
+                successCount: successfulRows,
+                failureCount: failedRows
+            });
+
+            if (finalStatus !== 'COMPLETED') {
+                const members = await prisma.member.findMany({
+                    where: {
+                        organizationId,
+                        role: { in: ['admin', 'root'] }
+                    },
+                    include: { user: { select: { email: true } } }
+                });
+
+                const { sendNotificationEmail } =
+                    await import('../../utils/email.util.js');
+
+                for (const member of members) {
+                    if (member.user.email) {
+                        await sendNotificationEmail({
+                            to: member.user.email,
+                            data: {
+                                type: 'import_failed',
+                                title:
+                                    finalStatus === 'PARTIALLY_FAILED'
+                                        ? 'Import Completed with Errors'
+                                        : 'Import Failed',
+                                message: `Import of ${jobDetails.fileName} finished with ${failedRows} errors.`,
+                                actionUrl: `${env.appUrl}/imports/${jobId}`
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         logger.info(
             `Import job ${jobId} completed with status: ${finalStatus}`
         );
     } catch (error) {
         logger.error(`Import job ${jobId} failed: ${error}`);
 
-        await prisma.importJob.update({
+        // Only proceed with failure update/notification if the status isn't already final
+        const currentJob = await prisma.importJob.findUnique({
             where: { id: jobId },
-            data: {
-                status: IMPORT_JOB_STATUS.FAILED,
-                completedAt: new Date()
-            }
+            select: { status: true, fileName: true, createdByUserId: true }
         });
+
+        if (currentJob && currentJob.status === IMPORT_JOB_STATUS.PROCESSING) {
+            await prisma.importJob.update({
+                where: { id: jobId },
+                data: {
+                    status: IMPORT_JOB_STATUS.FAILED,
+                    completedAt: new Date()
+                }
+            });
+
+            const { createImportNotification } =
+                await import('../notifications/notification.service.js');
+            await createImportNotification({
+                organizationId,
+                userId: currentJob.createdByUserId,
+                jobId,
+                fileName: currentJob.fileName,
+                status: 'failed',
+                successCount: 0,
+                failureCount: 0
+            });
+        }
     } finally {
         // Clean up temp file
         if (tempFilePath) {

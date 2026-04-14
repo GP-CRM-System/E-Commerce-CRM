@@ -17,6 +17,7 @@ export type RolePermissions = {
     supportTickets: ('read' | 'write' | 'delete')[];
     tags: ('read' | 'write' | 'delete')[];
     reports: 'read'[];
+    notifications: ('read' | 'write' | 'delete')[];
 };
 
 export const DEFAULT_ROLES = {
@@ -38,7 +39,8 @@ export const DEFAULT_ROLES = {
         campaigns: ['read', 'write', 'delete'],
         supportTickets: ['read', 'write', 'delete'],
         tags: ['read', 'write', 'delete'],
-        reports: ['read']
+        reports: ['read'],
+        notifications: ['read', 'write', 'delete']
     },
     admin: {
         organization: ['read', 'update'],
@@ -58,7 +60,8 @@ export const DEFAULT_ROLES = {
         campaigns: ['read', 'write', 'delete'],
         supportTickets: ['read', 'write', 'delete'],
         tags: ['read', 'write', 'delete'],
-        reports: ['read']
+        reports: ['read'],
+        notifications: ['read', 'write', 'delete']
     },
     member: {
         organization: [],
@@ -78,7 +81,8 @@ export const DEFAULT_ROLES = {
         campaigns: ['read'],
         supportTickets: ['read', 'write'],
         tags: ['read'],
-        reports: []
+        reports: [],
+        notifications: ['read']
     }
 } as const satisfies Record<string, RolePermissions>;
 
@@ -102,5 +106,6 @@ export const AVAILABLE_PERMISSIONS: RolePermissions = {
     campaigns: ['read', 'write', 'delete'],
     supportTickets: ['read', 'write', 'delete'],
     tags: ['read', 'write', 'delete'],
-    reports: ['read']
+    reports: ['read'],
+    notifications: ['read', 'write', 'delete']
 };

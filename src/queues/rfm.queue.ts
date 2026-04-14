@@ -58,6 +58,15 @@ function calcChurn(
     return Math.min(1, Math.max(0, days / avgDays));
 }
 
+function getChurnRiskLevel(
+    score: number | null
+): 'low' | 'medium' | 'high' | null {
+    if (score === null) return null;
+    if (score >= 0.7) return 'high';
+    if (score >= 0.4) return 'medium';
+    return 'low';
+}
+
 function calculateAverages(
     totalSpent: number,
     totalOrders: number,
@@ -188,6 +197,9 @@ export async function processRFMSynchronously(
                     daysWindow
                 );
 
+                const churnScore = calcChurn(lastOrderAt, avgDaysBetweenOrders);
+                const riskLevel = getChurnRiskLevel(churnScore);
+
                 await prisma.customer.update({
                     where: { id: customerId },
                     data: {
@@ -202,13 +214,54 @@ export async function processRFMSynchronously(
                         rfmRecency: recency,
                         rfmFrequency: frequency,
                         rfmMonetary: monetary,
-                        churnRiskScore: calcChurn(
-                            lastOrderAt,
-                            avgDaysBetweenOrders
-                        ),
+                        churnRiskScore: churnScore,
                         lastScoredAt: new Date()
                     }
                 });
+
+                if (riskLevel === 'high') {
+                    const customer = await prisma.customer.findUnique({
+                        where: { id: customerId },
+                        select: { name: true }
+                    });
+
+                    if (customer) {
+                        const { createChurnAlertNotification } =
+                            await import('../api/notifications/notification.service.js');
+                        await createChurnAlertNotification({
+                            organizationId,
+                            customerId,
+                            customerName: customer.name,
+                            riskLevel: 'high'
+                        });
+
+                        const members = await prisma.member.findMany({
+                            where: {
+                                organizationId,
+                                role: { in: ['admin', 'root'] }
+                            },
+                            include: { user: { select: { email: true } } }
+                        });
+
+                        const { sendNotificationEmail } =
+                            await import('../utils/email.util.js');
+                        const { env } = await import('../config/env.config.js');
+
+                        for (const member of members) {
+                            if (member.user.email) {
+                                await sendNotificationEmail({
+                                    to: member.user.email,
+                                    data: {
+                                        type: 'churn_alert',
+                                        title: 'High Churn Risk Alert',
+                                        message: `Customer ${customer.name} is at high risk of churning.`,
+                                        actionUrl: `${env.appUrl}/customers/${customerId}`
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
 
                 await checkAndUpdateLifecycleStage(customerId, organizationId);
             })
@@ -313,6 +366,12 @@ export async function processSingleCustomerRFM(
         DAYS_WINDOW
     );
 
+    const churnScore = calcChurn(
+        metrics.lastOrderAt,
+        metrics.avgDaysBetweenOrders
+    );
+    const riskLevel = getChurnRiskLevel(churnScore);
+
     // Merge all updates into a single database trip
     await prisma.customer.update({
         where: { id: customerId },
@@ -328,13 +387,28 @@ export async function processSingleCustomerRFM(
             rfmRecency: recency,
             rfmFrequency: frequency,
             rfmMonetary: monetary,
-            churnRiskScore: calcChurn(
-                metrics.lastOrderAt,
-                metrics.avgDaysBetweenOrders
-            ),
+            churnRiskScore: churnScore,
             lastScoredAt: new Date()
         }
     });
+
+    if (riskLevel === 'high') {
+        const customer = await prisma.customer.findUnique({
+            where: { id: customerId },
+            select: { name: true }
+        });
+
+        if (customer) {
+            const { createChurnAlertNotification } =
+                await import('../api/notifications/notification.service.js');
+            await createChurnAlertNotification({
+                organizationId,
+                customerId,
+                customerName: customer.name,
+                riskLevel: 'high'
+            });
+        }
+    }
 
     await checkAndUpdateLifecycleStage(customerId, organizationId, {
         allowWinback: customer.lifecycleStage === 'CHURNED'

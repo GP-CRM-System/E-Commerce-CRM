@@ -3,56 +3,38 @@ import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
 import crypto from 'crypto';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
-import { auth } from '../auth/auth.js';
-import { fromNodeHeaders } from 'better-auth/node';
+import {
+    createTestUser,
+    cleanupTestUser,
+    type TestAuth
+} from '../../test/helpers/auth.js';
 import * as webhookService from './webhook.service.js';
 
-let authToken: string;
-let testOrgId: string;
-let testIntegrationId: string;
-const TEST_SECRET = 'test-shopify-secret';
-
 describe('Webhook & Idempotency API', () => {
+    let authA: TestAuth;
+    let testIntegrationId: string;
+    const TEST_SECRET = 'test-shopify-secret';
+
+    const getSignature = (body: string, secret: string) => {
+        return crypto
+            .createHmac('sha256', secret)
+            .update(body, 'utf8')
+            .digest('base64');
+    };
+
+    let emailA: string;
+
     beforeAll(async () => {
-        const testEmail = 'webhook-test@test.com';
-
-        // Clean up
-        await prisma.webhookIdempotencyKey.deleteMany({});
-        await prisma.webhookLog.deleteMany({});
-        await prisma.integration.deleteMany({});
-        await prisma.user.deleteMany({ where: { email: testEmail } });
-        await prisma.organization.deleteMany({
-            where: { name: 'Webhook Test Org' }
-        });
-
-        const signup = await auth.api.signUpEmail({
-            body: {
-                email: testEmail,
-                password: 'Password123!',
-                name: 'Webhook Test User'
-            }
-        });
-        if (!signup || !signup.token) throw new Error('Signup failed');
-        authToken = signup.token;
-
-        const org = (await auth.api.createOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: {
-                name: 'Webhook Test Org',
-                slug: 'webhook-test-org-' + Date.now()
-            }
-        })) as { organization?: { id: string }; id?: string };
-
-        testOrgId = org.organization?.id ?? org.id ?? '';
-
-        await auth.api.setActiveOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: { organizationId: testOrgId }
-        });
+        emailA = `webhook-a-${Date.now()}@test.com`;
+        authA = await createTestUser(
+            emailA,
+            'Webhook Org A',
+            `webhook-org-a-${Date.now()}`
+        );
 
         const integration = await prisma.integration.create({
             data: {
-                orgId: testOrgId,
+                orgId: authA.orgId,
                 provider: 'shopify',
                 name: 'Test Store',
                 shopDomain: 'test-webhook.myshopify.com',
@@ -65,10 +47,12 @@ describe('Webhook & Idempotency API', () => {
     });
 
     afterAll(async () => {
-        await prisma.webhookIdempotencyKey.deleteMany({});
-        await prisma.webhookLog.deleteMany({});
-        await prisma.integration.deleteMany({ where: { orgId: testOrgId } });
-        await prisma.organization.deleteMany({ where: { id: testOrgId } });
+        if (authA) {
+            await prisma.webhookLog.deleteMany({
+                where: { integrationId: testIntegrationId }
+            });
+            await cleanupTestUser(emailA, authA.orgId);
+        }
     });
 
     describe('Webhook Service Units', () => {
@@ -78,7 +62,7 @@ describe('Webhook & Idempotency API', () => {
             const key1 = webhookService.generateIdempotencyKey(payload, topic);
             const key2 = webhookService.generateIdempotencyKey(payload, topic);
             expect(key1).toBe(key2);
-            expect(key1).toHaveLength(64); // SHA256 hex
+            expect(key1).toHaveLength(64);
         });
 
         it('should use webhook ID as key if provided', () => {
@@ -112,14 +96,13 @@ describe('Webhook & Idempotency API', () => {
         it('should allow reusing expired keys', async () => {
             const key = 'expired-key-' + Date.now();
 
-            // Create an expired key manually
             await prisma.webhookIdempotencyKey.create({
                 data: {
                     integrationId: testIntegrationId,
                     provider: 'shopify',
                     key,
                     topic: 'test',
-                    expiresAt: new Date(Date.now() - 1000) // 1s ago
+                    expiresAt: new Date(Date.now() - 1000)
                 }
             });
 
@@ -169,6 +152,15 @@ describe('Webhook & Idempotency API', () => {
             expect(response.status).toBe(401);
         });
 
+        it('should reject missing signature header', async () => {
+            const response = await request(app)
+                .post(`/api/webhooks/shopify/${testIntegrationId}`)
+                .set('x-shopify-topic', topic)
+                .send(payload);
+
+            expect(response.status).toBe(401);
+        });
+
         it('should reject duplicates', async () => {
             const uniquePayload = { id: Date.now(), email: 'dup@test.com' };
             const uniqueBody = JSON.stringify(uniquePayload);
@@ -190,11 +182,20 @@ describe('Webhook & Idempotency API', () => {
             expect(res2.status).toBe(200);
             expect(res2.body.duplicate).toBe(true);
         });
+
+        it('should return 404 for non-existent integration', async () => {
+            const response = await request(app)
+                .post('/api/webhooks/shopify/non-existent-id')
+                .set('x-shopify-topic', topic)
+                .set('x-shopify-hmac-sha256', 'test')
+                .send(payload);
+
+            expect(response.status).toBe(404);
+        });
     });
 
     describe('POST /api/cron/cleanup/idempotency', () => {
         it('should cleanup expired keys', async () => {
-            // Create an expired key
             await prisma.webhookIdempotencyKey.create({
                 data: {
                     integrationId: testIntegrationId,
@@ -207,7 +208,7 @@ describe('Webhook & Idempotency API', () => {
 
             const response = await request(app)
                 .post('/api/cron/cleanup/idempotency')
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({});
 
             expect(response.status).toBe(200);
@@ -219,6 +220,42 @@ describe('Webhook & Idempotency API', () => {
                 '/api/cron/cleanup/idempotency'
             );
             expect(response.status).toBe(401);
+        });
+
+        it('should return 0 when no expired keys', async () => {
+            const response = await request(app)
+                .post('/api/cron/cleanup/idempotency')
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({});
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.deletedCount).toBe(0);
+        });
+    });
+
+    describe('DB State Verification', () => {
+        it('should persist webhook logs correctly', async () => {
+            const payload = { id: Date.now() + 1, email: 'log-test@test.com' };
+            const bodyStr = JSON.stringify(payload);
+            const sig = getSignature(bodyStr, TEST_SECRET);
+
+            await request(app)
+                .post(`/api/webhooks/shopify/${testIntegrationId}`)
+                .set('x-shopify-topic', 'orders/create')
+                .set('x-shopify-hmac-sha256', sig)
+                .set('x-shopify-shop-domain', 'test-webhook.myshopify.com')
+                .send(payload);
+
+            const logs = await prisma.webhookLog.findMany({
+                where: { integrationId: testIntegrationId },
+                orderBy: { createdAt: 'desc' },
+                take: 1
+            });
+
+            expect(logs.length).toBeGreaterThan(0);
+            if (logs[0]) {
+                expect(logs[0].topic).toBe('orders/create');
+            }
         });
     });
 });

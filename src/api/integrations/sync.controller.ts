@@ -45,8 +45,21 @@ export const triggerFullSync = asyncHandler(
 
 export const getSyncLogs = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
         const integrationId = req.params.integrationId as string;
         const { status, syncType, limit = '50', offset = '0' } = req.query;
+
+        if (!activeOrganizationId) {
+            throw new AuthorizationError('No active organization selected');
+        }
+
+        const integration = await prisma.integration.findFirst({
+            where: { id: integrationId, orgId: activeOrganizationId }
+        });
+
+        if (!integration) {
+            throw new NotFoundError('Integration not found');
+        }
 
         const where: Record<string, unknown> = { integrationId };
         if (status) where.status = status;

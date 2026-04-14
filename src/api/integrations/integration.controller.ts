@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import * as integrationService from './integration.service.js';
+import prisma from '../../config/prisma.config.js';
 import {
     HttpStatus,
     ResponseHandler,
@@ -121,6 +122,7 @@ export const getIntegration = asyncHandler(
             {
                 id: integration.id,
                 provider: integration.provider,
+                name: integration.name,
                 shopDomain: integration.shopDomain,
                 syncStatus: integration.syncStatus,
                 isActive: integration.isActive,
@@ -154,6 +156,7 @@ export const updateIntegration = asyncHandler(
             {
                 id: integration.id,
                 provider: integration.provider,
+                name: integration.name,
                 shopDomain: integration.shopDomain,
                 syncStatus: integration.syncStatus,
                 isActive: integration.isActive
@@ -172,18 +175,24 @@ export const deleteIntegration = asyncHandler(
             throw new AuthorizationError('No active organization selected');
         }
 
+        const integration = await prisma.integration.findFirst({
+            where: { id: integrationId, orgId: activeOrganizationId }
+        });
+
+        if (!integration) {
+            throw new NotFoundError('Integration not found');
+        }
+
         await integrationService.deleteIntegration(
             integrationId,
             activeOrganizationId
         );
 
-        ResponseHandler.success(
-            res,
-            'Integration deleted successfully',
-            HttpStatus.OK,
-            null,
-            req.url
-        );
+        return res.status(HttpStatus.NO_CONTENT).json({
+            success: true,
+            message: 'Integration deleted successfully',
+            path: req.url
+        });
     }
 );
 

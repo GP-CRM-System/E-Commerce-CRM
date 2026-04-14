@@ -60,6 +60,62 @@ export async function checkAndUpdateLifecycleStage(
             `Lifecycle transition for ${customerId}: ${previousStage} → ${newStage}`
         );
 
+        const isAlertStage = newStage === 'AT_RISK' || newStage === 'CHURNED';
+
+        if (isAlertStage) {
+            try {
+                const { createLifecycleNotification } =
+                    await import('../notifications/notification.service.js');
+                const customerWithName = await prisma.customer.findUnique({
+                    where: { id: customerId },
+                    select: { name: true }
+                });
+
+                if (customerWithName) {
+                    await createLifecycleNotification({
+                        organizationId,
+                        customerId,
+                        customerName: customerWithName.name,
+                        previousStage,
+                        newStage
+                    });
+
+                    if (newStage === 'CHURNED') {
+                        const members = await prisma.member.findMany({
+                            where: {
+                                organizationId,
+                                role: { in: ['admin', 'root'] }
+                            },
+                            include: { user: { select: { email: true } } }
+                        });
+
+                        const { sendNotificationEmail } =
+                            await import('../../utils/email.util.js');
+                        const { env } =
+                            await import('../../config/env.config.js');
+
+                        for (const member of members) {
+                            if (member.user.email) {
+                                await sendNotificationEmail({
+                                    to: member.user.email,
+                                    data: {
+                                        type: 'lifecycle_change',
+                                        title: 'Customer Churned',
+                                        message: `Customer ${customerWithName.name} has churned.`,
+                                        actionUrl: `${env.appUrl}/customers/${customerId}`
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                logger.error(
+                    `Failed to create lifecycle notification: ${error}`
+                );
+            }
+        }
+
         return {
             customerId,
             previousStage,

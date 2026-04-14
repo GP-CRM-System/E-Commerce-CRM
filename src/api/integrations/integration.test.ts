@@ -9,104 +9,45 @@ import {
 } from 'bun:test';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
-import { auth } from '../auth/auth.js';
-import { fromNodeHeaders } from 'better-auth/node';
-
-let authToken: string;
-let testOrgId: string;
-let testIntegrationId: string;
+import {
+    createTestUser,
+    cleanupTestUser,
+    type TestAuth
+} from '../../test/helpers/auth.js';
 
 describe('Integrations API', () => {
+    let authA: TestAuth;
+    let authB: TestAuth;
+    let testIntegrationId: string;
+
+    let emailA: string;
+    let emailB: string;
+
     beforeAll(async () => {
-        // Cleanup existing test data
-        const testEmail = 'integration-test@test.com';
-        await prisma.webhookLog.deleteMany({
-            where: { integration: { orgId: { not: '' } } }
-        });
-        await prisma.syncLog.deleteMany({
-            where: { integration: { orgId: { not: '' } } }
-        });
-        await prisma.integration.deleteMany({});
-
-        await prisma.session.deleteMany({
-            where: { user: { email: testEmail } }
-        });
-        await prisma.member.deleteMany({
-            where: { user: { email: testEmail } }
-        });
-        await prisma.account.deleteMany({
-            where: { user: { email: testEmail } }
-        });
-        await prisma.user.deleteMany({
-            where: { email: testEmail }
-        });
-        await prisma.organization.deleteMany({
-            where: { name: 'Integration Test Org' }
-        });
-
-        const orgSlug = 'integration-test-org-' + Date.now();
-        const signup = await auth.api.signUpEmail({
-            body: {
-                email: testEmail,
-                password: 'Password123!',
-                name: 'Integration Test User'
-            }
-        });
-
-        if (!signup) throw new Error('Signup failed');
-        authToken = signup.token!;
-
-        const testUserId = signup.user.id;
-        await prisma.user.update({
-            where: { id: testUserId },
-            data: { emailVerified: true }
-        });
-
-        const org = await auth.api.createOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: {
-                name: 'Integration Test Org',
-                slug: orgSlug
-            }
-        });
-
-        const orgResponse = org as {
-            organization?: { id: string };
-            id?: string;
-        };
-        testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
-
-        await auth.api.setActiveOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: { organizationId: testOrgId }
-        });
-
-        const signin = await auth.api.signInEmail({
-            body: {
-                email: testEmail,
-                password: 'Password123!'
-            }
-        });
-        authToken = signin.token!;
+        emailA = `integration-a-${Date.now()}@test.com`;
+        emailB = `integration-b-${Date.now()}@test.com`;
+        authA = await createTestUser(
+            emailA,
+            'Integration Org A',
+            `int-org-a-${Date.now()}`
+        );
+        authB = await createTestUser(
+            emailB,
+            'Integration Org B',
+            `int-org-b-${Date.now()}`
+        );
     });
 
     afterAll(async () => {
-        await prisma.webhookLog.deleteMany({
-            where: { integration: { orgId: testOrgId } }
-        });
-        await prisma.syncLog.deleteMany({
-            where: { integration: { orgId: testOrgId } }
-        });
-        await prisma.integration.deleteMany({
-            where: { orgId: testOrgId }
-        });
+        if (authA) await cleanupTestUser(emailA, authA.orgId);
+        if (authB) await cleanupTestUser(emailB, authB.orgId);
     });
 
     describe('POST /api/integrations/shopify/connect', () => {
         it('should reject invalid shop domain', async () => {
             const response = await request(app)
                 .post('/api/integrations/shopify/connect')
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({
                     shopDomain: 'invalid..myshopify.com',
                     accessToken: 'test-token'
@@ -118,7 +59,7 @@ describe('Integrations API', () => {
         it('should reject missing access token', async () => {
             const response = await request(app)
                 .post('/api/integrations/shopify/connect')
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({
                     shopDomain: 'test.myshopify.com'
                 });
@@ -138,24 +79,124 @@ describe('Integrations API', () => {
         });
     });
 
-    describe('GET /api/integrations', () => {
-        it('should return empty array when no integrations exist', async () => {
-            await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+    describe('Cross-Tenant Isolation', () => {
+        it('should NOT allow Org B to see Org A integration', async () => {
+            const createRes = await prisma.integration.create({
+                data: {
+                    orgId: authA.orgId,
+                    provider: 'shopify',
+                    name: 'A Integration',
+                    shopDomain: 'a.myshopify.com',
+                    accessToken: 'a-token',
+                    syncStatus: 'pending',
+                    isActive: true
+                }
             });
-            await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+
+            const response = await request(app)
+                .get(`/api/integrations/${createRes.id}`)
+                .set('Authorization', `Bearer ${authB.token}`);
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should NOT allow Org B to update Org A integration', async () => {
+            const createRes = await prisma.integration.create({
+                data: {
+                    orgId: authA.orgId,
+                    provider: 'shopify',
+                    name: 'A Integration 2',
+                    shopDomain: 'a2.myshopify.com',
+                    accessToken: 'a2-token',
+                    syncStatus: 'pending',
+                    isActive: true
+                }
             });
+
+            const response = await request(app)
+                .patch(`/api/integrations/${createRes.id}`)
+                .set('Authorization', `Bearer ${authB.token}`)
+                .send({ name: 'Hacked Name' });
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should NOT allow Org B to delete Org A integration', async () => {
+            const createRes = await prisma.integration.create({
+                data: {
+                    orgId: authA.orgId,
+                    provider: 'shopify',
+                    name: 'A Integration 3',
+                    shopDomain: 'a3.myshopify.com',
+                    accessToken: 'a3-token',
+                    syncStatus: 'pending',
+                    isActive: true
+                }
+            });
+
+            const response = await request(app)
+                .delete(`/api/integrations/${createRes.id}`)
+                .set('Authorization', `Bearer ${authB.token}`);
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should NOT list Org A integrations in Org B', async () => {
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authB.orgId }
             });
 
             const response = await request(app)
                 .get('/api/integrations')
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authB.token}`);
 
             expect(response.status).toBe(200);
             expect(response.body.data).toEqual([]);
+        });
+    });
+
+    describe('GET /api/integrations', () => {
+        beforeEach(async () => {
+            await prisma.syncLog.deleteMany({
+                where: { integration: { orgId: authA.orgId } }
+            });
+            await prisma.webhookLog.deleteMany({
+                where: { integration: { orgId: authA.orgId } }
+            });
+            await prisma.integration.deleteMany({
+                where: { orgId: authA.orgId }
+            });
+        });
+
+        it('should return empty array when no integrations exist', async () => {
+            const response = await request(app)
+                .get('/api/integrations')
+                .set('Authorization', `Bearer ${authA.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data).toEqual([]);
+        });
+
+        it('should list integrations', async () => {
+            await prisma.integration.create({
+                data: {
+                    orgId: authA.orgId,
+                    provider: 'shopify',
+                    name: 'Test Store',
+                    shopDomain: 'test.myshopify.com',
+                    accessToken: 'test-token',
+                    syncStatus: 'pending',
+                    isActive: true
+                }
+            });
+
+            const response = await request(app)
+                .get('/api/integrations')
+                .set('Authorization', `Bearer ${authA.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data).toBeInstanceOf(Array);
+            expect(response.body.data.length).toBeGreaterThan(0);
         });
 
         it('should reject unauthenticated request', async () => {
@@ -167,18 +208,18 @@ describe('Integrations API', () => {
     describe('GET /api/integrations/:integrationId', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -193,65 +234,37 @@ describe('Integrations API', () => {
         it('should return 404 for non-existent integration', async () => {
             const response = await request(app)
                 .get('/api/integrations/non-existent-id')
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authA.token}`);
 
             expect(response.status).toBe(404);
         });
 
-        it('should reject access from different org', async () => {
-            const otherOrg = await prisma.organization.create({
-                data: {
-                    name: 'Other Org',
-                    slug: 'other-org-' + Date.now()
-                }
-            });
-
-            const otherIntegration = await prisma.integration.create({
-                data: {
-                    orgId: otherOrg.id,
-                    provider: 'shopify',
-                    name: 'Other Store',
-                    shopDomain: 'other.myshopify.com',
-                    accessToken: 'other-token',
-                    syncStatus: 'pending',
-                    isActive: true
-                }
-            });
-
+        it('should get integration details', async () => {
             const response = await request(app)
-                .get(`/api/integrations/${otherIntegration.id}`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .get(`/api/integrations/${testIntegrationId}`)
+                .set('Authorization', `Bearer ${authA.token}`);
 
-            expect(response.status).toBe(404);
-
-            await prisma.syncLog.deleteMany({
-                where: { integrationId: otherIntegration.id }
-            });
-            await prisma.webhookLog.deleteMany({
-                where: { integrationId: otherIntegration.id }
-            });
-            await prisma.integration.delete({
-                where: { id: otherIntegration.id }
-            });
-            await prisma.organization.delete({ where: { id: otherOrg.id } });
+            expect(response.status).toBe(200);
+            expect(response.body.data.id).toBe(testIntegrationId);
+            expect(response.body.data.name).toBe('Test Store');
         });
     });
 
     describe('PATCH /api/integrations/:integrationId', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -263,42 +276,74 @@ describe('Integrations API', () => {
             testIntegrationId = integration.id;
         });
 
-        it('should update integration name', async () => {
+        it('should update integration name with validation', async () => {
             const response = await request(app)
                 .patch(`/api/integrations/${testIntegrationId}`)
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({ name: 'Updated Store' });
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toHaveProperty('id');
+            expect(response.body.data.name).toBe('Updated Store');
         });
 
-        it('should toggle isActive', async () => {
+        it('should toggle isActive with validation', async () => {
             const response = await request(app)
                 .patch(`/api/integrations/${testIntegrationId}`)
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({ isActive: false });
 
             expect(response.status).toBe(200);
             expect(response.body.data.isActive).toBe(false);
+        });
+
+        it('should fail with invalid isActive (400)', async () => {
+            const response = await request(app)
+                .patch(`/api/integrations/${testIntegrationId}`)
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({ isActive: 'invalid' });
+
+            expect(response.status).toBe(400);
+        });
+
+        it('should return 404 for non-existent integration', async () => {
+            const response = await request(app)
+                .patch('/api/integrations/non-existent-id')
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({ name: 'Updated' });
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should verify DB state after update', async () => {
+            await request(app)
+                .patch(`/api/integrations/${testIntegrationId}`)
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({ name: 'DB Verified Store' });
+
+            const integration = await prisma.integration.findUnique({
+                where: { id: testIntegrationId },
+                select: { name: true }
+            });
+
+            expect(integration?.name).toBe('DB Verified Store');
         });
     });
 
     describe('DELETE /api/integrations/:integrationId', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -313,32 +358,40 @@ describe('Integrations API', () => {
         it('should delete integration', async () => {
             const response = await request(app)
                 .delete(`/api/integrations/${testIntegrationId}`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authA.token}`);
 
-            expect(response.status).toBe(200);
+            expect(response.status).toBe(204);
 
             const deleted = await prisma.integration.findUnique({
                 where: { id: testIntegrationId }
             });
             expect(deleted).toBeNull();
         });
+
+        it('should return 404 for non-existent integration', async () => {
+            const response = await request(app)
+                .delete('/api/integrations/non-existent-id-12345')
+                .set('Authorization', `Bearer ${authA.token}`);
+
+            expect(response.status).toBe(404);
+        });
     });
 
     describe('POST /api/integrations/:integrationId/test-connection', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -353,28 +406,36 @@ describe('Integrations API', () => {
         it('should return failure for invalid token', async () => {
             const response = await request(app)
                 .post(`/api/integrations/${testIntegrationId}/test-connection`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authA.token}`);
 
             expect(response.status).toBe(200);
             expect(response.body.data.success).toBe(false);
+        });
+
+        it('should return 404 for non-existent integration', async () => {
+            const response = await request(app)
+                .post('/api/integrations/non-existent-id/test-connection')
+                .set('Authorization', `Bearer ${authA.token}`);
+
+            expect(response.status).toBe(404);
         });
     });
 
     describe('POST /api/integrations/:integrationId/sync/full', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -387,41 +448,48 @@ describe('Integrations API', () => {
         });
 
         it('should trigger full sync', async () => {
-            // Note: This might still fail with 500 if syncService.fullSync tries to call real Shopify API
             const response = await request(app)
                 .post(`/api/integrations/${testIntegrationId}/sync/full`)
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authA.token}`)
                 .send({ entities: ['customers', 'orders'] });
 
-            // If it calls real API, it will fail with 500 or 400, but we test the route exists
             expect([200, 400, 500]).toContain(response.status);
         });
 
         it('should return 404 for non-existent integration', async () => {
             const response = await request(app)
                 .post('/api/integrations/3OLaqoEm39_b7Y6u0Hama/sync/full')
-                .set('Authorization', `Bearer ${authToken}`)
-                .send({ entities: ['customers'] }); // Add body to pass validation
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({ entities: ['customers'] });
 
             expect(response.status).toBe(404);
+        });
+
+        it('should fail with invalid entities (400)', async () => {
+            const response = await request(app)
+                .post(`/api/integrations/${testIntegrationId}/sync/full`)
+                .set('Authorization', `Bearer ${authA.token}`)
+                .send({ entities: ['invalid_entity'] });
+
+            expect(response.status).toBe(400);
         });
     });
 
     describe('GET /api/integrations/:integrationId/sync/logs', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -436,28 +504,36 @@ describe('Integrations API', () => {
         it('should return sync logs', async () => {
             const response = await request(app)
                 .get(`/api/integrations/${testIntegrationId}/sync/logs`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authA.token}`);
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toBeDefined();
+            expect(response.body.data).toBeInstanceOf(Array);
+        });
+
+        it('should return 404 for non-existent integration', async () => {
+            const response = await request(app)
+                .get('/api/integrations/non-existent-id/sync/logs')
+                .set('Authorization', `Bearer ${authA.token}`);
+
+            expect(response.status).toBe(404);
         });
     });
 
     describe('GET /api/integrations/:integrationId/webhooks/logs', () => {
         beforeEach(async () => {
             await prisma.syncLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.webhookLog.deleteMany({
-                where: { integration: { orgId: testOrgId } }
+                where: { integration: { orgId: authA.orgId } }
             });
             await prisma.integration.deleteMany({
-                where: { orgId: testOrgId }
+                where: { orgId: authA.orgId }
             });
 
             const integration = await prisma.integration.create({
                 data: {
-                    orgId: testOrgId,
+                    orgId: authA.orgId,
                     provider: 'shopify',
                     name: 'Test Store',
                     shopDomain: 'test.myshopify.com',
@@ -472,7 +548,7 @@ describe('Integrations API', () => {
         it('should return webhook logs', async () => {
             const response = await request(app)
                 .get(`/api/webhooks/${testIntegrationId}/logs`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${authA.token}`);
 
             expect(response.status).toBe(200);
             expect(response.body.data).toBeDefined();

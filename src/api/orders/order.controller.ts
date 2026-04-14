@@ -133,9 +133,24 @@ export const update = asyncHandler(
             );
         }
 
+        const orderId = req.params.id as string;
+        const existing = await orderService.getOrderDetails(
+            orderId,
+            organizationId
+        );
+
+        if (!existing) {
+            return ResponseHandler.error(
+                res,
+                'Order not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
         const data = orderSchema.updateOrder.parse(req.body);
         const order = await orderService.updateOrder(
-            req.params.id as string,
+            orderId,
             data,
             organizationId
         );
@@ -161,16 +176,28 @@ export const remove = asyncHandler(
             );
         }
 
-        const order = await orderService.deleteOrder(
-            req.params.id as string,
+        const orderId = req.params.id as string;
+        const existing = await orderService.getOrderDetails(
+            orderId,
             organizationId
         );
+
+        if (!existing) {
+            return ResponseHandler.error(
+                res,
+                'Order not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        await orderService.deleteOrder(orderId, organizationId);
 
         return ResponseHandler.success(
             res,
             'Order deleted successfully',
-            HttpStatus.OK,
-            order
+            HttpStatus.NO_CONTENT,
+            null
         );
     }
 );

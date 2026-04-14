@@ -6,7 +6,8 @@ import type { CustomerFilters } from './customer.schemas.js';
 import {
     HttpStatus,
     ResponseHandler,
-    AuthorizationError
+    AuthorizationError,
+    ErrorCode
 } from '../../utils/response.util.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 
@@ -103,7 +104,14 @@ export const getCustomer = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to fetch customer');
+            ResponseHandler.error(
+                res,
+                'Customer not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                req.url
+            );
+            return;
         }
 
         ResponseHandler.success(
@@ -137,7 +145,14 @@ export const updateCustomer = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to update customer');
+            ResponseHandler.error(
+                res,
+                'Customer not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                req.url
+            );
+            return;
         }
 
         ResponseHandler.success(
@@ -170,7 +185,14 @@ export const deleteCustomer = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to delete customer');
+            ResponseHandler.error(
+                res,
+                'Customer not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                req.url
+            );
+            return;
         }
 
         ResponseHandler.success(

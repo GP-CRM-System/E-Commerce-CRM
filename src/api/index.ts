@@ -11,6 +11,7 @@ import webhookRouter from './integrations/webhook.router.js';
 import syncRouter from './integrations/sync.router.js';
 import cronRouter from './cron/cron.router.js';
 import segmentRouter from './segments/segment.router.js';
+import notificationRouter from './notifications/notification.router.js';
 import { rateLimiter, authRateLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
@@ -29,5 +30,6 @@ router.use('/webhooks', webhookRouter);
 router.use('/integrations', syncRouter);
 router.use('/cron', cronRouter);
 router.use('/segments', segmentRouter);
+router.use('/notifications', notificationRouter);
 
 export default router;
