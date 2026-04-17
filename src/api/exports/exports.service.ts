@@ -77,7 +77,10 @@ export async function processExportJob(
     }
 
     if (existingJob.status !== 'PENDING') {
-        logger.warn({ jobId, status: existingJob.status }, 'Export job already processed');
+        logger.warn(
+            { jobId, status: existingJob.status },
+            'Export job already processed'
+        );
         return existingJob;
     }
 

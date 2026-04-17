@@ -134,7 +134,9 @@ export async function startServer(): Promise<void> {
             logger.info(
                 `[Init] Server running on http://localhost:${env.port}`
             );
-            logger.info(`[Docs] Scalar docs http://localhost:${env.port}/reference`);
+            logger.info(
+                `[Docs] Scalar docs http://localhost:${env.port}/reference`
+            );
         });
 
         /**

@@ -2148,7 +2148,10 @@
                                     "subject": { "type": "string" },
                                     "templateId": { "type": "string" },
                                     "segmentId": { "type": "string" },
-                                    "scheduledAt": { "type": "string", "format": "date-time" }
+                                    "scheduledAt": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
                                 }
                             }
                         }
@@ -2200,7 +2203,10 @@
                                     "subject": { "type": "string" },
                                     "templateId": { "type": "string" },
                                     "segmentId": { "type": "string" },
-                                    "scheduledAt": { "type": "string", "format": "date-time" }
+                                    "scheduledAt": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
                                 }
                             }
                         }
@@ -2466,7 +2472,15 @@
                                 "properties": {
                                     "subject": { "type": "string" },
                                     "description": { "type": "string" },
-                                    "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "urgent"
+                                        ]
+                                    },
                                     "customerId": { "type": "string" }
                                 }
                             }
@@ -2517,8 +2531,24 @@
                                 "properties": {
                                     "subject": { "type": "string" },
                                     "description": { "type": "string" },
-                                    "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "closed"] },
-                                    "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] }
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "open",
+                                            "in_progress",
+                                            "resolved",
+                                            "closed"
+                                        ]
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "urgent"
+                                        ]
+                                    }
                                 }
                             }
                         }

@@ -141,7 +141,10 @@ async function processImportJob(
     }
 
     if (existingJob.status !== 'PENDING') {
-        logger.warn({ jobId, status: existingJob.status }, 'Import job already processed');
+        logger.warn(
+            { jobId, status: existingJob.status },
+            'Import job already processed'
+        );
         return;
     }
 
