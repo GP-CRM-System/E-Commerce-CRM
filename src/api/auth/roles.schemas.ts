@@ -42,7 +42,9 @@ export const permissionSchemas: Record<
     supportTickets: z.array(z.enum(['read', 'write', 'delete'])),
     tags: z.array(z.enum(['read', 'write', 'delete'])),
     reports: z.array(z.enum(['read'])),
-    notifications: z.array(z.enum(['read', 'write', 'delete']))
+    notifications: z.array(z.enum(['read', 'write', 'delete'])),
+    templates: z.array(z.enum(['read', 'write', 'delete'])),
+    conversations: z.array(z.enum(['read', 'write', 'delete']))
 };
 
 export const createRoleSchema = z.object({

@@ -129,6 +129,21 @@ async function processImportJob(
     const batchSize = IMPORT_CONFIG.BATCH_SIZE[entityType];
     let successfulRows = 0;
     let failedRows = 0;
+    const createdRecordIds: string[] = [];
+
+    const existingJob = await prisma.importJob.findUnique({
+        where: { id: jobId }
+    });
+
+    if (!existingJob) {
+        logger.error({ jobId }, 'Import job not found');
+        throw new Error(`Import job not found: ${jobId}`);
+    }
+
+    if (existingJob.status !== 'PENDING') {
+        logger.warn({ jobId, status: existingJob.status }, 'Import job already processed');
+        return;
+    }
 
     await prisma.importJob.update({
         where: { id: jobId },
@@ -147,13 +162,16 @@ async function processImportJob(
 
             for (const row of batch) {
                 try {
-                    await processRow(
+                    const result = await processRow(
                         prisma,
                         row,
                         entityType,
                         organizationId,
                         duplicateStrategy
                     );
+                    if (result.action === 'created') {
+                        createdRecordIds.push(result.id);
+                    }
                     batchSuccess++;
                 } catch (error) {
                     batchFailed++;
@@ -178,8 +196,6 @@ async function processImportJob(
 
             successfulRows += batchSuccess;
             failedRows += batchFailed;
-
-            // Updated: Removed status update inside batch loop to reduce DB contention
         }
 
         const finalStatus =
@@ -196,7 +212,8 @@ async function processImportJob(
                 completedAt: new Date(),
                 successfulRows,
                 failedRows,
-                processedRows: rows.length
+                processedRows: rows.length,
+                createdRecordIds
             }
         });
 
@@ -363,4 +380,77 @@ export async function closeImportQueue() {
     if (importQueue) {
         await importQueue.close();
     }
+}
+
+export async function rollbackImportJob(
+    jobId: string,
+    organizationId: string
+): Promise<{ deletedCount: number }> {
+    const job = await prisma.importJob.findFirst({
+        where: { id: jobId, organizationId }
+    });
+
+    if (!job) {
+        throw new Error('Import job not found');
+    }
+
+    if (job.status === 'PROCESSING') {
+        throw new Error('Cannot rollback a job that is currently processing');
+    }
+
+    const recordIds = job.createdRecordIds || [];
+    if (!job.createdRecordIds || recordIds.length === 0) {
+        logger.warn(
+            { jobId },
+            'No createdRecordIds found - job may predate this feature. Skipping rollback to avoid unintended data deletion.'
+        );
+        return { deletedCount: 0 };
+    }
+
+    let totalDeleted = 0;
+    const batchSize = 1000;
+
+    for (let i = 0; i < recordIds.length; i += batchSize) {
+        const batchIds = recordIds.slice(i, i + batchSize);
+        let count = 0;
+
+        switch (job.entityType) {
+            case 'customer':
+                count = await prisma.customer
+                    .deleteMany({
+                        where: { id: { in: batchIds }, organizationId }
+                    })
+                    .then((r) => r.count);
+                break;
+            case 'product':
+                count = await prisma.product
+                    .deleteMany({
+                        where: { id: { in: batchIds }, organizationId }
+                    })
+                    .then((r) => r.count);
+                break;
+            case 'order':
+                count = await prisma.order
+                    .deleteMany({
+                        where: { id: { in: batchIds }, organizationId }
+                    })
+                    .then((r) => r.count);
+                break;
+        }
+        totalDeleted += count;
+    }
+
+    await prisma.importJob.update({
+        where: { id: jobId },
+        data: {
+            status: 'CANCELLED',
+            summary: {
+                ...(typeof job.summary === 'object' ? job.summary : {}),
+                rollbackAt: new Date().toISOString(),
+                deletedCount: totalDeleted
+            }
+        }
+    });
+
+    return { deletedCount: totalDeleted };
 }

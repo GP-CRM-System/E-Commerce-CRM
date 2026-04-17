@@ -263,6 +263,30 @@ export async function findProductBySku(
     });
 }
 
+export async function getInvoiceData(id: string, organizationId: string) {
+    const order = await prisma.order.findUnique({
+        where: { id, organizationId },
+        include: {
+            customer: true,
+            orderItems: {
+                include: {
+                    product: true
+                }
+            }
+        }
+    });
+
+    if (!order) return null;
+
+    const organization = await prisma.organization.findUnique({
+        where: { id: organizationId }
+    });
+
+    if (!organization) return null;
+
+    return { order, organization };
+}
+
 async function triggerCustomerScoreUpdate(
     customerId: string,
     organizationId: string

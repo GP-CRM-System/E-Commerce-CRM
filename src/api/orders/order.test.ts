@@ -231,6 +231,12 @@ describe('Orders API', () => {
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body.data)).toBe(true);
             expect(response.body.pagination).toBeDefined();
+            expect(response.body.pagination).toHaveProperty('page');
+            expect(response.body.pagination).toHaveProperty('limit');
+            expect(response.body.pagination).toHaveProperty('total');
+            expect(response.body.pagination.page).toBe(1);
+            expect(response.body.pagination.limit).toBe(10);
+            expect(response.body.pagination.total).toBeGreaterThanOrEqual(0);
         });
 
         it('should filter orders by status', async () => {

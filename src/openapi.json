@@ -63,6 +63,46 @@
         {
             "name": "Cron",
             "description": "Manual triggers for RFM and lifecycle recalculations"
+        },
+        {
+            "name": "Notifications",
+            "description": "In-app notification management"
+        },
+        {
+            "name": "Templates",
+            "description": "Email template management"
+        },
+        {
+            "name": "Campaigns",
+            "description": "Email marketing campaigns"
+        },
+        {
+            "name": "Messaging",
+            "description": "WhatsApp/Facebook messaging and conversations"
+        },
+        {
+            "name": "Payments",
+            "description": "Payment processing and callbacks"
+        },
+        {
+            "name": "Tickets",
+            "description": "Support ticket management"
+        },
+        {
+            "name": "Audit Logs",
+            "description": "System audit and activity logging"
+        },
+        {
+            "name": "Reports",
+            "description": "Dashboard and analytics reports"
+        },
+        {
+            "name": "Tracking",
+            "description": "Campaign email open/click tracking"
+        },
+        {
+            "name": "Unsubscribe",
+            "description": "Email unsubscribe handling"
         }
     ],
     "paths": {
@@ -1802,6 +1842,823 @@
                     "404": { "description": "Role not found" }
                 },
                 "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/notifications": {
+            "get": {
+                "operationId": "listNotifications",
+                "summary": "List all notifications",
+                "tags": ["Notifications"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of notifications" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/notifications/unread-count": {
+            "get": {
+                "operationId": "getUnreadCount",
+                "summary": "Get unread notification count",
+                "tags": ["Notifications"],
+                "responses": {
+                    "200": { "description": "Unread count" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/notifications/{id}": {
+            "get": {
+                "operationId": "getNotification",
+                "summary": "Get notification by ID",
+                "tags": ["Notifications"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Notification details" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteNotification",
+                "summary": "Delete notification",
+                "tags": ["Notifications"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Notification deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/notifications/{id}/read": {
+            "patch": {
+                "operationId": "markNotificationAsRead",
+                "summary": "Mark notification as read",
+                "tags": ["Notifications"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Notification marked as read" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/notifications/mark-all-read": {
+            "post": {
+                "operationId": "markAllNotificationsAsRead",
+                "summary": "Mark all notifications as read",
+                "tags": ["Notifications"],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ids": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "All notifications marked as read" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/templates": {
+            "get": {
+                "operationId": "listTemplates",
+                "summary": "List all email templates",
+                "tags": ["Templates"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of templates" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createTemplate",
+                "summary": "Create a new email template",
+                "tags": ["Templates"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["name", "subject", "body"],
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "body": { "type": "string" },
+                                    "category": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Template created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/templates/{id}": {
+            "get": {
+                "operationId": "getTemplate",
+                "summary": "Get template by ID",
+                "tags": ["Templates"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Template details" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateTemplate",
+                "summary": "Update email template",
+                "tags": ["Templates"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "body": { "type": "string" },
+                                    "category": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Template updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteTemplate",
+                "summary": "Delete email template",
+                "tags": ["Templates"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Template deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/templates/{id}/preview": {
+            "get": {
+                "operationId": "previewTemplate",
+                "summary": "Preview email template",
+                "tags": ["Templates"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Template preview" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/campaigns": {
+            "get": {
+                "operationId": "listCampaigns",
+                "summary": "List all campaigns",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of campaigns" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createCampaign",
+                "summary": "Create a new campaign",
+                "tags": ["Campaigns"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["name", "subject", "templateId"],
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "templateId": { "type": "string" },
+                                    "segmentId": { "type": "string" },
+                                    "scheduledAt": { "type": "string", "format": "date-time" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Campaign created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/campaigns/{id}": {
+            "get": {
+                "operationId": "getCampaign",
+                "summary": "Get campaign by ID",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Campaign details" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateCampaign",
+                "summary": "Update campaign",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "templateId": { "type": "string" },
+                                    "segmentId": { "type": "string" },
+                                    "scheduledAt": { "type": "string", "format": "date-time" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Campaign updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteCampaign",
+                "summary": "Delete campaign",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Campaign deleted" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/campaigns/{id}/send": {
+            "post": {
+                "operationId": "sendCampaign",
+                "summary": "Send campaign",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "recipientIds": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Campaign sent" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/campaigns/{id}/stats": {
+            "get": {
+                "operationId": "getCampaignStats",
+                "summary": "Get campaign statistics",
+                "tags": ["Campaigns"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Campaign statistics" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/conversations": {
+            "get": {
+                "operationId": "listConversations",
+                "summary": "List all messaging conversations",
+                "tags": ["Messaging"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of conversations" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/conversations/{id}/messages": {
+            "get": {
+                "operationId": "getConversationMessages",
+                "summary": "Get messages in a conversation",
+                "tags": ["Messaging"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 50 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of messages" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "sendMessage",
+                "summary": "Send a message in a conversation",
+                "tags": ["Messaging"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["content"],
+                                "properties": {
+                                    "content": { "type": "string" },
+                                    "mediaUrl": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Message sent" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/messaging/meta/webhook": {
+            "get": {
+                "operationId": "verifyMetaWebhook",
+                "summary": "Verify Meta webhook subscription",
+                "tags": ["Messaging"],
+                "parameters": [
+                    {
+                        "name": "hub.mode",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "hub.verify_token",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "hub.challenge",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Webhook verified" }
+                }
+            },
+            "post": {
+                "operationId": "receiveMetaWebhook",
+                "summary": "Receive Meta webhook events",
+                "tags": ["Messaging"],
+                "responses": {
+                    "200": { "description": "Event received" }
+                }
+            }
+        },
+        "/payments/initialize/{orderId}": {
+            "post": {
+                "operationId": "initializePayment",
+                "summary": "Initialize payment for an order",
+                "tags": ["Payments"],
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Payment initialized" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/payments/fawry/callback": {
+            "post": {
+                "operationId": "handlePaymentCallback",
+                "summary": "Handle payment callback from Fawry",
+                "tags": ["Payments"],
+                "responses": {
+                    "200": { "description": "Callback handled" }
+                }
+            }
+        },
+        "/tickets": {
+            "get": {
+                "operationId": "listTickets",
+                "summary": "List all support tickets",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of tickets" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createTicket",
+                "summary": "Create a new support ticket",
+                "tags": ["Tickets"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["subject", "description"],
+                                "properties": {
+                                    "subject": { "type": "string" },
+                                    "description": { "type": "string" },
+                                    "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                                    "customerId": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Ticket created" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/tickets/{id}": {
+            "get": {
+                "operationId": "getTicket",
+                "summary": "Get ticket by ID",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Ticket details" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateTicket",
+                "summary": "Update support ticket",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "subject": { "type": "string" },
+                                    "description": { "type": "string" },
+                                    "status": { "type": "string", "enum": ["open", "in_progress", "resolved", "closed"] },
+                                    "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Ticket updated" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/tickets/{id}/notes": {
+            "post": {
+                "operationId": "addTicketNote",
+                "summary": "Add a note to a ticket",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["content"],
+                                "properties": {
+                                    "content": { "type": "string" },
+                                    "isInternal": { "type": "boolean" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": { "description": "Note added" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/audit-logs": {
+            "get": {
+                "operationId": "listAuditLogs",
+                "summary": "List audit logs",
+                "tags": ["Audit Logs"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of audit logs" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/reports/dashboard": {
+            "get": {
+                "operationId": "getDashboardStats",
+                "summary": "Get dashboard statistics",
+                "tags": ["Reports"],
+                "responses": {
+                    "200": { "description": "Dashboard statistics" }
+                },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/track/open/{recipientId}": {
+            "get": {
+                "operationId": "trackEmailOpen",
+                "summary": "Track email open event",
+                "tags": ["Tracking"],
+                "parameters": [
+                    {
+                        "name": "recipientId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tracking pixel",
+                        "content": { "image/gif": {} }
+                    }
+                }
+            }
+        },
+        "/track/click/{recipientId}": {
+            "get": {
+                "operationId": "trackEmailClick",
+                "summary": "Track email click event",
+                "tags": ["Tracking"],
+                "parameters": [
+                    {
+                        "name": "recipientId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "url",
+                        "in": "query",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "302": { "description": "Redirect to target URL" }
+                }
+            }
+        },
+        "/unsubscribe/{token}": {
+            "get": {
+                "operationId": "unsubscribeFromCampaign",
+                "summary": "Unsubscribe from marketing emails",
+                "tags": ["Unsubscribe"],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Unsubscribed successfully" }
+                }
             }
         }
     },

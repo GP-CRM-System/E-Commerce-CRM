@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
 import type { CustomerUncheckedCreateInput } from '../../generated/prisma/models/Customer.js';
 import type { ProductUncheckedCreateInput } from '../../generated/prisma/models/Product.js';
 import type { OrderUncheckedCreateInput } from '../../generated/prisma/models/Order.js';
@@ -12,7 +12,7 @@ export async function processRow(
     entityType: EntityType,
     organizationId: string,
     duplicateStrategy: 'create_only' | 'upsert'
-) {
+): Promise<{ id: string; action: 'created' | 'updated' }> {
     switch (entityType) {
         case 'customer':
             return processCustomerRow(
@@ -40,7 +40,7 @@ async function processCustomerRow(
     row: ParsedRow,
     organizationId: string,
     duplicateStrategy: 'create_only' | 'upsert'
-) {
+): Promise<{ id: string; action: 'created' | 'updated' }> {
     const data = row.data;
     const name = data.name as string;
 
@@ -87,31 +87,33 @@ async function processCustomerRow(
         customerData.acceptsMarketing =
             data.acceptsMarketing === true || data.acceptsMarketing === 'true';
 
-    if (duplicateStrategy === 'upsert' && data.externalId) {
-        const existing = await db.customer.findFirst({
-            where: { externalId: String(data.externalId), organizationId }
-        });
-        if (existing) {
-            return db.customer.update({
-                where: { id: existing.id },
-                data: { ...customerData, updatedAt: new Date() }
+    if (duplicateStrategy === 'upsert') {
+        const orConditions: Prisma.CustomerWhereInput[] = [];
+        if (data.externalId)
+            orConditions.push({ externalId: String(data.externalId) });
+        if (data.email) orConditions.push({ email: String(data.email) });
+        if (data.phone) orConditions.push({ phone: String(data.phone) });
+
+        if (orConditions.length > 0) {
+            const existing = await db.customer.findFirst({
+                where: {
+                    organizationId,
+                    OR: orConditions
+                }
             });
+
+            if (existing) {
+                const updated = await db.customer.update({
+                    where: { id: existing.id },
+                    data: { ...customerData, updatedAt: new Date() }
+                });
+                return { id: updated.id, action: 'updated' };
+            }
         }
     }
 
-    if (duplicateStrategy === 'upsert' && data.email) {
-        const existing = await db.customer.findFirst({
-            where: { email: String(data.email), organizationId }
-        });
-        if (existing) {
-            return db.customer.update({
-                where: { id: existing.id },
-                data: { ...customerData, updatedAt: new Date() }
-            });
-        }
-    }
-
-    return db.customer.create({ data: customerData });
+    const created = await db.customer.create({ data: customerData });
+    return { id: created.id, action: 'created' };
 }
 
 async function processProductRow(
@@ -119,7 +121,7 @@ async function processProductRow(
     row: ParsedRow,
     organizationId: string,
     duplicateStrategy: 'create_only' | 'upsert'
-) {
+): Promise<{ id: string; action: 'created' | 'updated' }> {
     const data = row.data;
     const name = data.name as string;
     const price = data.price as number;
@@ -155,40 +157,40 @@ async function processProductRow(
         }
     }
 
-    if (duplicateStrategy === 'upsert' && data.externalId) {
-        const existing = await db.product.findFirst({
-            where: { externalId: String(data.externalId), organizationId }
-        });
-        if (existing) {
-            return db.product.update({
-                where: { id: existing.id },
-                data: { ...productData, updatedAt: new Date() }
+    if (duplicateStrategy === 'upsert') {
+        const orConditions: Prisma.ProductWhereInput[] = [];
+        if (data.externalId)
+            orConditions.push({ externalId: String(data.externalId) });
+        if (data.sku) orConditions.push({ sku: String(data.sku) });
+
+        if (orConditions.length > 0) {
+            const existing = await db.product.findFirst({
+                where: {
+                    organizationId,
+                    OR: orConditions
+                }
             });
+
+            if (existing) {
+                const updated = await db.product.update({
+                    where: { id: existing.id },
+                    data: { ...productData, updatedAt: new Date() }
+                });
+                return { id: updated.id, action: 'updated' };
+            }
         }
     }
 
-    if (duplicateStrategy === 'upsert' && data.sku) {
-        const existing = await db.product.findFirst({
-            where: { sku: String(data.sku), organizationId }
-        });
-        if (existing) {
-            return db.product.update({
-                where: { id: existing.id },
-                data: { ...productData, updatedAt: new Date() }
-            });
-        }
-    }
-
-    return db.product.create({ data: productData });
+    const created = await db.product.create({ data: productData });
+    return { id: created.id, action: 'created' };
 }
 
 async function processOrderRow(
     db: PrismaDb,
     row: ParsedRow,
     organizationId: string,
-    _duplicateStrategy: 'create_only' | 'upsert'
-) {
-    void _duplicateStrategy;
+    duplicateStrategy: 'create_only' | 'upsert'
+): Promise<{ id: string; action: 'created' | 'updated' }> {
     const data = row.data;
 
     let customerId = data.customerId as string | undefined;
@@ -244,5 +246,22 @@ async function processOrderRow(
     if (data.tags) orderData.tags = String(data.tags);
     if (data.source) orderData.source = String(data.source);
 
-    return db.order.create({ data: orderData });
+    if (duplicateStrategy === 'upsert' && data.externalId) {
+        const existing = await db.order.findFirst({
+            where: {
+                externalId: String(data.externalId),
+                organizationId
+            }
+        });
+        if (existing) {
+            const updated = await db.order.update({
+                where: { id: existing.id },
+                data: { ...orderData, updatedAt: new Date() }
+            });
+            return { id: updated.id, action: 'updated' };
+        }
+    }
+
+    const created = await db.order.create({ data: orderData });
+    return { id: created.id, action: 'created' };
 }

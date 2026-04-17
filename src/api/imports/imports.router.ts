@@ -40,4 +40,8 @@ router
         importController.getErrors
     );
 
+router
+    .route('/:id/rollback')
+    .post(requirePermission('imports:write'), importController.rollback);
+
 export default router;

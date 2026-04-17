@@ -10,6 +10,7 @@ import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import * as orderSchema from './order.schemas.js';
 import type { OrderFilters } from './order.schemas.js';
+import { generateInvoice } from '../../utils/pdf.util.js';
 
 export const list = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -199,5 +200,42 @@ export const remove = asyncHandler(
             HttpStatus.NO_CONTENT,
             null
         );
+    }
+);
+
+export const getInvoice = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId;
+        if (!organizationId) {
+            return ResponseHandler.error(
+                res,
+                'No active organization',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const invoiceData = await orderService.getInvoiceData(
+            req.params.id as string,
+            organizationId
+        );
+
+        if (!invoiceData) {
+            return ResponseHandler.error(
+                res,
+                'Order or Organization not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        const pdfBuffer = await generateInvoice(invoiceData);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename=invoice-${invoiceData.order.externalId || invoiceData.order.id}.pdf`
+        );
+        res.send(pdfBuffer);
     }
 );

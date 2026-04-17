@@ -150,9 +150,124 @@ describe('Customer API', () => {
         expect(response.body.data).toHaveProperty('id');
         expect(response.body.data.name).toBe(customerData.name);
         expect(response.body.data.email).toBe(customerData.email);
+        expect(response.body.data.phone).toBe(customerData.phone);
+        expect(response.body.data.address).toBe(customerData.address);
+        expect(response.body.data.city).toBe(customerData.city);
+        expect(response.body.data.source).toBe(customerData.source);
+        expect(response.body.data.lifecycleStage).toBe(
+            customerData.lifecycleStage
+        );
+        expect(response.body.data.externalId).toBe(customerData.externalId);
+        expect(response.body.data.acceptsMarketing).toBe(
+            customerData.acceptsMarketing
+        );
         expect(response.body.data.organizationId).toBe(testOrgId);
 
         testCustomerId = response.body.data.id;
+    });
+
+    it('should return 400 for missing required fields', async () => {
+        const customerData = {
+            // Missing required 'name' field
+            email: 'test@example.com',
+            phone: '12345678901'
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
+    });
+
+    it('should return 400 for invalid email format', async () => {
+        const customerData = {
+            name: 'John Doe',
+            email: 'invalid-email', // Invalid email format
+            phone: '12345678901'
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
+    });
+
+    it('should return 400 for phone number too short', async () => {
+        const customerData = {
+            name: 'John Doe',
+            email: 'test@example.com',
+            phone: '123' // Too short (min 11 chars)
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
+    });
+
+    it('should return 400 for phone number too long', async () => {
+        const customerData = {
+            name: 'John Doe',
+            email: 'test@example.com',
+            phone: '12345678901234' // Too long (max 13 chars)
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
+    });
+
+    it('should return 400 for invalid source enum value', async () => {
+        const customerData = {
+            name: 'John Doe',
+            email: 'test@example.com',
+            phone: '12345678901',
+            source: 'INVALID_SOURCE' // Invalid enum value
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
+    });
+
+    it('should return 400 for invalid lifecycleStage enum value', async () => {
+        const customerData = {
+            name: 'John Doe',
+            email: 'test@example.com',
+            phone: '12345678901',
+            lifecycleStage: 'INVALID_STAGE' // Invalid enum value
+        };
+
+        const response = await request(app)
+            .post('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send(customerData);
+
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('message');
+        expect(response.body).toHaveProperty('details');
     });
 
     it('should list all customers', async () => {
@@ -164,6 +279,57 @@ describe('Customer API', () => {
         expect(response.status).toBe(200);
         expect(Array.isArray(response.body.data)).toBe(true);
         expect(response.body.data.length).toBeGreaterThan(0);
+    });
+
+    it('should verify pagination structure in response', async () => {
+        // First create enough customers to test pagination
+        for (let i = 0; i < 5; i++) {
+            await request(app)
+                .post('/api/customers')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send({
+                    name: `Pagination Test Customer ${i}`,
+                    email: `pagination${i}-${Date.now()}@test.com`,
+                    phone: `1234567890${i}`
+                });
+        }
+
+        // Test with limit of 2 to ensure pagination
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ page: '1', limit: '2' });
+
+        expect(response.status).toBe(200);
+
+        // Verify pagination object exists
+        expect(response.body.pagination).toBeDefined();
+        expect(response.body.pagination).toHaveProperty('page');
+        expect(response.body.pagination).toHaveProperty('limit');
+        expect(response.body.pagination).toHaveProperty('total');
+
+        // Verify values
+        expect(response.body.pagination.page).toBe(1);
+        expect(response.body.pagination.limit).toBe(2);
+        expect(response.body.pagination.total).toBeGreaterThan(0);
+
+        // Verify returned item count matches limit
+        expect(response.body.data.length).toBeLessThanOrEqual(2);
+    });
+
+    it('should correctly calculate pagination', async () => {
+        const response = await request(app)
+            .get('/api/customers')
+            .set('Authorization', `Bearer ${authToken}`)
+            .query({ page: '1', limit: '1' });
+
+        expect(response.status).toBe(200);
+
+        const pagination = response.body.pagination;
+        expect(pagination).toBeDefined();
+        expect(pagination).toHaveProperty('page');
+        expect(pagination).toHaveProperty('limit');
+        expect(pagination).toHaveProperty('total');
     });
 
     it('should filter customers by search', async () => {
@@ -259,6 +425,161 @@ describe('Customer API', () => {
     it('should return 401 if unauthorized', async () => {
         const response = await request(app).get('/api/customers');
         expect(response.status).toBe(401);
+    });
+
+    it('should verify error response for unauthorized', async () => {
+        const response = await request(app).get('/api/customers');
+
+        expect(response.status).toBe(401);
+    });
+
+    describe('Cross-Org Isolation', () => {
+        let crossOrgToken: string;
+
+        it('should not allow user from org B to access org A customer', async () => {
+            // Create second user and org with unique email
+            const uniqueEmail = `cross-org-${Date.now()}@test.com`;
+            const signup = await auth.api.signUpEmail({
+                body: {
+                    email: uniqueEmail,
+                    password: 'Password123!',
+                    name: 'Cross Org Test User'
+                }
+            });
+
+            await prisma.user.update({
+                where: { id: signup.user.id },
+                data: { emailVerified: true }
+            });
+
+            const org = await auth.api.createOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${signup.token!}`
+                }),
+                body: {
+                    name: 'Cross Org Test',
+                    slug: 'cross-org-test-' + Date.now()
+                }
+            });
+
+            const orgResponse = org as {
+                organization?: { id: string };
+                id?: string;
+            };
+            const crossOrgId =
+                orgResponse.organization?.id ?? orgResponse.id ?? '';
+
+            await auth.api.setActiveOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${signup.token!}`
+                }),
+                body: { organizationId: crossOrgId }
+            });
+
+            const signin = await auth.api.signInEmail({
+                body: {
+                    email: uniqueEmail,
+                    password: 'Password123!'
+                }
+            });
+            crossOrgToken = signin.token!;
+
+            // Try to access org A's customer from org B - should fail
+            const response = await request(app)
+                .get(`/api/customers/${testCustomerId}`)
+                .set('Authorization', `Bearer ${crossOrgToken}`);
+
+            // Should return 404 (not found) or 403 (forbidden) due to org isolation
+            expect([401, 403, 404]).toContain(response.status);
+        });
+
+        it('should not allow user from org B to update org A customer', async () => {
+            const response = await request(app)
+                .put(`/api/customers/${testCustomerId}`)
+                .set('Authorization', `Bearer ${crossOrgToken}`)
+                .send({ name: 'Hacked Name' });
+
+            expect([401, 403, 404]).toContain(response.status);
+        });
+
+        it('should not allow user from org B to delete org A customer', async () => {
+            const response = await request(app)
+                .delete(`/api/customers/${testCustomerId}`)
+                .set('Authorization', `Bearer ${crossOrgToken}`);
+
+            expect([401, 403, 404]).toContain(response.status);
+        });
+    });
+
+    describe('Delete Customer', () => {
+        let deleteCustomerId: string;
+
+        it('should delete customer and associated notes/events (cascading delete)', async () => {
+            // Create customer with note and event
+            const customer = await prisma.customer.create({
+                data: {
+                    name: 'Delete Test Customer',
+                    email: 'delete-test@test.com',
+                    organizationId: testOrgId,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            });
+            deleteCustomerId = customer.id;
+
+            await prisma.note.create({
+                data: {
+                    body: 'Test note',
+                    customerId: deleteCustomerId,
+                    authorId: testUserId,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            });
+
+            await prisma.customerEvent.create({
+                data: {
+                    customerId: deleteCustomerId,
+                    eventType: 'ORDER_PLACED',
+                    description: 'Test event',
+                    source: 'test',
+                    occurredAt: new Date()
+                }
+            });
+
+            // Delete the customer
+            const response = await request(app)
+                .delete(`/api/customers/${deleteCustomerId}`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+
+            // Verify customer is deleted
+            const deletedCustomer = await prisma.customer.findUnique({
+                where: { id: deleteCustomerId }
+            });
+            expect(deletedCustomer).toBeNull();
+
+            // Verify associated notes are deleted
+            const notes = await prisma.note.findMany({
+                where: { customerId: deleteCustomerId }
+            });
+            expect(notes.length).toBe(0);
+
+            // Verify associated events are deleted
+            const events = await prisma.customerEvent.findMany({
+                where: { customerId: deleteCustomerId }
+            });
+            expect(events.length).toBe(0);
+        });
+
+        it('should return 404 when trying to delete non-existent customer', async () => {
+            const response = await request(app)
+                .delete('/api/customers/non-existent-id')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(404);
+        });
     });
 
     describe('Note Routes', () => {

@@ -345,6 +345,30 @@ describe('Roles API', () => {
             expect(response.status).toBe(400);
         });
 
+        it('should return 400 for invalid permission keys', async () => {
+            const response = await request(app)
+                .post('/api/roles')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send({
+                    name: 'invalid-perm-role',
+                    permissions: { invalidResource: ['read'] } // Invalid permission key
+                });
+
+            expect(response.status).toBe(400);
+        });
+
+        it('should return 400 for invalid permission actions', async () => {
+            const response = await request(app)
+                .post('/api/roles')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send({
+                    name: 'invalid-action-role',
+                    permissions: { customers: ['invalidAction'] } // Invalid permission action
+                });
+
+            expect(response.status).toBe(400);
+        });
+
         it('should return 401 without authentication', async () => {
             const response = await request(app)
                 .post('/api/roles')
@@ -358,20 +382,24 @@ describe('Roles API', () => {
     });
 
     describe('PATCH /api/roles/:id', () => {
-        let customRoleId: string | undefined;
+        let customRoleId: string;
+        let defaultRoleId: string;
 
         beforeAll(async () => {
             const dbRole = await prisma.organizationRole.findFirst({
                 where: { organizationId: testOrgId, role: 'support-lead' }
             });
-            customRoleId = dbRole?.id;
+            expect(dbRole).not.toBeNull();
+            customRoleId = dbRole!.id;
+
+            const adminRole = await prisma.organizationRole.findFirst({
+                where: { organizationId: testOrgId, role: 'admin' }
+            });
+            expect(adminRole).not.toBeNull();
+            defaultRoleId = adminRole!.id;
         });
 
         it('should update a custom role', async () => {
-            if (!customRoleId) {
-                return;
-            }
-
             const response = await request(app)
                 .patch(`/api/roles/${customRoleId}`)
                 .set('Authorization', `Bearer ${authToken}`)
@@ -389,12 +417,8 @@ describe('Roles API', () => {
         });
 
         it('should fail when updating default roles', async () => {
-            const dbRole = await prisma.organizationRole.findFirst({
-                where: { organizationId: testOrgId, role: 'admin' }
-            });
-
             const response = await request(app)
-                .patch(`/api/roles/${dbRole?.id}`)
+                .patch(`/api/roles/${defaultRoleId}`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({
                     name: 'super-admin',
@@ -403,10 +427,37 @@ describe('Roles API', () => {
 
             expect(response.status).toBe(400);
         });
+
+        it('should return 401 when PATCH without authentication', async () => {
+            const response = await request(app)
+                .patch(`/api/roles/${customRoleId}`)
+                .send({ name: 'updated' });
+
+            expect(response.status).toBe(401);
+        });
+
+        it('should return 403 when member tries to update role', async () => {
+            const response = await request(app)
+                .patch(`/api/roles/${customRoleId}`)
+                .set('Authorization', `Bearer ${memberToken}`)
+                .send({ name: 'hacked' });
+
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 404 when updating non-existent role', async () => {
+            const response = await request(app)
+                .patch('/api/roles/non-existent-id')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send({ name: 'test' });
+
+            expect(response.status).toBe(404);
+        });
     });
 
     describe('DELETE /api/roles/:id', () => {
-        let testRoleId: string | undefined;
+        let testRoleId: string;
+        let memberRoleId: string;
 
         beforeAll(async () => {
             const existing = await prisma.organizationRole.findFirst({
@@ -425,13 +476,15 @@ describe('Roles API', () => {
                 });
                 testRoleId = role.id;
             }
+
+            const memberRole = await prisma.organizationRole.findFirst({
+                where: { organizationId: testOrgId, role: 'member' }
+            });
+            expect(memberRole).not.toBeNull();
+            memberRoleId = memberRole!.id;
         });
 
         it('should delete a custom role', async () => {
-            if (!testRoleId) {
-                return;
-            }
-
             const response = await request(app)
                 .delete(`/api/roles/${testRoleId}`)
                 .set('Authorization', `Bearer ${authToken}`);
@@ -441,27 +494,35 @@ describe('Roles API', () => {
         });
 
         it('should fail when deleting default roles', async () => {
-            const dbRole = await prisma.organizationRole.findFirst({
-                where: { organizationId: testOrgId, role: 'member' }
-            });
-
-            if (!dbRole) {
-                return;
-            }
-
             const response = await request(app)
-                .delete(`/api/roles/${dbRole.id}`)
+                .delete(`/api/roles/${memberRoleId}`)
                 .set('Authorization', `Bearer ${authToken}`);
 
             expect(response.status).toBe(400);
         });
 
-        it('should return 401 without authentication', async () => {
+        it('should return 401 when DELETE without authentication', async () => {
             const response = await request(app).delete(
                 '/api/roles/some-role-id'
             );
 
             expect(response.status).toBe(401);
+        });
+
+        it('should return 403 when member tries to delete role', async () => {
+            const response = await request(app)
+                .delete(`/api/roles/${memberRoleId}`)
+                .set('Authorization', `Bearer ${memberToken}`);
+
+            expect(response.status).toBe(403);
+        });
+
+        it('should return 404 when deleting non-existent role', async () => {
+            const response = await request(app)
+                .delete('/api/roles/non-existent-id')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(404);
         });
     });
 

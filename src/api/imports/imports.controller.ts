@@ -191,3 +191,29 @@ export const getErrors = asyncHandler(
         );
     }
 );
+
+export const rollback = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId;
+        if (!organizationId) {
+            return ResponseHandler.error(
+                res,
+                'No active organization',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const result = await importService.rollbackImportJob(
+            req.params.id as string,
+            organizationId
+        );
+
+        return ResponseHandler.success(
+            res,
+            'Import job rolled back successfully',
+            HttpStatus.OK,
+            result
+        );
+    }
+);

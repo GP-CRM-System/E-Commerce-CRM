@@ -31,4 +31,8 @@ router
     )
     .delete(requirePermission('orders:delete'), orderController.remove);
 
+router
+    .route('/:id/invoice')
+    .get(requirePermission('orders:read'), orderController.getInvoice);
+
 export default router;

@@ -7,15 +7,16 @@ import {
 } from '../../utils/response.util.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import * as segmentService from './segment.service.js';
-import prisma from '../../config/prisma.config.js';
 import { buildPrismaWhere } from './segment.utils.js';
-import { processExportJob } from '../exports/exports.controller.js';
+import * as exportService from '../exports/exports.service.js';
 import type {
     CreateSegmentInput,
     UpdateSegmentInput,
     ListSegmentsInput,
     ListSegmentCustomersInput
 } from './segment.schemas.js';
+
+import type { Prisma } from '../../generated/prisma/client.js';
 
 export const createSegment = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -212,29 +213,15 @@ export const exportSegment = asyncHandler(
 
         const segmentWhere = buildPrismaWhere(segment.filter);
 
-        const job = await prisma.exportJob.create({
-            data: {
-                organizationId,
-                createdByUserId: userId,
+        const job = await exportService.createExportJob(
+            organizationId,
+            userId,
+            {
                 entityType: 'customer',
-                format,
-                filters: { prismaWhere: segmentWhere } as object,
-                status: 'PENDING'
+                format: format as 'csv' | 'xlsx',
+                filters: { prismaWhere: segmentWhere as Prisma.InputJsonValue }
             }
-        });
-
-        processExportJob(
-            job.id,
-            'customer',
-            format,
-            [],
-            { prismaWhere: segmentWhere },
-            organizationId
-        ).catch((err) => {
-            import('../../utils/logger.util.js').then(({ default: logger }) =>
-                logger.error(`Segment export job ${job.id} failed: ${err}`)
-            );
-        });
+        );
 
         ResponseHandler.success(
             res,

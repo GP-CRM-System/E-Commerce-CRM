@@ -18,6 +18,8 @@ export type RolePermissions = {
     tags: ('read' | 'write' | 'delete')[];
     reports: 'read'[];
     notifications: ('read' | 'write' | 'delete')[];
+    templates: ('read' | 'write' | 'delete')[];
+    conversations: ('read' | 'write' | 'delete')[];
 };
 
 export const DEFAULT_ROLES = {
@@ -40,7 +42,9 @@ export const DEFAULT_ROLES = {
         supportTickets: ['read', 'write', 'delete'],
         tags: ['read', 'write', 'delete'],
         reports: ['read'],
-        notifications: ['read', 'write', 'delete']
+        notifications: ['read', 'write', 'delete'],
+        templates: ['read', 'write', 'delete'],
+        conversations: ['read', 'write', 'delete']
     },
     admin: {
         organization: ['read', 'update'],
@@ -61,7 +65,9 @@ export const DEFAULT_ROLES = {
         supportTickets: ['read', 'write', 'delete'],
         tags: ['read', 'write', 'delete'],
         reports: ['read'],
-        notifications: ['read', 'write', 'delete']
+        notifications: ['read', 'write', 'delete'],
+        templates: ['read', 'write', 'delete'],
+        conversations: ['read', 'write', 'delete']
     },
     member: {
         organization: [],
@@ -82,7 +88,9 @@ export const DEFAULT_ROLES = {
         supportTickets: ['read', 'write'],
         tags: ['read'],
         reports: [],
-        notifications: ['read']
+        notifications: ['read'],
+        templates: ['read'],
+        conversations: ['read']
     }
 } as const satisfies Record<string, RolePermissions>;
 
@@ -107,5 +115,7 @@ export const AVAILABLE_PERMISSIONS: RolePermissions = {
     supportTickets: ['read', 'write', 'delete'],
     tags: ['read', 'write', 'delete'],
     reports: ['read'],
-    notifications: ['read', 'write', 'delete']
+    notifications: ['read', 'write', 'delete'],
+    templates: ['read', 'write', 'delete'],
+    conversations: ['read', 'write', 'delete']
 };

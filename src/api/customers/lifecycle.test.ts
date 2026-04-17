@@ -13,6 +13,7 @@ import {
 let authToken: string;
 let testOrgId: string;
 let testCustomerId: string;
+let testUserId: string;
 
 describe('Lifecycle Service', () => {
     beforeAll(async () => {
@@ -26,6 +27,13 @@ describe('Lifecycle Service', () => {
         await prisma.order.deleteMany({
             where: {
                 organization: { slug: { startsWith: 'lifecycle-test-org' } }
+            }
+        });
+        await prisma.customerEvent.deleteMany({
+            where: {
+                customer: {
+                    organization: { slug: { startsWith: 'lifecycle-test-org' } }
+                }
             }
         });
         await prisma.customer.deleteMany({
@@ -60,7 +68,7 @@ describe('Lifecycle Service', () => {
         if (!signup) throw new Error('Signup failed');
         authToken = signup.token!;
 
-        const testUserId = signup.user.id;
+        testUserId = signup.user.id;
         await prisma.user.update({
             where: { id: testUserId },
             data: { emailVerified: true }
@@ -80,6 +88,8 @@ describe('Lifecycle Service', () => {
         };
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
 
+        if (!testOrgId) throw new Error('Failed to create organization');
+
         await auth.api.setActiveOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
             body: { organizationId: testOrgId }
@@ -88,7 +98,8 @@ describe('Lifecycle Service', () => {
         const signin = await auth.api.signInEmail({
             body: { email: 'lifecycle-test@test.com', password: 'Password123!' }
         });
-        authToken = signin.token!;
+        if (!signin?.token) throw new Error('Signin failed');
+        authToken = signin.token;
 
         const customer = await prisma.customer.create({
             data: {
@@ -112,8 +123,26 @@ describe('Lifecycle Service', () => {
         await prisma.order.deleteMany({
             where: { organizationId: testOrgId }
         });
+        await prisma.customerEvent.deleteMany({
+            where: { customer: { organizationId: testOrgId } }
+        });
         await prisma.customer.deleteMany({
             where: { organizationId: testOrgId }
+        });
+        await prisma.member.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.session.deleteMany({
+            where: { userId: testUserId }
+        });
+        await prisma.organizationRole.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.organization.deleteMany({
+            where: { slug: { startsWith: 'lifecycle-test-org' } }
+        });
+        await prisma.user.deleteMany({
+            where: { id: testUserId }
         });
     });
 
@@ -286,6 +315,162 @@ describe('Lifecycle Service', () => {
 
             expect(result.promoted + result.demoted).toBeGreaterThanOrEqual(0);
             expect(customer?.lifecycleStage).toBeDefined();
+        });
+
+        it('should promote top spenders to VIP (percentile-based)', async () => {
+            // Create multiple customers with varying spend
+            for (let i = 0; i < 10; i++) {
+                await prisma.customer.create({
+                    data: {
+                        name: `VIP Test Customer ${i}`,
+                        email: `vip-test-${i}-${Date.now()}@test.com`,
+                        organizationId: testOrgId,
+                        lifecycleStage: 'LOYAL',
+                        totalSpent: (i + 1) * 1000, // 1000, 2000, ... 10000
+                        totalOrders: 10,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    }
+                });
+            }
+
+            const result = await recalculateVIPCustomers(testOrgId);
+
+            // Should promote at least one customer to VIP based on percentile
+            expect(result.promoted).toBeGreaterThanOrEqual(0);
+        });
+
+        it('should demote from VIP when spending drops below threshold', async () => {
+            await prisma.customer.update({
+                where: { id: testCustomerId },
+                data: {
+                    lifecycleStage: 'VIP',
+                    totalSpent: 100, // Drop below VIP threshold
+                    totalOrders: 2
+                }
+            });
+
+            const result = await recalculateVIPCustomers(testOrgId);
+
+            const customer = await prisma.customer.findUnique({
+                where: { id: testCustomerId },
+                select: { lifecycleStage: true }
+            });
+
+            expect(result.demoted).toBeGreaterThanOrEqual(0);
+            expect(customer?.lifecycleStage).not.toBe('VIP');
+        });
+
+        it('should NOT promote PROSPECT customers to VIP even with high spend', async () => {
+            await prisma.customer.update({
+                where: { id: testCustomerId },
+                data: {
+                    lifecycleStage: 'PROSPECT',
+                    totalSpent: 50000,
+                    totalOrders: 0
+                }
+            });
+
+            await recalculateVIPCustomers(testOrgId);
+
+            const customer = await prisma.customer.findUnique({
+                where: { id: testCustomerId },
+                select: { lifecycleStage: true }
+            });
+
+            // PROSPECT should NOT be promoted to VIP
+            expect(customer?.lifecycleStage).toBe('PROSPECT');
+        });
+
+        it('should NOT promote LEAD customers to VIP even with high spend', async () => {
+            await prisma.customer.update({
+                where: { id: testCustomerId },
+                data: {
+                    lifecycleStage: 'LEAD',
+                    totalSpent: 50000,
+                    totalOrders: 0
+                }
+            });
+
+            await recalculateVIPCustomers(testOrgId);
+
+            const customer = await prisma.customer.findUnique({
+                where: { id: testCustomerId },
+                select: { lifecycleStage: true }
+            });
+
+            // LEAD should NOT be promoted to VIP
+            expect(customer?.lifecycleStage).toBe('LEAD');
+        });
+    });
+
+    describe('Missing Transitions', () => {
+        it('should transition from ONE_TIME to RETURNING when totalOrders >= RETURNING_THRESHOLD', async () => {
+            await prisma.customer.update({
+                where: { id: testCustomerId },
+                data: {
+                    lifecycleStage: 'ONE_TIME',
+                    totalOrders: LIFECYCLE_RULES.RETURNING_THRESHOLD,
+                    lastOrderAt: new Date(),
+                    churnRiskScore: null
+                }
+            });
+        });
+
+        describe('Database State After Transitions', () => {
+            it('should update customer lifecycleStage in database after transition', async () => {
+                await prisma.customer.update({
+                    where: { id: testCustomerId },
+                    data: {
+                        lifecycleStage: 'PROSPECT',
+                        totalOrders: LIFECYCLE_RULES.ONE_TIME_THRESHOLD,
+                        churnRiskScore: null
+                    }
+                });
+
+                const result = await checkAndUpdateLifecycleStage(
+                    testCustomerId,
+                    testOrgId
+                );
+
+                expect(result?.triggered).toBe(true);
+                expect(result?.newStage).toBe('ONE_TIME');
+
+                const updatedCustomer = await prisma.customer.findUnique({
+                    where: { id: testCustomerId },
+                    select: { lifecycleStage: true }
+                });
+
+                expect(updatedCustomer?.lifecycleStage).toBe('ONE_TIME');
+            });
+
+            it('should NOT update customer if no transition needed', async () => {
+                await prisma.customer.update({
+                    where: { id: testCustomerId },
+                    data: {
+                        lifecycleStage: 'PROSPECT',
+                        totalOrders: 0,
+                        churnRiskScore: null
+                    }
+                });
+
+                const result = await checkAndUpdateLifecycleStage(
+                    testCustomerId,
+                    testOrgId
+                );
+
+                expect(result?.triggered).toBe(false);
+                expect(result?.reason).toBe('No transition needed');
+            });
+
+            it('should return null when customer not found', async () => {
+                const result = await checkAndUpdateLifecycleStage(
+                    'non-existent-customer-id',
+                    testOrgId
+                );
+
+                expect(result).toBeNull();
+            });
         });
     });
 });

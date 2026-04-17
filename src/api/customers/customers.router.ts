@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as customerController from './customer.controller.js';
 import * as analyticsController from './analytics.controller.js';
+import * as timelineController from './timeline.controller.js';
 import * as customerSchema from './customer.schemas.js';
+import { getTimelineSchema } from './timeline.schemas.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
 import { paginationSchema } from '../../utils/pagination.util.js';
 
@@ -51,6 +53,14 @@ router
     .get(
         requirePermission('customers:read'),
         analyticsController.getCustomerRFM
+    );
+
+router
+    .route('/:id/timeline')
+    .get(
+        requirePermission('customers:read'),
+        validateRequest(getTimelineSchema, 'query'),
+        timelineController.getTimeline
     );
 
 router

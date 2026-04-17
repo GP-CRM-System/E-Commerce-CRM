@@ -15,10 +15,12 @@ import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
 import { importWorker } from './queues/import.queue.js';
 import { rfmWorker } from './queues/rfm.processor.js';
+import { initExportWorker } from './api/exports/exports.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import { redisConnection, isRedisAvailable } from './config/redis.config.js';
 import { RedisConnection } from 'bullmq';
 import { auth } from './api/auth/auth.js';
+import { initRateLimitStore } from './config/ratelimit.config.js';
 
 checkEnv();
 
@@ -110,6 +112,8 @@ export async function startServer(): Promise<void> {
             try {
                 new RedisConnection(redisConnection);
                 logger.info('[Init] Redis connected successfully');
+                await initRateLimitStore();
+                logger.info('[Init] Rate limit Redis store initialized');
             } catch (redisErr) {
                 logger.error(`[Init] Redis connection failed: ${redisErr}`);
                 throw new Error(
@@ -124,10 +128,13 @@ export async function startServer(): Promise<void> {
         }
 
         const server = app.listen(env.port, async () => {
+            if (isRedisAvailable) {
+                initExportWorker();
+            }
             logger.info(
                 `[Init] Server running on http://localhost:${env.port}`
             );
-            logger.info(`[Docs] Scalar docs http://localhost:${env.port}/docs`);
+            logger.info(`[Docs] Scalar docs http://localhost:${env.port}/reference`);
         });
 
         /**

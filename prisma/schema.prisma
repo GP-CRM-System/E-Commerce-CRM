@@ -23,6 +23,8 @@ model User {
   notes         Note[]
   importJobs    ImportJob[]
   exportJobs    ExportJob[]
+  assignedTickets SupportTicket[] @relation("AssignedTickets")
+  ticketNotes   TicketNote[]
 
   @@unique([email])
   @@map("user")
@@ -84,7 +86,7 @@ model Organization {
   logo           String?
   settings       Json? // { timezone, locale, currency, branding }
   createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
+  updatedAt      DateTime           @updatedAt
   members        Member[]
   invitations    Invitation[]
   customers      Customer[]
@@ -100,6 +102,9 @@ model Organization {
   importJobs     ImportJob[]
   exportJobs     ExportJob[]
   notifications  Notification[]
+  emailTemplates EmailTemplate[]
+  conversations  Conversation[]
+  transactions   Transaction[]
 
   @@map("organization")
 }
@@ -185,7 +190,7 @@ model Customer {
   lifecycleStage CustomerLifecycleStage @default(PROSPECT)
   tags           Tag[]
   notes          Note[]
-  organization   Organization           @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   organizationId String
@@ -214,6 +219,8 @@ model Customer {
   customerEvents       CustomerEvent[]
   metrics              CustomerMetric?
   interactions         Interaction[]
+  campaignRecipients  CampaignRecipient[]
+  conversations        Conversation[]
 
   // AI & Behavioral Fields
   isLoyaltyMember       Boolean @default(false)
@@ -248,7 +255,7 @@ model Note {
 model Integration {
   id           String       @id @default(nanoid())
   orgId        String
-  organization Organization @relation(fields: [orgId], references: [id])
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   provider     String // 'shopify'
   name         String?
   shopDomain   String?
@@ -381,7 +388,7 @@ model Tag {
   name           String
   color          String
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customers      Customer[]
 
   @@unique([organizationId, name])
@@ -393,7 +400,7 @@ model Segment {
   name           String
   filter         Json
   description    String?
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organizationId String
@@ -403,22 +410,61 @@ model Segment {
 }
 
 model Campaign {
-  id             String       @id @default(nanoid())
-  name           String
-  description    String?
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  segmentId      String? // Targeted segment
-  type           String       @default("email") // email, sms
-  status         String       @default("draft") // draft, scheduled, active, paused, completed
-  content        Json? // { subject, body, templateId }
-  scheduledAt    DateTime?
-  sentAt         DateTime?
-  metrics        Json? // { sent: 0, delivered: 0, opened: 0, clicked: 0, converted: 0 }
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String              @id @default(nanoid())
+  name            String
+  description     String?
+  organizationId  String
+  organization    Organization        @relation(fields: [organizationId], references: [id])
+  segmentId       String?
+  templateId      String?
+  template        EmailTemplate?      @relation(fields: [templateId], references: [id])
+  type            CampaignType       @default(EMAIL)
+  status          CampaignStatus     @default(DRAFT)
+  subject         String?
+  content         Json? // { body }
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  recipientCount  Int                @default(0)
+  metrics         Json? // { sent: 0, delivered: 0, opened: 0, clicked: 0, converted: 0 }
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  recipients      CampaignRecipient[]
 
   @@index([organizationId])
+  @@index([status])
+  @@index([templateId])
+}
+
+model EmailTemplate {
+  id             String       @id @default(nanoid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  subject        String
+  htmlBody       String
+  variables      String[]    @default([]) // ['customer.name', 'order.total']
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  campaigns      Campaign[]
+
+  @@index([organizationId])
+}
+
+model CampaignRecipient {
+  id          String          @id @default(nanoid())
+  campaignId  String
+  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status      RecipientStatus @default(PENDING)
+  sentAt      DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  failReason  String?
+
+  @@unique([campaignId, customerId])
+  @@index([campaignId])
+  @@index([customerId])
   @@index([status])
 }
 
@@ -427,7 +473,7 @@ model Product {
   name           String
   price          Decimal
   description    String?
-  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   organizationId String
@@ -475,6 +521,30 @@ model ProductVariant {
   @@index([productId])
 }
 
+enum CampaignType {
+  EMAIL
+  SMS
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
 enum ShippingStatus {
   PENDING
   PROCESSING
@@ -498,7 +568,7 @@ model Order {
   paymentStatus  PaymentStatus   @default(PENDING)
   orderItems     OrderItem[]
   customer       Customer        @relation(fields: [customerId], references: [id])
-  organization   Organization    @relation(fields: [organizationId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   supportTickets SupportTicket[]
@@ -521,11 +591,54 @@ model Order {
   note              String?
   source            String? // 'web', 'pos', 'shopify_draft_order', etc.
   referringSite     String?
+  transactions      Transaction[]
 
   @@index([organizationId])
   @@index([customerId])
   @@index([externalId])
   @@index([shopifyOrderId])
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum TransactionProvider {
+  FAWRY
+  STRIPE
+  PAYPAL
+  CASH
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+}
+
+model Transaction {
+  id             String              @id @default(nanoid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  externalId     String?             // Provider reference (e.g., Fawry ref no)
+  amount         Decimal
+  currency       String              @default("EGP")
+  provider       TransactionProvider
+  status         TransactionStatus   @default(PENDING)
+  type           TransactionType     @default(PAYMENT)
+  metadata       Json?               // Additional provider data
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId])
+  @@index([orderId])
+  @@index([externalId])
 }
 
 model OrderItem {
@@ -562,13 +675,32 @@ model SupportTicket {
   description    String
   status         SupportTicketStatus   @default(PENDING)
   priority       SupportTicketPriority @default(MEDIUM)
+  assignedToId   String?
+  assignedTo     User?                 @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  lastResponseAt DateTime?
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
-  organization   Organization          @relation(fields: [organizationId], references: [id])
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer       Customer              @relation(fields: [customerId], references: [id])
   order          Order?                @relation(fields: [orderId], references: [id])
+  notes          TicketNote[]
 
   @@index([organizationId])
+  @@index([assignedToId])
+}
+
+model TicketNote {
+  id             String        @id @default(nanoid())
+  ticketId       String
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User          @relation(fields: [authorId], references: [id])
+  body           String
+  isInternal     Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([ticketId])
 }
 
 model AuditLog {
@@ -581,7 +713,7 @@ model AuditLog {
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id])
 }
 
@@ -604,7 +736,7 @@ enum ExportJobStatus {
 model ImportJob {
   id              String           @id @default(nanoid())
   organizationId  String
-  organization    Organization     @relation(fields: [organizationId], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdByUserId String
   user            User             @relation(fields: [createdByUserId], references: [id])
   entityType      String // 'customer', 'product', 'order'
@@ -617,6 +749,7 @@ model ImportJob {
   processedRows   Int              @default(0)
   successfulRows  Int              @default(0)
   failedRows      Int              @default(0)
+  createdRecordIds String[]        @default([]) // IDs of records created by this import
   startedAt       DateTime?
   completedAt     DateTime?
   createdAt       DateTime         @default(now())
@@ -627,6 +760,61 @@ model ImportJob {
   @@index([status])
   @@index([entityType])
   @@index([createdAt])
+}
+
+enum ConversationStatus {
+  OPEN
+  PENDING
+  CLOSED
+  ARCHIVED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Conversation {
+  id             String             @id @default(nanoid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String?
+  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  externalId     String?            // Meta conversation ID
+  provider       String             // 'whatsapp', 'facebook', 'instagram'
+  status         ConversationStatus @default(OPEN)
+  lastMessageAt  DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  messages       Message[]
+
+  @@unique([organizationId, externalId])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([externalId])
+}
+
+model Message {
+  id             String           @id @default(nanoid())
+  conversationId String
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  externalId     String?          // Meta message ID
+  direction      MessageDirection
+  content        String
+  type           String           @default("text") // 'text', 'image', 'video', 'template'
+  status         MessageStatus    @default(SENT)
+  metadata       Json?            // Media URLs, template names, etc.
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId])
+  @@index([externalId])
 }
 
 model Notification {
@@ -663,7 +851,7 @@ model ImportJobError {
 model ExportJob {
   id              String          @id @default(nanoid())
   organizationId  String
-  organization    Organization    @relation(fields: [organizationId], references: [id])
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdByUserId String
   user            User            @relation(fields: [createdByUserId], references: [id])
   entityType      String
