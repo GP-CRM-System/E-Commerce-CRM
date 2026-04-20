@@ -160,3 +160,22 @@ export function expectNotNull<T>(
         throw new Error(message ?? 'Expected value to not be null');
     }
 }
+
+export interface ErrorContract {
+    success: boolean;
+    code: string;
+    message: string;
+    status: number;
+    timestamp: string;
+    path?: string;
+    details?: unknown;
+}
+
+export interface ErrorResponse {
+    message: string;
+    code: string;
+    status: number;
+    timestamp: Date;
+    path?: string;
+    details?: Record<string, unknown>;
+}

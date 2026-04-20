@@ -415,6 +415,79 @@ describe('Lifecycle Service', () => {
                     churnRiskScore: null
                 }
             });
+
+            const result = await checkAndUpdateLifecycleStage(
+                testCustomerId,
+                testOrgId
+            );
+
+            expect(result?.triggered).toBe(true);
+            expect(result?.newStage).toBe('RETURNING');
+
+            const updatedCustomer = await prisma.customer.findUnique({
+                where: { id: testCustomerId },
+                select: { lifecycleStage: true }
+            });
+
+            expect(updatedCustomer?.lifecycleStage).toBe('RETURNING');
+        });
+
+        it('should transition from AT_RISK to CHURNED when churn risk remains high and no recent orders', async () => {
+            const customer = await prisma.customer.create({
+                data: {
+                    name: 'AT_RISK to CHURNED Test',
+                    email: `churn-test-${Date.now()}@test.com`,
+                    organizationId: testOrgId,
+                    lifecycleStage: 'AT_RISK',
+                    churnRiskScore: LIFECYCLE_RULES.AT_RISK_THRESHOLD + 0.1,
+                    avgDaysBetweenOrders: 10,
+                    lastOrderAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            });
+
+            const result = await checkAndUpdateLifecycleStage(
+                customer.id,
+                testOrgId
+            );
+
+            expect(result?.triggered).toBe(true);
+            expect(result?.newStage).toBe('CHURNED');
+
+            const updatedCustomer = await prisma.customer.findUnique({
+                where: { id: customer.id },
+                select: { lifecycleStage: true }
+            });
+
+            expect(updatedCustomer?.lifecycleStage).toBe('CHURNED');
+
+            await prisma.customer.delete({ where: { id: customer.id } });
+        });
+
+        it('should NOT transition from AT_RISK to CHURNED when customer has recent orders', async () => {
+            const customer = await prisma.customer.create({
+                data: {
+                    name: 'AT_RISK Stable Test',
+                    email: `at-risk-stable-${Date.now()}@test.com`,
+                    organizationId: testOrgId,
+                    lifecycleStage: 'AT_RISK',
+                    churnRiskScore: LIFECYCLE_RULES.AT_RISK_THRESHOLD + 0.1,
+                    avgDaysBetweenOrders: 30,
+                    lastOrderAt: new Date(),
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            });
+
+            const result = await checkAndUpdateLifecycleStage(
+                customer.id,
+                testOrgId
+            );
+
+            expect(result?.triggered).toBe(false);
+
+            await prisma.customer.delete({ where: { id: customer.id } });
         });
 
         describe('Database State After Transitions', () => {

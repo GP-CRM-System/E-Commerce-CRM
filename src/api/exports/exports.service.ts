@@ -72,8 +72,8 @@ export async function processExportJob(
     });
 
     if (!existingJob) {
-        logger.error({ jobId }, 'Export job not found');
-        throw new Error(`Export job not found: ${jobId}`);
+        logger.warn({ jobId }, 'Export job not found - may have been processed previously or cleaned up');
+        return null;
     }
 
     if (existingJob.status !== 'PENDING') {

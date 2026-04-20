@@ -3146,6 +3146,333 @@
                     }
                 }
             }
+        },
+        "/health": {
+            "get": {
+                "operationId": "healthCheck",
+                "summary": "Check system health",
+                "tags": ["Health"],
+                "responses": {
+                    "200": { "description": "All services healthy" },
+                    "503": { "description": "Services unhealthy" }
+                }
+            }
+        },
+        "/reports/dashboard": {
+            "get": {
+                "operationId": "getDashboard",
+                "summary": "Get dashboard statistics",
+                "tags": ["Reports"],
+                "responses": { "200": { "description": "Dashboard stats" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/reports/audit": {
+            "get": {
+                "operationId": "getAuditLogs",
+                "summary": "Get audit logs",
+                "tags": ["Audit Logs"],
+                "parameters": [
+                    { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                    { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+                ],
+                "responses": { "200": { "description": "Audit logs" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/tickets": {
+            "get": {
+                "operationId": "listTickets",
+                "summary": "List all tickets",
+                "tags": ["Tickets"],
+                "parameters": [
+                    { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                    { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } },
+                    { "name": "status", "in": "query", "schema": { "type": "string" } },
+                    { "name": "priority", "in": "query", "schema": { "type": "string" } },
+                    { "name": "assignedToId", "in": "query", "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "List of tickets" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createTicket",
+                "summary": "Create a new ticket",
+                "tags": ["Tickets"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["customerId", "subject", "description"],
+                                "properties": {
+                                    "customerId": { "type": "string" },
+                                    "orderId": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "description": { "type": "string" },
+                                    "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"] }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "201": { "description": "Ticket created" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/tickets/{id}": {
+            "get": {
+                "operationId": "getTicket",
+                "summary": "Get ticket by ID",
+                "tags": ["Tickets"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Ticket details" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateTicket",
+                "summary": "Update ticket",
+                "tags": ["Tickets"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "PENDING", "RESOLVED", "CLOSED"] },
+                                    "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"] },
+                                    "assignedToId": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "200": { "description": "Ticket updated" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/tickets/{id}/notes": {
+            "post": {
+                "operationId": "addTicketNote",
+                "summary": "Add note to ticket",
+                "tags": ["Tickets"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["content"],
+                                "properties": {
+                                    "content": { "type": "string" },
+                                    "isInternal": { "type": "boolean" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "201": { "description": "Note added" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports": {
+            "get": {
+                "operationId": "listImports",
+                "summary": "List import jobs",
+                "tags": ["Imports"],
+                "parameters": [
+                    { "name": "entityType", "in": "query", "schema": { "type": "string" } },
+                    { "name": "status", "in": "query", "schema": { "type": "string" } },
+                    { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                    { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+                ],
+                "responses": { "200": { "description": "Import jobs" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createImport",
+                "summary": "Create a new import job",
+                "tags": ["Imports"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["file", "entityType"],
+                                "properties": {
+                                    "file": { "type": "string", "format": "binary" },
+                                    "entityType": { "type": "string", "enum": ["customer", "product", "order"] },
+                                    "hasHeader": { "type": "boolean" },
+                                    "mapping": { "type": "object" },
+                                    "duplicateStrategy": { "type": "string", "enum": ["create_only", "upsert"] },
+                                    "mode": { "type": "string", "enum": ["create_only", "upsert"] }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "201": { "description": "Import job created" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports/{id}": {
+            "get": {
+                "operationId": "getImport",
+                "summary": "Get import job status",
+                "tags": ["Imports"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Import job details" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports/{id}/errors": {
+            "get": {
+                "operationId": "getImportErrors",
+                "summary": "Get import job errors",
+                "tags": ["Imports"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Import job errors" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/imports/{id}/rollback": {
+            "post": {
+                "operationId": "rollbackImport",
+                "summary": "Rollback import job",
+                "tags": ["Imports"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Import rolled back" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports": {
+            "get": {
+                "operationId": "listExports",
+                "summary": "List export jobs",
+                "tags": ["Exports"],
+                "parameters": [
+                    { "name": "entityType", "in": "query", "schema": { "type": "string" } },
+                    { "name": "status", "in": "query", "schema": { "type": "string" } },
+                    { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+                    { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+                ],
+                "responses": { "200": { "description": "Export jobs" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "post": {
+                "operationId": "createExport",
+                "summary": "Create a new export job",
+                "tags": ["Exports"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["entityType", "format"],
+                                "properties": {
+                                    "entityType": { "type": "string", "enum": ["customer", "product", "order"] },
+                                    "format": { "type": "string", "enum": ["csv", "xlsx"] },
+                                    "selectedColumns": { "type": "array", "items": { "type": "string" } },
+                                    "filters": { "type": "object" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "201": { "description": "Export job created" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports/{id}": {
+            "get": {
+                "operationId": "getExport",
+                "summary": "Get export job status",
+                "tags": ["Exports"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Export job details" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/exports/{id}/download": {
+            "get": {
+                "operationId": "downloadExport",
+                "summary": "Download export file",
+                "tags": ["Exports"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Export file" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/roles": {
+            "get": {
+                "operationId": "listRoles",
+                "summary": "List all roles",
+                "tags": ["Roles"],
+                "responses": { "200": { "description": "List of roles" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/roles/permissions": {
+            "get": {
+                "operationId": "listPermissions",
+                "summary": "List all available permissions",
+                "tags": ["Roles"],
+                "responses": { "200": { "description": "Available permissions" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/roles/{id}": {
+            "get": {
+                "operationId": "getRole",
+                "summary": "Get role by ID",
+                "tags": ["Roles"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Role details" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "patch": {
+                "operationId": "updateRole",
+                "summary": "Update role",
+                "tags": ["Roles"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "200": { "description": "Role updated" } },
+                "security": [{ "bearerAuth": [] }]
+            },
+            "delete": {
+                "operationId": "deleteRole",
+                "summary": "Delete role",
+                "tags": ["Roles"],
+                "parameters": [
+                    { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+                ],
+                "responses": { "204": { "description": "Role deleted" } },
+                "security": [{ "bearerAuth": [] }]
+            }
         }
     }
 }

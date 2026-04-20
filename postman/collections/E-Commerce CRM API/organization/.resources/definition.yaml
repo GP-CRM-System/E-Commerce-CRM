@@ -1,5 +1,0 @@
-$kind: collection
-name: Organization
-description: Organization management endpoints for creating, updating, deleting,
-  and managing organizations.
-order: 2000

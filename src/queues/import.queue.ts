@@ -52,7 +52,8 @@ export const importWorker = new Worker<ImportJobData>(
             });
 
             if (!importJobRecord) {
-                throw new Error(`Import job record not found: ${jobId}`);
+                logger.warn({ jobId }, 'Import job record not found - may have been cleaned up');
+                return null;
             }
 
             const rows = await parseFile(buffer, fileType);

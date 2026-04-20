@@ -35,7 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 /src/generated/prisma
 .vscode
-.agents
+.agents/skills
 AGENTS.md
 opencode.json
 /temp

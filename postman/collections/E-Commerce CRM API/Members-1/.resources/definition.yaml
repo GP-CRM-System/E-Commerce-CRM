@@ -1,5 +1,0 @@
-$kind: collection
-name: Members
-description: Organization member management endpoints including invitations,
-  role updates, and member removal.
-order: 3145

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import healthRouter from './health.router.js';
 import authRouter from './auth/auth.router.js';
 import rolesRouter from './auth/roles.router.js';
 import customerRouter from './customers/customers.router.js';
@@ -24,6 +25,7 @@ import reportRouter from './reports/report.router.js';
 import { rateLimiter, authRateLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
+router.use('/health', healthRouter);
 router.use(rateLimiter);
 
 router.use('/auth', authRateLimiter);
