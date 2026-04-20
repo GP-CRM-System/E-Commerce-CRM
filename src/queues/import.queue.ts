@@ -52,7 +52,10 @@ export const importWorker = new Worker<ImportJobData>(
             });
 
             if (!importJobRecord) {
-                logger.warn({ jobId }, 'Import job record not found - may have been cleaned up');
+                logger.warn(
+                    { jobId },
+                    'Import job record not found - may have been cleaned up'
+                );
                 return null;
             }
 

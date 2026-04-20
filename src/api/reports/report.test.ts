@@ -46,7 +46,11 @@ describe('Reports API', () => {
             });
 
             const now = new Date();
-            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+            const lastMonth = new Date(
+                now.getFullYear(),
+                now.getMonth() - 1,
+                15
+            );
 
             await prisma.order.createMany({
                 data: [
@@ -93,7 +97,11 @@ describe('Reports API', () => {
                         name: 'Acq Customer 2',
                         email: 'acq2@test.com',
                         organizationId: authA.orgId,
-                        createdAt: new Date(now.getFullYear(), now.getMonth() - 3, 1)
+                        createdAt: new Date(
+                            now.getFullYear(),
+                            now.getMonth() - 3,
+                            1
+                        )
                     }
                 ]
             });
@@ -107,8 +115,7 @@ describe('Reports API', () => {
         });
 
         it('should reject unauthorized requests', async () => {
-            const res = await request(app)
-                .get('/api/reports/dashboard');
+            const res = await request(app).get('/api/reports/dashboard');
 
             expect(res.status).toBe(401);
         });

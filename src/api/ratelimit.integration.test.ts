@@ -62,7 +62,10 @@ describe('Rate Limiting Integration Tests', () => {
             }
         });
 
-        const orgResponse = org as { organization?: { id: string }; id?: string };
+        const orgResponse = org as {
+            organization?: { id: string };
+            id?: string;
+        };
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
 
         await auth.api.setActiveOrganization({
@@ -80,50 +83,107 @@ describe('Rate Limiting Integration Tests', () => {
 
     afterAll(async () => {
         if (!testOrgId) return;
-        await prisma.conversation.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.ticketNote.deleteMany({ where: { ticket: { organizationId: testOrgId } } });
-        await prisma.supportTicket.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.transaction.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.notification.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.customerEvent.deleteMany({ where: { customer: { organizationId: testOrgId } } });
-        await prisma.note.deleteMany({ where: { customer: { organizationId: testOrgId } } });
-        await prisma.orderItem.deleteMany({ where: { order: { organizationId: testOrgId } } });
+        await prisma.conversation.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.ticketNote.deleteMany({
+            where: { ticket: { organizationId: testOrgId } }
+        });
+        await prisma.supportTicket.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.transaction.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.notification.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.customerEvent.deleteMany({
+            where: { customer: { organizationId: testOrgId } }
+        });
+        await prisma.note.deleteMany({
+            where: { customer: { organizationId: testOrgId } }
+        });
+        await prisma.orderItem.deleteMany({
+            where: { order: { organizationId: testOrgId } }
+        });
         await prisma.order.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.customer.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.productVariant.deleteMany({ where: { product: { organizationId: testOrgId } } });
-        await prisma.product.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.segment.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.importJobError.deleteMany({ where: { importJob: { organizationId: testOrgId } } });
-        await prisma.importJob.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.exportJob.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.syncLog.deleteMany({ where: { integration: { orgId: testOrgId } } });
+        await prisma.customer.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.productVariant.deleteMany({
+            where: { product: { organizationId: testOrgId } }
+        });
+        await prisma.product.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.segment.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.importJobError.deleteMany({
+            where: { importJob: { organizationId: testOrgId } }
+        });
+        await prisma.importJob.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.exportJob.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.syncLog.deleteMany({
+            where: { integration: { orgId: testOrgId } }
+        });
         await prisma.integration.deleteMany({ where: { orgId: testOrgId } });
-        await prisma.webhookLog.deleteMany({ where: { integration: { orgId: testOrgId } } });
-        await prisma.campaignRecipient.deleteMany({ where: { campaign: { organizationId: testOrgId } } });
-        await prisma.campaign.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.emailTemplate.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.member.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.organizationRole.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.session.deleteMany({ where: { user: { email: 'rl-test@test.com' } } });
-        await prisma.account.deleteMany({ where: { user: { email: 'rl-test@test.com' } } });
+        await prisma.webhookLog.deleteMany({
+            where: { integration: { orgId: testOrgId } }
+        });
+        await prisma.campaignRecipient.deleteMany({
+            where: { campaign: { organizationId: testOrgId } }
+        });
+        await prisma.campaign.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.emailTemplate.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.member.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.organizationRole.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.session.deleteMany({
+            where: { user: { email: 'rl-test@test.com' } }
+        });
+        await prisma.account.deleteMany({
+            where: { user: { email: 'rl-test@test.com' } }
+        });
         await prisma.organization.deleteMany({ where: { id: testOrgId } });
         await prisma.user.deleteMany({ where: { email: 'rl-test@test.com' } });
     });
 
     describe('Rate Limit Handler Response Format', () => {
         it('should return correct status code for rate limit', async () => {
-            const capturedReq: MockRequest = { method: 'POST', path: '/api/customers' };
+            const capturedReq: MockRequest = {
+                method: 'POST',
+                path: '/api/customers'
+            };
             let capturedStatus: number | undefined;
 
-            const { rateLimitHandler } = await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (req: MockRequest, res: MockResponse) => unknown;
+            const { rateLimitHandler } =
+                await import('../config/ratelimit.config.js');
+            const handlerFn = rateLimitHandler as (
+                req: MockRequest,
+                res: MockResponse
+            ) => unknown;
 
             const mockRes: MockResponse = {
-                status: function(code: number) {
+                status: function (code: number) {
                     capturedStatus = code;
                     return this;
                 },
-                json: function() { return this; }
+                json: function () {
+                    return this;
+                }
             };
 
             handlerFn(capturedReq, mockRes);
@@ -131,15 +191,24 @@ describe('Rate Limiting Integration Tests', () => {
         });
 
         it('should include method and path in rate limit error response', async () => {
-            const capturedReq: MockRequest = { method: 'GET', path: '/api/test-endpoint' };
+            const capturedReq: MockRequest = {
+                method: 'GET',
+                path: '/api/test-endpoint'
+            };
             let capturedBody: unknown;
 
-            const { rateLimitHandler } = await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (req: MockRequest, res: MockResponse) => unknown;
+            const { rateLimitHandler } =
+                await import('../config/ratelimit.config.js');
+            const handlerFn = rateLimitHandler as (
+                req: MockRequest,
+                res: MockResponse
+            ) => unknown;
 
             const mockRes: MockResponse = {
-                status: function() { return this; },
-                json: function(data: unknown) {
+                status: function () {
+                    return this;
+                },
+                json: function (data: unknown) {
                     capturedBody = data;
                     return this;
                 }
@@ -153,7 +222,8 @@ describe('Rate Limiting Integration Tests', () => {
 
     describe('Rate Limit Configuration', () => {
         it('should have correct default limits configured', async () => {
-            const { createRateLimiter, createAuthRateLimiter } = await import('../config/ratelimit.config.js');
+            const { createRateLimiter, createAuthRateLimiter } =
+                await import('../config/ratelimit.config.js');
 
             const apiLimiter = await createRateLimiter();
             const authLimiter = await createAuthRateLimiter();
@@ -168,19 +238,26 @@ describe('Rate Limiting Integration Tests', () => {
 
     describe('Error Contract Validation', () => {
         it('should return valid error contract for 429 responses', async () => {
-            const capturedReq: MockRequest = { method: 'GET', path: '/api/test' };
+            const capturedReq: MockRequest = {
+                method: 'GET',
+                path: '/api/test'
+            };
             let capturedStatus: number | undefined;
             let capturedBody: unknown;
 
-            const { rateLimitHandler } = await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (req: MockRequest, res: MockResponse) => unknown;
+            const { rateLimitHandler } =
+                await import('../config/ratelimit.config.js');
+            const handlerFn = rateLimitHandler as (
+                req: MockRequest,
+                res: MockResponse
+            ) => unknown;
 
             const mockRes: MockResponse = {
-                status: function(code: number) {
+                status: function (code: number) {
                     capturedStatus = code;
                     return this;
                 },
-                json: function(data: unknown) {
+                json: function (data: unknown) {
                     capturedBody = data;
                     return this;
                 }
@@ -189,7 +266,12 @@ describe('Rate Limiting Integration Tests', () => {
             handlerFn(capturedReq, mockRes);
 
             expect(capturedStatus).toBe(HttpStatus.TOO_MANY_REQUESTS);
-            const body = capturedBody as { message?: string; code?: string; status?: number; timestamp?: Date };
+            const body = capturedBody as {
+                message?: string;
+                code?: string;
+                status?: number;
+                timestamp?: Date;
+            };
             expect(body).toHaveProperty('message');
             expect(body).toHaveProperty('code');
             expect(body).toHaveProperty('status');

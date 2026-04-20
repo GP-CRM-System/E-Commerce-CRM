@@ -441,7 +441,9 @@ describe('Lifecycle Service', () => {
                     lifecycleStage: 'AT_RISK',
                     churnRiskScore: LIFECYCLE_RULES.AT_RISK_THRESHOLD + 0.1,
                     avgDaysBetweenOrders: 10,
-                    lastOrderAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                    lastOrderAt: new Date(
+                        Date.now() - 30 * 24 * 60 * 60 * 1000
+                    ),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }

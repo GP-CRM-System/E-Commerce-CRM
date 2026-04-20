@@ -72,7 +72,10 @@ export async function processExportJob(
     });
 
     if (!existingJob) {
-        logger.warn({ jobId }, 'Export job not found - may have been processed previously or cleaned up');
+        logger.warn(
+            { jobId },
+            'Export job not found - may have been processed previously or cleaned up'
+        );
         return null;
     }
 
