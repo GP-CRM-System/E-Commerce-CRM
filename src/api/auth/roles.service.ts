@@ -4,13 +4,13 @@
  * This module provides a "Validation Wrapper" around Better Auth's organization role management.
  *
  * Why Custom Implementation?
- * - Better Auth's built-in role routes (e.g., `/api/auth/organization/create-role`) do not support
- *   custom metadata like a `description` field, which is essential for CRM UIs.
- * - We need strict validation to ensure permissions conform to `AVAILABLE_PERMISSIONS` from roles.config.ts.
- * - We must protect default roles (`root`, `admin`, `member`, `owner`) from accidental modification/deletion.
+ * - Better Auth's built-in role routes (e.g., /api/auth/organization/create-role) do not support
+ *   custom metadata like a description field, which is essential for CRM UIs.
+ * - We need strict validation to ensure permissions conform to AVAILABLE_PERMISSIONS from roles.config.ts.
+ * - We must protect default roles (root, admin, member, owner) from accidental modification/deletion.
  *
- * Note: The storage still uses the `organizationRole` table which Better Auth's `organization` plugin
- * uses when `dynamicAccessControl` is enabled. This is NOT a reimplementation of Better Auth's logic,
+ * Note: The storage still uses the organizationRole table which Better Auth's organization plugin
+ * uses when dynamicAccessControl is enabled. This is NOT a reimplementation of Better Auth's logic,
  * but rather an extension with project-specific validation and metadata support.
  */
 
@@ -28,6 +28,7 @@ import {
     ErrorCode
 } from '../../utils/response.util.js';
 import type { OrganizationRole } from '../../generated/prisma/client.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const DEFAULT_ROLE_NAMES = Object.keys(DEFAULT_ROLES) as [string, ...string[]];
 
@@ -157,7 +158,8 @@ export const getRole = async (organizationId: string, roleId: string) => {
 
 export const createRole = async (
     input: CreateRoleInput,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ) => {
     if (isDefaultRole(input.name) || input.name.toLowerCase() === 'owner') {
         throw new BadRequestError(
@@ -186,6 +188,14 @@ export const createRole = async (
         }
     });
 
+    await AuditService.log({
+        organizationId,
+        userId,
+        action: 'CREATE',
+        targetId: role.id,
+        targetType: 'ROLE'
+    });
+
     return {
         id: role.id,
         name: role.role,
@@ -201,7 +211,8 @@ export const createRole = async (
 export const updateRole = async (
     roleId: string,
     input: UpdateRoleInput,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ) => {
     const role = await prisma.organizationRole.findFirst({
         where: { id: roleId, organizationId }
@@ -257,6 +268,14 @@ export const updateRole = async (
         }
     });
 
+    await AuditService.log({
+        organizationId,
+        userId,
+        action: 'UPDATE',
+        targetId: roleId,
+        targetType: 'ROLE'
+    });
+
     const parsedPermissions =
         typeof updatedRole.permission === 'string'
             ? JSON.parse(updatedRole.permission)
@@ -271,7 +290,11 @@ export const updateRole = async (
     };
 };
 
-export const deleteRole = async (roleId: string, organizationId: string) => {
+export const deleteRole = async (
+    roleId: string,
+    organizationId: string,
+    userId: string
+) => {
     const role = await prisma.organizationRole.findFirst({
         where: { id: roleId, organizationId }
     });
@@ -286,6 +309,14 @@ export const deleteRole = async (roleId: string, organizationId: string) => {
 
     await prisma.organizationRole.delete({
         where: { id: roleId }
+    });
+
+    await AuditService.log({
+        organizationId,
+        userId,
+        action: 'DELETE',
+        targetId: roleId,
+        targetType: 'ROLE'
     });
 
     return { success: true, message: 'Role deleted successfully' };

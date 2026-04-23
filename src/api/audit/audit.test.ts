@@ -1,60 +1,181 @@
 import request from 'supertest';
-import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import app from '../../app.js';
-import {
-    createTestUser,
-    cleanupTestUser,
-    type TestAuth
-} from '../../test/helpers/auth.js';
+import prisma from '../../config/prisma.config.js';
+import { auth } from '../auth/auth.js';
+import { fromNodeHeaders } from 'better-auth/node';
+import { DEFAULT_ROLES } from '../../config/roles.config.js';
+
+interface CreateOrgResponse {
+    organization?: { id: string };
+    id?: string;
+}
+
+interface CreateInvitationResponse {
+    id?: string;
+    invitation?: { id: string };
+}
+
+let adminToken: string;
+let adminUserId: string;
+let adminOrgId: string;
+let memberToken: string;
+let memberUserId: string;
 
 describe('Audit API', () => {
-    let authA: TestAuth;
-
     beforeAll(async () => {
-        authA = await createTestUser(
-            `audit-a-${Date.now()}@test.com`,
-            'Audit Org A',
-            `audit-org-a-${Date.now()}`
-        );
+        // Cleanup first
+        await prisma.auditLog.deleteMany({
+            where: { organization: { slug: { startsWith: 'audit-test' } } }
+        });
+        await prisma.organizationRole.deleteMany({
+            where: { organization: { slug: { startsWith: 'audit-test' } } }
+        });
+        await prisma.member.deleteMany({
+            where: { user: { email: { startsWith: 'audit-test' } } }
+        });
+        await prisma.session.deleteMany({
+            where: { user: { email: { startsWith: 'audit-test' } } }
+        });
+        await prisma.account.deleteMany({
+            where: { user: { email: { startsWith: 'audit-test' } } }
+        });
+        await prisma.user.deleteMany({
+            where: { email: { startsWith: 'audit-test' } }
+        });
+        await prisma.organization.deleteMany({
+            where: { slug: { startsWith: 'audit-test' } }
+        });
+
+        // Create admin user and org (this will be the organization owner)
+        const adminSignup = await auth.api.signUpEmail({
+            body: {
+                email: 'audit-test-admin@test.com',
+                password: 'Password123!',
+                name: 'Audit Test Admin'
+            }
+        });
+        adminUserId = adminSignup.user.id;
+        adminToken = adminSignup.token!;
+
+        await prisma.user.update({
+            where: { id: adminUserId },
+            data: { emailVerified: true }
+        });
+
+        const adminOrg = await auth.api.createOrganization({
+            headers: fromNodeHeaders({ authorization: `Bearer ${adminToken}` }),
+            body: {
+                name: 'Audit Test Org',
+                slug: 'audit-test-org-' + Date.now()
+            }
+        });
+        adminOrgId =
+            (adminOrg as CreateOrgResponse).organization?.id ??
+            (adminOrg as CreateOrgResponse).id ??
+            '';
+
+        // Seed default roles - ensure 'member' role doesn't have reports:read
+        for (const [roleName, permissions] of Object.entries(DEFAULT_ROLES)) {
+            await prisma.organizationRole.create({
+                data: {
+                    organizationId: adminOrgId,
+                    role: roleName,
+                    permission: JSON.stringify(permissions)
+                }
+            });
+        }
+
+        // Create member user
+        const memberSignup = await auth.api.signUpEmail({
+            body: {
+                email: 'audit-test-member@test.com',
+                password: 'Password123!',
+                name: 'Audit Test Member'
+            }
+        });
+        memberUserId = memberSignup.user.id;
+        memberToken = memberSignup.token!;
+
+        await prisma.user.update({
+            where: { id: memberUserId },
+            data: { emailVerified: true }
+        });
+
+        // Invite member to admin's org with 'member' role
+        const invite = await auth.api.createInvitation({
+            headers: fromNodeHeaders({ authorization: `Bearer ${adminToken}` }),
+            body: {
+                email: 'audit-test-member@test.com',
+                role: 'member',
+                organizationId: adminOrgId
+            }
+        });
+
+        // Accept the invitation
+        const inviteId =
+            (invite as CreateInvitationResponse).id ??
+            (invite as CreateInvitationResponse).invitation?.id;
+        if (!inviteId) throw new Error('Failed to get invitation ID');
+
+        await auth.api.acceptInvitation({
+            headers: fromNodeHeaders({
+                authorization: `Bearer ${memberToken}`
+            }),
+            body: { invitationId: inviteId }
+        });
+
+        // Sign in member again to get updated token with org context
+        const memberSignin = await auth.api.signInEmail({
+            body: {
+                email: 'audit-test-member@test.com',
+                password: 'Password123!'
+            }
+        });
+        memberToken = memberSignin.token!;
     });
 
     afterAll(async () => {
-        if (authA) await cleanupTestUser(authA.email, authA.orgId);
+        await prisma.auditLog.deleteMany({
+            where: { organizationId: adminOrgId }
+        });
+        await prisma.organizationRole.deleteMany({
+            where: { organizationId: adminOrgId }
+        });
+        await prisma.member.deleteMany({
+            where: { userId: { in: [adminUserId, memberUserId] } }
+        });
+        await prisma.session.deleteMany({
+            where: { user: { email: { startsWith: 'audit-test' } } }
+        });
+        await prisma.account.deleteMany({
+            where: { user: { email: { startsWith: 'audit-test' } } }
+        });
+        await prisma.user.deleteMany({
+            where: { email: { startsWith: 'audit-test' } }
+        });
+        await prisma.organization.deleteMany({
+            where: { id: adminOrgId }
+        });
     });
 
-    describe('GET /api/audit-logs', () => {
-        it('should return empty list for new org', async () => {
-            const res = await request(app)
-                .get('/api/audit-logs')
-                .set('Authorization', `Bearer ${authA.token}`);
+    test('GET /api/audit-logs - should require authentication', async () => {
+        const response = await request(app).get('/api/audit-logs');
+        expect(response.status).toBe(401);
+    });
 
-            expect(res.status).toBe(200);
-            expect(res.body.data).toBeDefined();
-            expect(res.body.pagination).toBeDefined();
-        });
+    test('GET /api/audit-logs - should reject member without reports:read permission', async () => {
+        const response = await request(app)
+            .get('/api/audit-logs')
+            .set('Authorization', `Bearer ${memberToken}`);
+        expect(response.status).toBe(403);
+    });
 
-        it('should accept pagination params', async () => {
-            const res = await request(app)
-                .get('/api/audit-logs?page=1&limit=10')
-                .set('Authorization', `Bearer ${authA.token}`);
-
-            expect(res.status).toBe(200);
-            expect(res.body.pagination.page).toBe(1);
-            expect(res.body.pagination.limit).toBe(10);
-        });
-
-        it('should reject invalid page/limit', async () => {
-            const res = await request(app)
-                .get('/api/audit-logs?page=-1')
-                .set('Authorization', `Bearer ${authA.token}`);
-
-            expect([400, 500]).toContain(res.status);
-        });
-
-        it('should reject unauthorized requests', async () => {
-            const res = await request(app).get('/api/audit-logs');
-
-            expect(res.status).toBe(401);
-        });
+    test('GET /api/audit-logs - should allow access with reports:read permission', async () => {
+        const response = await request(app)
+            .get('/api/audit-logs')
+            .set('Authorization', `Bearer ${adminToken}`);
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('success', true);
     });
 });

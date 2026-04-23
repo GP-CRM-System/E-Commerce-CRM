@@ -213,6 +213,12 @@ describe('Lifecycle Service', () => {
 
             expect(result?.triggered).toBe(true);
             expect(result?.newStage).toBe('ONE_TIME');
+
+            // Verify event emission
+            const event = await prisma.customerEvent.findFirst({
+                where: { customerId: testCustomerId }
+            });
+            expect(event).toBeDefined();
         });
 
         it('should transition RETURNING to LOYAL at threshold', async () => {
@@ -231,6 +237,12 @@ describe('Lifecycle Service', () => {
 
             expect(result?.triggered).toBe(true);
             expect(result?.newStage).toBe('LOYAL');
+
+            // Verify event emission
+            const event = await prisma.customerEvent.findFirst({
+                where: { customerId: testCustomerId }
+            });
+            expect(event).toBeDefined();
         });
 
         it('should transition to AT_RISK when churn risk is high', async () => {
@@ -250,6 +262,12 @@ describe('Lifecycle Service', () => {
 
             expect(result?.triggered).toBe(true);
             expect(result?.newStage).toBe('AT_RISK');
+
+            // Verify event emission
+            const event = await prisma.customerEvent.findFirst({
+                where: { customerId: testCustomerId }
+            });
+            expect(event).toBeDefined();
         });
 
         it('should not transition if no threshold met', async () => {
@@ -456,6 +474,12 @@ describe('Lifecycle Service', () => {
 
             expect(result?.triggered).toBe(true);
             expect(result?.newStage).toBe('CHURNED');
+
+            // Verify event emission
+            const event = await prisma.customerEvent.findFirst({
+                where: { customerId: customer.id }
+            });
+            expect(event).toBeDefined();
 
             const updatedCustomer = await prisma.customer.findUnique({
                 where: { id: customer.id },

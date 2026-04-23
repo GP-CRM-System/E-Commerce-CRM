@@ -38,7 +38,7 @@ router
 router
     .route('/:id')
     .get(requirePermission('customers:read'), customerController.getCustomer)
-    .put(
+    .patch(
         requirePermission('customers:write'),
         validateRequest(customerSchema.updateCustomer),
         customerController.updateCustomer
@@ -77,7 +77,7 @@ router
 
 router
     .route('/:id/notes/:noteId')
-    .put(
+    .patch(
         requirePermission('customers:write'),
         validateRequest(customerSchema.updateNote),
         customerController.updateNote
@@ -101,7 +101,7 @@ router
 
 router
     .route('/:id/events/:eventId')
-    .put(
+    .patch(
         requirePermission('customers:write'),
         validateRequest(customerSchema.updateEvent),
         customerController.updateEvent

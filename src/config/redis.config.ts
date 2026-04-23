@@ -1,6 +1,7 @@
 import { env } from '../config/env.config.js';
 import { createClient, type RedisClientType } from '@redis/client';
 import * as Sentry from '@sentry/bun';
+import logger from '../utils/logger.util.js';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
@@ -112,5 +113,3 @@ export async function checkRedisHealth(): Promise<{
         return { available: false, error };
     }
 }
-
-import logger from '../utils/logger.util.js';

@@ -411,7 +411,7 @@ describe('Customer API', () => {
         };
 
         const response = await request(app)
-            .put(`/api/customers/${testCustomerId}`)
+            .patch(`/api/customers/${testCustomerId}`)
             .set('Authorization', `Bearer ${authToken}`)
             .send(updateData);
 
@@ -495,7 +495,7 @@ describe('Customer API', () => {
 
         it('should not allow user from org B to update org A customer', async () => {
             const response = await request(app)
-                .put(`/api/customers/${testCustomerId}`)
+                .patch(`/api/customers/${testCustomerId}`)
                 .set('Authorization', `Bearer ${crossOrgToken}`)
                 .send({ name: 'Hacked Name' });
 
@@ -617,7 +617,7 @@ describe('Customer API', () => {
             };
 
             const response = await request(app)
-                .put(`/api/customers/${testCustomerId}/notes/${testNoteId}`)
+                .patch(`/api/customers/${testCustomerId}/notes/${testNoteId}`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(noteData);
 
@@ -685,7 +685,7 @@ describe('Customer API', () => {
             };
 
             const response = await request(app)
-                .put(`/api/customers/${testCustomerId}/events/${testEventId}`)
+                .patch(`/api/customers/${testCustomerId}/events/${testEventId}`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send(eventData);
 

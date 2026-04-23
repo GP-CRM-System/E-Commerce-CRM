@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { it, describe, expect, beforeAll } from 'bun:test';
+import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
 import app from '../app.js';
 import prisma from '../config/prisma.config.js';
 import { auth } from '../api/auth/auth.js';
@@ -63,6 +63,17 @@ describe('Auth Middleware', () => {
         authToken = signin.token!;
     });
 
+    afterAll(async () => {
+        const testEmail = 'auth-mw-test@test.com';
+        await prisma.session.deleteMany({ where: { user: { email: testEmail } } });
+        await prisma.member.deleteMany({ where: { user: { email: testEmail } } });
+        await prisma.user.deleteMany({ where: { email: testEmail } });
+        await prisma.organization.deleteMany({
+            where: { slug: { startsWith: 'auth-mw-test-org' } }
+        });
+        await prisma.account.deleteMany({ where: { user: { email: testEmail } } });
+    });
+
     describe('protect', () => {
         it('should allow authenticated request', async () => {
             const response = await request(app)
@@ -89,10 +100,12 @@ describe('Auth Middleware', () => {
         });
 
         it('should reject request without active organization', async () => {
+            const noOrgEmail = 'no-org-' + Date.now() + '@test.com';
+            
             // Create a new user without an active org
             const signup = await auth.api.signUpEmail({
                 body: {
-                    email: 'no-org@test.com',
+                    email: noOrgEmail,
                     password: 'Password123!',
                     name: 'No Org User'
                 }
@@ -104,7 +117,10 @@ describe('Auth Middleware', () => {
 
             expect(response.status).toBe(403);
 
-            await prisma.user.delete({ where: { email: 'no-org@test.com' } });
+            // Cleanup
+            await prisma.session.deleteMany({ where: { user: { email: noOrgEmail } } });
+            await prisma.account.deleteMany({ where: { user: { email: noOrgEmail } } });
+            await prisma.user.delete({ where: { email: noOrgEmail } });
         });
     });
 });

@@ -14,6 +14,7 @@ import {
     DEFAULT_ROLES
 } from '../../config/roles.config.js';
 import loggerUtil from '../../utils/logger.util.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const ac = createAccessControl(AVAILABLE_PERMISSIONS);
 
@@ -81,25 +82,18 @@ export const auth = betterAuth({
         bearer(),
         organization({
             ac: ac,
-            // User can only create an organization if they are not already a member of one.
             allowUserToCreateOrganization: async (user) => {
                 const memberships = await prisma.member.count({
                     where: { userId: user.id }
                 });
                 return memberships === 0;
             },
-            // Each user can own at most one organization.
             organizationLimit: 1,
-            // The creator gets the root role with full permissions.
             creatorRole: 'root',
-            // Use slug instead of ID for organization identification
             defaultOrganizationIdField: 'slug',
-            // Invitation settings
             invitationExpiresIn: 60 * 60 * 24 * 7,
             invitationLimit: 100,
-            // Membership settings
             membershipLimit: 100,
-            // Prevent accidental organization deletion
             disableOrganizationDeletion: true,
             organizationHooks: {
                 beforeDeleteOrganization: async (data) => {
@@ -167,14 +161,6 @@ export const auth = betterAuth({
             clientId: env.googleClientId!,
             clientSecret: env.googleClientSecret!
         }
-        // facebook: {
-        //     clientId: env.facebookClientId!,
-        //     clientSecret: env.facebookClientSecret!
-        // },
-        // microsoft: {
-        //     clientId: env.microsoftClientId!,
-        //     clientSecret: env.microsoftClientSecret!
-        // }
     },
     advanced: {
         cookiePrefix: 'better-auth',
@@ -201,16 +187,63 @@ export const auth = betterAuth({
                     }
                 }
             }
+        },
+        member: {
+            create: {
+                after: async (member: unknown) => {
+                    await AuditService.log({
+                        organizationId: (member as { organizationId: string })
+                            .organizationId,
+                        userId: (member as { userId: string }).userId,
+                        action: 'INVITE_ACCEPT',
+                        targetId: (member as { id: string }).id,
+                        targetType: 'MEMBER'
+                    });
+                }
+            },
+            delete: {
+                after: async (member: unknown) => {
+                    await AuditService.log({
+                        organizationId: (member as { organizationId: string })
+                            .organizationId,
+                        userId: null, // Use null for system actions to avoid FK violation
+                        action: 'MEMBER_REMOVE',
+                        targetId: (member as { id: string }).id,
+                        targetType: 'MEMBER'
+                    });
+                }
+            },
+            update: {
+                after: async (member: unknown) => {
+                    await AuditService.log({
+                        organizationId: (member as { organizationId: string })
+                            .organizationId,
+                        userId: null, // Use null for system actions to avoid FK violation
+                        action: 'ROLE_CHANGE',
+                        targetId: (member as { id: string }).id,
+                        targetType: 'MEMBER'
+                    });
+                }
+            }
+        },
+        invitation: {
+            create: {
+                after: async (invitation: unknown) => {
+                    await AuditService.log({
+                        organizationId: (
+                            invitation as { organizationId: string }
+                        ).organizationId,
+                        userId: (invitation as { inviterId: string }).inviterId,
+                        action: 'INVITE_SEND',
+                        targetId: (invitation as { id: string }).id,
+                        targetType: 'INVITATION'
+                    });
+                }
+            }
         }
     }
 });
 
-/**
- * Retrieve the current authentication session from request headers.
- *
- * @param headers Request headers containing authentication credentials.
- * @returns The resolved session payload from Better Auth.
- */
 export const getAuthContext = async (headers: Request['headers']) => {
     const session = await auth.api.getSession({
         headers: fromNodeHeaders(headers)

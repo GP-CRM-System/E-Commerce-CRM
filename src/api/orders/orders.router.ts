@@ -24,7 +24,7 @@ router
 router
     .route('/:id')
     .get(requirePermission('orders:read'), orderController.get)
-    .put(
+    .patch(
         requirePermission('orders:write'),
         validateRequest(orderSchema.updateOrder),
         orderController.update

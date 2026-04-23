@@ -196,7 +196,7 @@ describe('Orders API', () => {
 
         it('should NOT allow Org B to update Org A order', async () => {
             const response = await request(app)
-                .put(`/api/orders/${testOrderId}`)
+                .patch(`/api/orders/${testOrderId}`)
                 .set('Authorization', `Bearer ${authB.token}`)
                 .send({ fulfillmentStatus: 'fulfilled' });
 
@@ -335,7 +335,7 @@ describe('Orders API', () => {
             };
 
             const response = await request(app)
-                .put(`/api/orders/${testOrderId}`)
+                .patch(`/api/orders/${testOrderId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send(updateData);
 
@@ -363,7 +363,7 @@ describe('Orders API', () => {
 
         it('should fail with invalid fulfillmentStatus on update (400)', async () => {
             const response = await request(app)
-                .put(`/api/orders/${testOrderId}`)
+                .patch(`/api/orders/${testOrderId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ fulfillmentStatus: 'INVALID' });
 
@@ -372,7 +372,7 @@ describe('Orders API', () => {
 
         it('should fail with invalid paymentStatus on update (400)', async () => {
             const response = await request(app)
-                .put(`/api/orders/${testOrderId}`)
+                .patch(`/api/orders/${testOrderId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ paymentStatus: 'INVALID' });
 
@@ -381,7 +381,7 @@ describe('Orders API', () => {
 
         it('should return 404 for non-existent order on update', async () => {
             const response = await request(app)
-                .put('/api/orders/non-existent-id')
+                .patch('/api/orders/non-existent-id')
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ fulfillmentStatus: 'fulfilled' });
 

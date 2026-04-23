@@ -100,7 +100,9 @@ export async function getCustomerTimeline(
             id: al.id,
             type: 'audit' as const,
             title: `Action: ${al.action}`,
-            description: `Performed by ${al.user.name}`,
+            description: al.user
+                ? `Performed by ${al.user.name}`
+                : `Performed by system`,
             occurredAt: al.createdAt
         }))
     ];

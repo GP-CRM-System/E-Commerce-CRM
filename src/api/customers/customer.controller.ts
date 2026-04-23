@@ -59,15 +59,17 @@ export const getAllCustomers = asyncHandler(
 
 export const createCustomer = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
-        const { activeOrganizationId, userId } = req.session;
+        const { activeOrganizationId } = req.session;
+        const userId = req.user.id;
 
-        if (!activeOrganizationId || !userId) {
+        if (!activeOrganizationId) {
             throw new AuthorizationError('No active organization selected');
         }
 
         const response = await customerService.createCustomer(
             req.body,
-            activeOrganizationId
+            activeOrganizationId,
+            userId
         );
 
         if (!response) {
@@ -138,10 +140,13 @@ export const updateCustomer = asyncHandler(
             throw new AuthorizationError('No active organization selected');
         }
 
+        const userId = req.user.id;
+
         const response = await customerService.updateCustomer(
             id,
             req.body,
-            activeOrganizationId
+            activeOrganizationId,
+            userId
         );
 
         if (!response) {
@@ -179,9 +184,12 @@ export const deleteCustomer = asyncHandler(
             throw new AuthorizationError('No active organization selected');
         }
 
+        const userId = req.user.id;
+
         const response = await customerService.deleteCustomer(
             id,
-            activeOrganizationId
+            activeOrganizationId,
+            userId
         );
 
         if (!response) {
@@ -237,7 +245,8 @@ export const getCustomerNotes = asyncHandler(
 
 export const createNote = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
-        const { activeOrganizationId, userId } = req.session;
+        const { activeOrganizationId } = req.session;
+        const userId = req.user.id;
 
         const id = req.params.id as string;
 
@@ -267,7 +276,8 @@ export const createNote = asyncHandler(
 
 export const updateNote = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
-        const { activeOrganizationId, userId } = req.session;
+        const { activeOrganizationId } = req.session;
+        const userId = req.user.id;
 
         const id = req.params.id as string;
         const noteId = req.params.noteId as string;
@@ -303,7 +313,8 @@ export const updateNote = asyncHandler(
 
 export const deleteNote = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
-        const { activeOrganizationId, userId } = req.session;
+        const { activeOrganizationId } = req.session;
+        const userId = req.user.id;
 
         const id = req.params.id as string;
         const noteId = req.params.noteId as string;

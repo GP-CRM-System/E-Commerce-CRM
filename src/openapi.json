@@ -224,7 +224,7 @@
                 },
                 "security": [{ "bearerAuth": [] }]
             },
-            "put": {
+            "patch": {
                 "operationId": "updateCustomer",
                 "summary": "Update customer",
                 "tags": ["Customers"],
@@ -324,7 +324,7 @@
             }
         },
         "/customers/{id}/notes/{noteId}": {
-            "put": {
+            "patch": {
                 "operationId": "updateNote",
                 "summary": "Update customer note",
                 "tags": ["Customers"],
@@ -435,7 +435,7 @@
             }
         },
         "/customers/{id}/events/{eventId}": {
-            "put": {
+            "patch": {
                 "operationId": "updateEvent",
                 "summary": "Update customer event",
                 "tags": ["Customers"],
@@ -1209,7 +1209,7 @@
                 },
                 "security": [{ "bearerAuth": [] }]
             },
-            "put": {
+            "patch": {
                 "operationId": "updateProduct",
                 "summary": "Update a product",
                 "tags": ["Products"],
@@ -1360,7 +1360,7 @@
                 },
                 "security": [{ "bearerAuth": [] }]
             },
-            "put": {
+            "patch": {
                 "operationId": "updateOrder",
                 "summary": "Update an order",
                 "tags": ["Orders"],
@@ -3638,6 +3638,39 @@
                     }
                 ],
                 "responses": { "204": { "description": "Role deleted" } },
+                "security": [{ "bearerAuth": [] }]
+            }
+        },
+        "/audit-logs": {
+            "get": {
+                "operationId": "listAuditLogs",
+                "summary": "List audit logs",
+                "tags": ["Audit Logs"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 1 }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "default": 20 }
+                    },
+                    {
+                        "name": "targetType",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "List of audit logs" }
+                },
                 "security": [{ "bearerAuth": [] }]
             }
         }

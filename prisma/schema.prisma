@@ -706,7 +706,7 @@ model TicketNote {
 model AuditLog {
   id             String @id @default(nanoid())
   organizationId String
-  userId         String
+  userId         String?
   action         String
   targetId       String
   targetType     String
@@ -714,7 +714,7 @@ model AuditLog {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
 }
 
 enum ImportJobStatus {

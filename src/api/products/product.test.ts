@@ -134,7 +134,7 @@ describe('Products API', () => {
 
         it('should NOT allow Org B to update Org A product', async () => {
             const response = await request(app)
-                .put(`/api/products/${testProductId}`)
+                .patch(`/api/products/${testProductId}`)
                 .set('Authorization', `Bearer ${authB.token}`)
                 .send({ name: 'Hacked Name' });
 
@@ -266,7 +266,7 @@ describe('Products API', () => {
             };
 
             const response = await request(app)
-                .put(`/api/products/${testProductId}`)
+                .patch(`/api/products/${testProductId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send(updateData);
 
@@ -277,7 +277,7 @@ describe('Products API', () => {
 
         it('should fail with invalid price on update (400)', async () => {
             const response = await request(app)
-                .put(`/api/products/${testProductId}`)
+                .patch(`/api/products/${testProductId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ price: 'not-a-number' });
 
@@ -286,7 +286,7 @@ describe('Products API', () => {
 
         it('should fail with invalid status on update (400)', async () => {
             const response = await request(app)
-                .put(`/api/products/${testProductId}`)
+                .patch(`/api/products/${testProductId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ status: 'INVALID' });
 
@@ -295,7 +295,7 @@ describe('Products API', () => {
 
         it('should return 404 for non-existent product on update', async () => {
             const response = await request(app)
-                .put('/api/products/non-existent-id')
+                .patch('/api/products/non-existent-id')
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ name: 'Test' });
 
@@ -314,7 +314,7 @@ describe('Products API', () => {
 
         it('should reject update from different org', async () => {
             const response = await request(app)
-                .put(`/api/products/${testProductId}`)
+                .patch(`/api/products/${testProductId}`)
                 .set('Authorization', `Bearer ${authB.token}`)
                 .send({ name: 'Hacked' });
 
@@ -373,12 +373,12 @@ describe('Products API', () => {
             const productId = createResponse.body.data.id;
 
             await request(app)
-                .put(`/api/products/${productId}`)
+                .patch(`/api/products/${productId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ inventory: 25 });
 
             await request(app)
-                .put(`/api/products/${productId}`)
+                .patch(`/api/products/${productId}`)
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ inventory: 10 });
 

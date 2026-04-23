@@ -24,7 +24,7 @@ router
 router
     .route('/:id')
     .get(requirePermission('products:read'), productController.get)
-    .put(
+    .patch(
         requirePermission('products:write'),
         validateRequest(productSchema.updateProduct),
         productController.update
@@ -41,7 +41,7 @@ router
 
 router
     .route('/:id/variants/:variantId')
-    .put(
+    .patch(
         requirePermission('products:write'),
         validateRequest(productSchema.updateProductVariant),
         productController.updateVariant

@@ -81,7 +81,8 @@ export const create = asyncHandler(
         const data = productSchema.createProduct.parse(req.body);
         const product = await productService.createProduct(
             data,
-            organizationId
+            organizationId,
+            req.user.id
         );
 
         return ResponseHandler.created(
@@ -158,7 +159,8 @@ export const update = asyncHandler(
         const product = await productService.updateProduct(
             productId,
             data,
-            organizationId
+            organizationId,
+            req.user.id
         );
 
         return ResponseHandler.success(
@@ -197,7 +199,11 @@ export const remove = asyncHandler(
             );
         }
 
-        await productService.deleteProduct(productId, organizationId);
+        await productService.deleteProduct(
+            productId,
+            organizationId,
+            req.user.id
+        );
 
         return ResponseHandler.success(
             res,

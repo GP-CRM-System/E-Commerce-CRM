@@ -26,6 +26,7 @@ import {
 } from '../../config/redis.config.js';
 import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models/ImportJobError.js';
 import { processRow } from './imports.processor.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const importQueue: Queue | null = isRedisAvailable
     ? new Queue('import-queue', { connection: redisConnection })
@@ -92,6 +93,14 @@ export async function createImportJob(
             successfulRows: 0,
             failedRows: 0
         }
+    });
+
+    await AuditService.log({
+        organizationId,
+        userId,
+        action: 'CREATE',
+        targetId: job.id,
+        targetType: 'IMPORT_JOB'
     });
 
     if (!validateFileType(file.originalname)) {
@@ -469,6 +478,14 @@ export async function rollbackImportJob(
                 deletedCount: totalDeleted
             }
         }
+    });
+
+    await AuditService.log({
+        organizationId,
+        userId: job.createdByUserId,
+        action: 'DELETE',
+        targetId: jobId,
+        targetType: 'IMPORT_JOB'
     });
 
     return { deletedCount: totalDeleted };

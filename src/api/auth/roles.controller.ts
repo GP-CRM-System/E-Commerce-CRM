@@ -77,6 +77,7 @@ export const createRole = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const input = createRoleSchema.parse(req.body);
         const organizationId = req.session.activeOrganizationId;
+        const userId = req.user.id;
         if (!organizationId) {
             return ResponseHandler.error(
                 res,
@@ -86,7 +87,11 @@ export const createRole = asyncHandler(
                 req.path
             );
         }
-        const role = await RolesService.createRole(input, organizationId);
+        const role = await RolesService.createRole(
+            input,
+            organizationId,
+            userId
+        );
         ResponseHandler.created(
             res,
             'Role created successfully',
@@ -101,6 +106,7 @@ export const updateRole = asyncHandler(
         const { roleId } = roleIdSchema.parse({ roleId: req.params.id });
         const input = updateRoleSchema.parse(req.body);
         const organizationId = req.session.activeOrganizationId;
+        const userId = req.user.id;
         if (!organizationId) {
             return ResponseHandler.error(
                 res,
@@ -113,7 +119,8 @@ export const updateRole = asyncHandler(
         const role = await RolesService.updateRole(
             roleId,
             input,
-            organizationId
+            organizationId,
+            userId
         );
         ResponseHandler.success(
             res,
@@ -129,6 +136,7 @@ export const deleteRole = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const { roleId } = roleIdSchema.parse({ roleId: req.params.id });
         const organizationId = req.session.activeOrganizationId;
+        const userId = req.user.id;
         if (!organizationId) {
             return ResponseHandler.error(
                 res,
@@ -138,7 +146,11 @@ export const deleteRole = asyncHandler(
                 req.path
             );
         }
-        const result = await RolesService.deleteRole(roleId, organizationId);
+        const result = await RolesService.deleteRole(
+            roleId,
+            organizationId,
+            userId
+        );
         ResponseHandler.success(
             res,
             result.message,

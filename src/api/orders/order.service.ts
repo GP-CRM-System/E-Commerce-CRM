@@ -5,6 +5,7 @@ import * as orderSchema from './order.schemas.js';
 import type { Order } from '../../generated/prisma/client.js';
 import type { OrderFilters } from './order.schemas.js';
 import { addRFMScoreJob } from '../../queues/rfm.queue.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export async function getAllOrders(
     organizationId: string,
@@ -89,7 +90,8 @@ export async function getAllOrders(
 
 export async function createOrder(
     data: z.infer<typeof orderSchema.createOrder>,
-    activeOrganizationId: string
+    activeOrganizationId: string,
+    userId: string
 ): Promise<Order> {
     try {
         const { items, createdAt, ...orderData } = data;
@@ -112,6 +114,14 @@ export async function createOrder(
                 orderItems: true,
                 customer: true
             }
+        });
+
+        await AuditService.log({
+            organizationId: activeOrganizationId,
+            userId,
+            action: 'CREATE',
+            targetId: order.id,
+            targetType: 'ORDER'
         });
 
         if (order.customerId) {
@@ -159,7 +169,8 @@ export async function getOrderDetails(
 export async function updateOrder(
     id: string,
     data: z.infer<typeof orderSchema.updateOrder>,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ): Promise<Order> {
     try {
         const order = await prisma.order.update({
@@ -177,6 +188,14 @@ export async function updateOrder(
             }
         });
 
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'UPDATE',
+            targetId: id,
+            targetType: 'ORDER'
+        });
+
         if (order.customerId) {
             await triggerCustomerScoreUpdate(order.customerId, organizationId);
         }
@@ -190,7 +209,8 @@ export async function updateOrder(
 
 export async function deleteOrder(
     id: string,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ): Promise<Order> {
     try {
         await prisma.orderItem.deleteMany({
@@ -202,6 +222,14 @@ export async function deleteOrder(
                 id,
                 organizationId
             }
+        });
+
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'DELETE',
+            targetId: id,
+            targetType: 'ORDER'
         });
 
         return order;

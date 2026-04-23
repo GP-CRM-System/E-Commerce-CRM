@@ -10,6 +10,7 @@ import type {
 } from '../../generated/prisma/client.js';
 import type { CustomerFilters } from './customer.schemas.js';
 import { buildPrismaWhere } from '../segments/segment.utils.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export async function getAllCustomers(
     organizationId: string,
@@ -81,7 +82,8 @@ export async function getAllCustomers(
 
 export async function createCustomer(
     data: z.infer<typeof customerSchema.createCustomer>,
-    activeOrganizationId: string
+    activeOrganizationId: string,
+    userId: string
 ) {
     try {
         const customer = await prisma.customer.create({
@@ -91,6 +93,14 @@ export async function createCustomer(
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
+        });
+
+        await AuditService.log({
+            organizationId: activeOrganizationId,
+            userId,
+            action: 'CREATE',
+            targetId: customer.id,
+            targetType: 'CUSTOMER'
         });
 
         return customer;
@@ -126,7 +136,8 @@ export async function getCustomerDetails(id: string, organizationId: string) {
 export async function updateCustomer(
     id: string,
     data: z.infer<typeof customerSchema.updateCustomer>,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ) {
     try {
         const customer = await prisma.customer.findFirst({
@@ -148,6 +159,14 @@ export async function updateCustomer(
             }
         });
 
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'UPDATE',
+            targetId: id,
+            targetType: 'CUSTOMER'
+        });
+
         return updatedCustomer;
     } catch (error) {
         logger.error(`Error updating customer: ${error}`);
@@ -155,7 +174,11 @@ export async function updateCustomer(
     }
 }
 
-export async function deleteCustomer(id: string, organizationId: string) {
+export async function deleteCustomer(
+    id: string,
+    organizationId: string,
+    userId: string
+) {
     try {
         const customer = await prisma.customer.findFirst({
             where: {
@@ -175,6 +198,14 @@ export async function deleteCustomer(id: string, organizationId: string) {
                 }
             })
         ]);
+
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'DELETE',
+            targetId: id,
+            targetType: 'CUSTOMER'
+        });
 
         return customer;
     } catch (error) {

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as productSchema from './product.schemas.js';
 import type { Product, ProductVariant } from '../../generated/prisma/client.js';
 import type { ProductFilters } from './product.schemas.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export async function getAllProducts(
     organizationId: string,
@@ -89,7 +90,8 @@ export async function getAllProducts(
 
 export async function createProduct(
     data: z.infer<typeof productSchema.createProduct>,
-    activeOrganizationId: string
+    activeOrganizationId: string,
+    userId: string
 ): Promise<Product> {
     try {
         const product = await prisma.product.create({
@@ -99,6 +101,14 @@ export async function createProduct(
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
+        });
+
+        await AuditService.log({
+            organizationId: activeOrganizationId,
+            userId,
+            action: 'CREATE',
+            targetId: product.id,
+            targetType: 'PRODUCT'
         });
 
         return product;
@@ -134,7 +144,8 @@ export async function getProductDetails(
 export async function updateProduct(
     id: string,
     data: z.infer<typeof productSchema.updateProduct>,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ): Promise<Product> {
     try {
         const product = await prisma.product.update({
@@ -148,6 +159,14 @@ export async function updateProduct(
             }
         });
 
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'UPDATE',
+            targetId: id,
+            targetType: 'PRODUCT'
+        });
+
         return product;
     } catch (error) {
         logger.error(`Error updating product: ${error}`);
@@ -157,7 +176,8 @@ export async function updateProduct(
 
 export async function deleteProduct(
     id: string,
-    organizationId: string
+    organizationId: string,
+    userId: string
 ): Promise<Product> {
     try {
         const product = await prisma.product.delete({
@@ -165,6 +185,14 @@ export async function deleteProduct(
                 id,
                 organizationId
             }
+        });
+
+        await AuditService.log({
+            organizationId,
+            userId,
+            action: 'DELETE',
+            targetId: id,
+            targetType: 'PRODUCT'
         });
 
         return product;

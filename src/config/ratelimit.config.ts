@@ -1,6 +1,6 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { createClient } from '@redis/client';
+import { createClient, type RedisClientType } from '@redis/client';
 import type { NextFunction, Request, Response } from 'express';
 import {
     ErrorCode,
@@ -32,16 +32,16 @@ export const authRateLimitHandler = (req: Request, res: Response) => {
     );
 };
 
-let redisStore: RedisStore | null = null;
-let redisInitPromise: Promise<RedisStore | null> | null = null;
+let redisClient: RedisClientType | null = null;
+let redisInitPromise: Promise<RedisClientType | null> | null = null;
 
-export const initRateLimitStore = async (): Promise<RedisStore | null> => {
+export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
     if (!isRedisAvailable || isTestEnv) {
         return null;
     }
 
-    if (redisStore) {
-        return redisStore;
+    if (redisClient) {
+        return redisClient;
     }
 
     if (redisInitPromise) {
@@ -62,13 +62,8 @@ export const initRateLimitStore = async (): Promise<RedisStore | null> => {
             });
 
             await client.connect();
-
-            redisStore = new RedisStore({
-                sendCommand: (...args: string[]) =>
-                    client.sendCommand(args) as Promise<number>
-            });
-
-            return redisStore;
+            redisClient = client;
+            return redisClient;
         } catch (err) {
             logger.error({ err }, 'Failed to connect Redis for rate limiter');
             return null;
@@ -78,16 +73,12 @@ export const initRateLimitStore = async (): Promise<RedisStore | null> => {
     return redisInitPromise;
 };
 
-export const getRateLimitStore = async (): Promise<RedisStore | null> => {
-    if (!isRedisAvailable || isTestEnv) {
-        return null;
-    }
-
-    if (redisStore) {
-        return redisStore;
-    }
-
-    return initRateLimitStore();
+const createStore = (prefix: string) => {
+    if (!redisClient || isTestEnv) return undefined;
+    return new RedisStore({
+        prefix,
+        sendCommand: (...args: string[]) => redisClient!.sendCommand(args)
+    });
 };
 
 export const rateLimiter = async (
@@ -95,7 +86,7 @@ export const rateLimiter = async (
     res: Response,
     next: NextFunction
 ) => {
-    const store = await getRateLimitStore();
+    if (!redisClient) await initRateLimitStore();
     const limiter = rateLimit({
         windowMs: 15 * 60 * 1000,
         limit: 100,
@@ -103,7 +94,8 @@ export const rateLimiter = async (
         skip: () => isTestEnv,
         standardHeaders: true,
         legacyHeaders: false,
-        store: store ?? undefined
+        store: createStore('rl:api:'),
+        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
     return limiter(req, res, next);
 };
@@ -113,7 +105,7 @@ export const authRateLimiter = async (
     res: Response,
     next: NextFunction
 ) => {
-    const store = await getRateLimitStore();
+    if (!redisClient) await initRateLimitStore();
     const limiter = rateLimit({
         windowMs: 15 * 60 * 1000,
         limit: 15,
@@ -121,14 +113,14 @@ export const authRateLimiter = async (
         skip: () => isTestEnv,
         standardHeaders: true,
         legacyHeaders: false,
-        store: store ?? undefined
+        store: createStore('rl:auth:'),
+        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
     return limiter(req, res, next);
 };
 
 export const createRateLimiter = async () => {
-    const store = await getRateLimitStore();
-
+    if (!redisClient) await initRateLimitStore();
     return rateLimit({
         windowMs: 15 * 60 * 1000,
         limit: 100,
@@ -136,13 +128,13 @@ export const createRateLimiter = async () => {
         skip: () => isTestEnv,
         standardHeaders: true,
         legacyHeaders: false,
-        store: store ?? undefined
+        store: createStore('rl:api2:'),
+        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
 };
 
 export const createAuthRateLimiter = async () => {
-    const store = await getRateLimitStore();
-
+    if (!redisClient) await initRateLimitStore();
     return rateLimit({
         windowMs: 15 * 60 * 1000,
         limit: 15,
@@ -150,6 +142,7 @@ export const createAuthRateLimiter = async () => {
         skip: () => isTestEnv,
         standardHeaders: true,
         legacyHeaders: false,
-        store: store ?? undefined
+        store: createStore('rl:auth2:'),
+        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
 };

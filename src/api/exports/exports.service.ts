@@ -13,6 +13,7 @@ import {
 import { toCSV, toExcel } from '../../utils/parser.util.js';
 import logger from '../../utils/logger.util.js';
 import { uploadToB2, isB2Configured } from '../../config/b2.config.js';
+import { AuditService } from '../audit/audit.service.js';
 
 function getExportQueue(): Queue | null {
     if (!isRedisAvailable) return null;
@@ -39,6 +40,14 @@ export async function createExportJob(
             filters: (data.filters as Prisma.InputJsonValue) || {},
             status: 'PENDING'
         }
+    });
+
+    await AuditService.log({
+        organizationId,
+        userId,
+        action: 'CREATE',
+        targetId: job.id,
+        targetType: 'EXPORT_JOB'
     });
 
     const health = await checkRedisHealth();

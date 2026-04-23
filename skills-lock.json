@@ -76,6 +76,11 @@
       "sourceType": "github",
       "computedHash": "0d6f44ac34b1ed3f8ed2970ecf90483d0f658fd1d204458f62bfefa28f31b095"
     },
+    "prisma-driver-adapter-implementation": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "86034220752575ac0551aa3d579ed0bdfb90616000ae5703bf11e47b655ec7d1"
+    },
     "prisma-expert": {
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "github",

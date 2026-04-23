@@ -77,7 +77,11 @@ export const create = asyncHandler(
         }
 
         const data = orderSchema.createOrder.parse(req.body);
-        const order = await orderService.createOrder(data, organizationId);
+        const order = await orderService.createOrder(
+            data,
+            organizationId,
+            req.user.id
+        );
 
         return ResponseHandler.created(
             res,
@@ -153,7 +157,8 @@ export const update = asyncHandler(
         const order = await orderService.updateOrder(
             orderId,
             data,
-            organizationId
+            organizationId,
+            req.user.id
         );
 
         return ResponseHandler.success(
@@ -192,7 +197,7 @@ export const remove = asyncHandler(
             );
         }
 
-        await orderService.deleteOrder(orderId, organizationId);
+        await orderService.deleteOrder(orderId, organizationId, req.user.id);
 
         return ResponseHandler.success(
             res,
