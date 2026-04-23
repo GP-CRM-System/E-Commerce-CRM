@@ -101,6 +101,42 @@ export const auth = betterAuth({
             membershipLimit: 100,
             // Prevent accidental organization deletion
             disableOrganizationDeletion: true,
+            organizationHooks: {
+                beforeDeleteOrganization: async (data) => {
+                    const { exportOrganizationData } = await import(
+                        '../../utils/org-export.util.js'
+                    );
+                    const exportResult =
+                        await exportOrganizationData(data.organization.id);
+
+                    if (exportResult.success && exportResult.downloadUrl) {
+                        const owner = await prisma.member.findFirst({
+                            where: {
+                                organizationId: data.organization.id,
+                                role: 'root'
+                            },
+                            include: { user: true }
+                        });
+
+                        if (owner?.user.email) {
+                            await sendEmail({
+                                to: owner.user.email,
+                                subject: `Your organization data export is ready`,
+                                html: `
+                                    <p>Hi ${owner.user.name ?? 'there'},</p>
+                                    <p>Your organization <strong>${data.organization.name}</strong> is scheduled for deletion.</p>
+                                    <p>Your data export is ready for download:</p>
+                                    <br/>
+                                    <a href="${exportResult.downloadUrl}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Download Your Data</a>
+                                    <br/><br/>
+                                    <p>This link will expire in 7 days.</p>
+                                    <p><strong>Warning:</strong> Your organization and all associated data will be permanently deleted. This action cannot be undone.</p>
+                                `
+                            });
+                        }
+                    }
+                }
+            },
             sendInvitationEmail: async (data) => {
                 const inviteUrl = `${env.appUrl}/accept-invitation?id=${data.invitation.id}`;
                 await sendEmail({
