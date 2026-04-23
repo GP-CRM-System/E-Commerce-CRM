@@ -95,7 +95,8 @@ export const rateLimiter = async (
         standardHeaders: true,
         legacyHeaders: false,
         store: createStore('rl:api:'),
-        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
     return limiter(req, res, next);
 };
@@ -114,7 +115,8 @@ export const authRateLimiter = async (
         standardHeaders: true,
         legacyHeaders: false,
         store: createStore('rl:auth:'),
-        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
     return limiter(req, res, next);
 };
@@ -129,7 +131,8 @@ export const createRateLimiter = async () => {
         standardHeaders: true,
         legacyHeaders: false,
         store: createStore('rl:api2:'),
-        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
 };
 
@@ -143,6 +146,7 @@ export const createAuthRateLimiter = async () => {
         standardHeaders: true,
         legacyHeaders: false,
         store: createStore('rl:auth2:'),
-        keyGenerator: (req) => ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
     });
 };

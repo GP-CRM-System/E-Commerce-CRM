@@ -65,13 +65,19 @@ describe('Auth Middleware', () => {
 
     afterAll(async () => {
         const testEmail = 'auth-mw-test@test.com';
-        await prisma.session.deleteMany({ where: { user: { email: testEmail } } });
-        await prisma.member.deleteMany({ where: { user: { email: testEmail } } });
+        await prisma.session.deleteMany({
+            where: { user: { email: testEmail } }
+        });
+        await prisma.member.deleteMany({
+            where: { user: { email: testEmail } }
+        });
         await prisma.user.deleteMany({ where: { email: testEmail } });
         await prisma.organization.deleteMany({
             where: { slug: { startsWith: 'auth-mw-test-org' } }
         });
-        await prisma.account.deleteMany({ where: { user: { email: testEmail } } });
+        await prisma.account.deleteMany({
+            where: { user: { email: testEmail } }
+        });
     });
 
     describe('protect', () => {
@@ -101,7 +107,7 @@ describe('Auth Middleware', () => {
 
         it('should reject request without active organization', async () => {
             const noOrgEmail = 'no-org-' + Date.now() + '@test.com';
-            
+
             // Create a new user without an active org
             const signup = await auth.api.signUpEmail({
                 body: {
@@ -118,8 +124,12 @@ describe('Auth Middleware', () => {
             expect(response.status).toBe(403);
 
             // Cleanup
-            await prisma.session.deleteMany({ where: { user: { email: noOrgEmail } } });
-            await prisma.account.deleteMany({ where: { user: { email: noOrgEmail } } });
+            await prisma.session.deleteMany({
+                where: { user: { email: noOrgEmail } }
+            });
+            await prisma.account.deleteMany({
+                where: { user: { email: noOrgEmail } }
+            });
             await prisma.user.delete({ where: { email: noOrgEmail } });
         });
     });

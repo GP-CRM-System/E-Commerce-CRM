@@ -200,7 +200,7 @@ export async function processRFMSynchronously(
                 const churnScore = calcChurn(lastOrderAt, avgDaysBetweenOrders);
                 const riskLevel = getChurnRiskLevel(churnScore);
 
-                await prisma.customer.update({
+                const updated = await prisma.customer.updateMany({
                     where: { id: customerId },
                     data: {
                         totalOrders,
@@ -218,6 +218,10 @@ export async function processRFMSynchronously(
                         lastScoredAt: new Date()
                     }
                 });
+
+                if (updated.count === 0) {
+                    return; // Skip if customer was deleted
+                }
 
                 if (riskLevel === 'high') {
                     const customer = await prisma.customer.findUnique({
@@ -334,7 +338,7 @@ export async function processSingleCustomerRFM(
     );
 
     if (!metrics.lastOrderAt) {
-        await prisma.customer.update({
+        await prisma.customer.updateMany({
             where: { id: customerId },
             data: {
                 totalOrders: 0,
@@ -373,7 +377,7 @@ export async function processSingleCustomerRFM(
     const riskLevel = getChurnRiskLevel(churnScore);
 
     // Merge all updates into a single database trip
-    await prisma.customer.update({
+    const updated = await prisma.customer.updateMany({
         where: { id: customerId },
         data: {
             totalOrders: metrics.totalOrders,
@@ -391,6 +395,11 @@ export async function processSingleCustomerRFM(
             lastScoredAt: new Date()
         }
     });
+
+    if (updated.count === 0) {
+        logger.warn(`Customer ${customerId} not found during update (possibly deleted)`);
+        return;
+    }
 
     if (riskLevel === 'high') {
         const customer = await prisma.customer.findUnique({
