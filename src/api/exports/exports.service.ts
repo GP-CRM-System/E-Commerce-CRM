@@ -7,14 +7,17 @@ import type {
 } from '../../generated/prisma/client.js';
 import {
     redisConnection,
-    isRedisAvailable
+    isRedisAvailable,
+    checkRedisHealth
 } from '../../config/redis.config.js';
 import { toCSV, toExcel } from '../../utils/parser.util.js';
 import logger from '../../utils/logger.util.js';
+import { uploadToB2, isB2Configured } from '../../config/b2.config.js';
 
-const exportQueue = isRedisAvailable
-    ? new Queue('export-queue', { connection: redisConnection })
-    : null;
+function getExportQueue(): Queue | null {
+    if (!isRedisAvailable) return null;
+    return new Queue('export-queue', { connection: redisConnection });
+}
 
 export async function createExportJob(
     organizationId: string,
@@ -38,14 +41,27 @@ export async function createExportJob(
         }
     });
 
+    const health = await checkRedisHealth();
+    const exportQueue = health.available ? getExportQueue() : null;
+
     if (exportQueue) {
         await exportQueue.add('process-export', {
             jobId: job.id,
             organizationId,
             ...data
         });
+        logger.info(`Export job ${job.id} added to queue (async)`);
     } else {
         // Sync fallback
+        if (!health.available) {
+            logger.warn(
+                `Redis unavailable (${health.error}) - running export ${job.id} synchronously. Large exports may timeout.`
+            );
+        } else {
+            logger.warn(
+                `Export queue not initialized - running export ${job.id} synchronously. Large exports may timeout.`
+            );
+        }
         processExportJob(
             job.id,
             data.entityType,
@@ -168,28 +184,52 @@ export async function processExportJob(
             buffer = await toExcel(exportData);
         }
 
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempDir = path.join(process.cwd(), 'temp', 'exports');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-        const filePath = path.join(tempDir, fileName);
-        fs.writeFileSync(filePath, buffer);
+        const b2Key = `exports/${jobId}/${fileName}`;
 
-        await prisma.exportJob.update({
-            where: { id: jobId },
-            data: {
-                status: 'COMPLETED',
-                fileName,
-                filePath,
-                totalRows: exportData.length,
-                completedAt: new Date()
+        if (isB2Configured) {
+            const uploadResult = await uploadToB2(b2Key, buffer);
+            if (!uploadResult.success) {
+                throw new Error(`Failed to upload to B2: ${uploadResult.error}`);
             }
-        });
+            await prisma.exportJob.update({
+                where: { id: jobId },
+                data: {
+                    status: 'COMPLETED',
+                    fileName,
+                    filePath: b2Key,
+                    totalRows: exportData.length,
+                    completedAt: new Date()
+                }
+            });
+        } else {
+            const fs = await import('fs');
+            const path = await import('path');
+            const tempDir = path.join(process.cwd(), 'temp', 'exports');
+            if (!fs.existsSync(tempDir))
+                fs.mkdirSync(tempDir, { recursive: true });
+            const filePath = path.join(tempDir, fileName);
+            fs.writeFileSync(filePath, buffer);
+
+            await prisma.exportJob.update({
+                where: { id: jobId },
+                data: {
+                    status: 'COMPLETED',
+                    fileName,
+                    filePath,
+                    totalRows: exportData.length,
+                    completedAt: new Date()
+                }
+            });
+        }
     } catch (error) {
         logger.error({ error, jobId }, 'Export job failed');
-        await prisma.exportJob.update({
-            where: { id: jobId },
-            data: { status: 'FAILED' }
-        });
+        try {
+            await prisma.exportJob.update({
+                where: { id: jobId },
+                data: { status: 'FAILED' }
+            });
+        } catch {
+            logger.warn({ jobId }, 'Failed to update job status - job may not exist');
+        }
     }
 }

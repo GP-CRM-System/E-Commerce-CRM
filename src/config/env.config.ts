@@ -35,7 +35,13 @@ export const env = {
 
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
-    metaAccessToken: process.env.META_ACCESS_TOKEN
+    metaAccessToken: process.env.META_ACCESS_TOKEN,
+
+    // Backblaze B2 Configuration
+    b2KeyId: process.env.B2_KEY_ID,
+    b2ApplicationKey: process.env.B2_APPLICATION_KEY,
+    b2Region: process.env.B2_REGION,
+    b2BucketName: process.env.B2_BUCKET_NAME
 };
 
 export function checkEnv(): void {
@@ -64,7 +70,11 @@ export function checkEnv(): void {
     }
 
     const hasRedis = env.redisHost && env.redisPort;
+    const hasB2 = env.b2KeyId && env.b2ApplicationKey && env.b2BucketName;
     if (!hasRedis) {
         // Warning log omitted to avoid circular dependency with logger
+    }
+    if (!hasB2) {
+        // Warning log omitted
     }
 }

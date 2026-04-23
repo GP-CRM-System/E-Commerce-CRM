@@ -19,7 +19,7 @@ router.get(
         return ResponseHandler.success(
             res,
             allHealthy ? 'All services healthy' : 'Some services unhealthy',
-            allHealthy ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE,
+            HttpStatus.OK,
             {
                 redis,
                 database: db,

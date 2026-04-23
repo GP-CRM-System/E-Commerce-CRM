@@ -17,8 +17,12 @@ import { importWorker } from './queues/import.queue.js';
 import { rfmWorker } from './queues/rfm.processor.js';
 import { initExportWorker } from './api/exports/exports.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
-import { redisConnection, isRedisAvailable } from './config/redis.config.js';
-import { RedisConnection } from 'bullmq';
+import {
+    isRedisAvailable,
+    checkRedisHealth,
+    startRedisHealthMonitor,
+    stopRedisHealthMonitor
+} from './config/redis.config.js';
 import { auth } from './api/auth/auth.js';
 import { initRateLimitStore } from './config/ratelimit.config.js';
 
@@ -109,21 +113,22 @@ export async function startServer(): Promise<void> {
 
         // Test Redis connection if available
         if (isRedisAvailable) {
-            try {
-                new RedisConnection(redisConnection);
-                logger.info('[Init] Redis connected successfully');
+            const health = await checkRedisHealth();
+            if (!health.available) {
+                logger.error(
+                    `[Init] Redis connection failed: ${health.error}. Sync fallback will be used for imports/exports.`
+                );
+            } else {
+                logger.info(
+                    `[Init] Redis connected successfully (latency: ${health.latency}ms)`
+                );
                 await initRateLimitStore();
                 logger.info('[Init] Rate limit Redis store initialized');
-            } catch (redisErr) {
-                logger.error(`[Init] Redis connection failed: ${redisErr}`);
-                throw new Error(
-                    `Failed to connect to Redis: ${(redisErr as Error).message}`,
-                    { cause: redisErr }
-                );
+                startRedisHealthMonitor();
             }
         } else {
             logger.warn(
-                '[Init] Redis not configured, some features may be unavailable'
+                '[Init] Redis not configured - all imports/exports will run synchronously'
             );
         }
 
@@ -144,6 +149,7 @@ export async function startServer(): Promise<void> {
          */
         process.on('SIGTERM', async () => {
             logger.info('SIGTERM received, shutting down gracefully...');
+            stopRedisHealthMonitor();
             server.close(async () => {
                 await Sentry.close(2000);
                 await importWorker.close();

@@ -1,14 +1,65 @@
 import { env } from '../config/env.config.js';
 import { createClient, type RedisClientType } from '@redis/client';
+import * as Sentry from '@sentry/bun';
+
+const isTestEnv = process.env.NODE_ENV === 'test';
 
 export const redisConnection = {
     host: env.redisHost,
-    port: env.redisPort
+    port: env.redisPort,
+    connectTimeout: 2000,
 };
 
-export const isRedisAvailable = !!(env.redisHost && env.redisPort);
+export const isRedisAvailable = isTestEnv
+    ? false
+    : !!(env.redisHost && env.redisPort);
 
 let redisClient: RedisClientType | null = null;
+let wasAvailable = false;
+let lastHealthCheck: Awaited<ReturnType<typeof checkRedisHealth>> | null =
+    null;
+let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+const HEALTH_CHECK_INTERVAL_MS = 60_000; // 1 minute
+
+export function startRedisHealthMonitor(): void {
+    if (!isRedisAvailable || healthCheckInterval || isTestEnv) return;
+
+    healthCheckInterval = setInterval(async () => {
+        const health = await checkRedisHealth();
+        lastHealthCheck = health;
+
+        if (wasAvailable && !health.available) {
+            logger.error(
+                { error: health.error },
+                'Redis became unavailable - imports/exports will run synchronously'
+            );
+            Sentry.captureMessage(
+                `Redis unavailable: ${health.error}. Imports/exports now running synchronously.`,
+                'warning'
+            );
+        } else if (!wasAvailable && health.available) {
+            logger.info(
+                { latency: health.latency },
+                'Redis became available again'
+            );
+        }
+
+        wasAvailable = health.available;
+    }, HEALTH_CHECK_INTERVAL_MS);
+
+    logger.info('[Redis] Health monitor started');
+}
+
+export function stopRedisHealthMonitor(): void {
+    if (healthCheckInterval) {
+        clearInterval(healthCheckInterval);
+        healthCheckInterval = null;
+        logger.info('[Redis] Health monitor stopped');
+    }
+}
+
+export { lastHealthCheck };
 
 export async function getRedisClient(): Promise<RedisClientType | null> {
     if (!isRedisAvailable) return null;
@@ -22,7 +73,16 @@ export async function getRedisClient(): Promise<RedisClientType | null> {
     }
 
     if (!redisClient.isOpen) {
-        await redisClient.connect();
+        try {
+            await redisClient.connect();
+        } catch (err) {
+            logger.warn(
+                { err },
+                'Failed to connect to Redis, will retry on next health check'
+            );
+            redisClient = null;
+            return null;
+        }
     }
 
     return redisClient;
@@ -40,7 +100,7 @@ export async function checkRedisHealth(): Promise<{
     try {
         const client = await getRedisClient();
         if (!client) {
-            return { available: false, error: 'Failed to connect' };
+            return { available: false, error: 'Failed to create client' };
         }
 
         const start = Date.now();

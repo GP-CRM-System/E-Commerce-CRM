@@ -21,7 +21,8 @@ import type {
 } from '../../types/import.types.js';
 import {
     redisConnection,
-    isRedisAvailable
+    isRedisAvailable,
+    checkRedisHealth
 } from '../../config/redis.config.js';
 import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models/ImportJobError.js';
 import { processRow } from './imports.processor.js';
@@ -93,7 +94,13 @@ export async function createImportJob(
         }
     });
 
-    if (isRedisAvailable && importQueue) {
+    if (!validateFileType(file.originalname)) {
+        throw new Error('Unsupported file type. Allowed: .csv, .xlsx');
+    }
+
+    const health = await checkRedisHealth();
+
+    if (health.available && importQueue) {
         await importQueue.add('process-import', {
             jobId: job.id,
             filePath: tempFilePath,
@@ -101,11 +108,20 @@ export async function createImportJob(
             organizationId,
             duplicateStrategy
         });
-        logger.info(`Import job ${job.id} added to queue (file-based)`);
+        logger.info(`Import job ${job.id} added to queue (async)`);
         return job;
     }
 
-    // Synchronous fallback (only if Redis is NOT available)
+    // Synchronous fallback (only when Redis is unavailable)
+    if (!health.available) {
+        logger.warn(
+            `Redis unavailable (${health.error}) - running import ${job.id} synchronously. Large imports may timeout.`
+        );
+    } else if (!importQueue) {
+        logger.warn(
+            `Import queue not initialized - running import ${job.id} synchronously. Large imports may timeout.`
+        );
+    }
     processImportJob(
         job.id,
         mappedRows,

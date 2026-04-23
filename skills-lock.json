@@ -14,7 +14,7 @@
     "bun": {
       "source": "bun.sh",
       "sourceType": "well-known",
-      "computedHash": "c20fe20eb84bb56fd5a96eae6e36c5fd8d38f989818a4944f8a08140fe5e7a5b"
+      "computedHash": "e81aa6ae97fdbc21cbccdbee38e0f314171fe8d7a09c5fdda72b82095cf4b9fa"
     },
     "create-auth-skill": {
       "source": "better-auth/skills",
