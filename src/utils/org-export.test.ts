@@ -46,8 +46,12 @@ describe('Organization Export', () => {
     });
 
     afterAll(async () => {
-        await prisma.customer.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.product.deleteMany({ where: { organizationId: testOrgId } });
+        await prisma.customer.deleteMany({
+            where: { organizationId: testOrgId }
+        });
+        await prisma.product.deleteMany({
+            where: { organizationId: testOrgId }
+        });
         await prisma.organization.delete({ where: { id: testOrgId } });
     });
 

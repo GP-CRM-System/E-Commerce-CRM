@@ -1,3 +1,4 @@
+bun format
 bun run lint
-bun tsc --noEmit
+bun typecheck
 bun test

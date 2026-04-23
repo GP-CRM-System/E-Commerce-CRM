@@ -106,7 +106,10 @@ export async function exportOrganizationData(organizationId: string): Promise<{
                 };
             }
 
-            const urlResult = await getSignedDownloadUrl(b2Key, 60 * 60 * 24 * 7);
+            const urlResult = await getSignedDownloadUrl(
+                b2Key,
+                60 * 60 * 24 * 7
+            );
             if (urlResult.success) {
                 logger.info(
                     { organizationId },
@@ -123,17 +126,26 @@ export async function exportOrganizationData(organizationId: string): Promise<{
         const path = await import('path');
         const tempDir = path.join(process.cwd(), 'temp', 'exports');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-        const filePath = path.join(tempDir, `org-${organizationId}-export.json`);
+        const filePath = path.join(
+            tempDir,
+            `org-${organizationId}-export.json`
+        );
         fs.writeFileSync(filePath, buffer);
 
-        logger.info({ organizationId, filePath }, 'Organization data exported locally');
+        logger.info(
+            { organizationId, filePath },
+            'Organization data exported locally'
+        );
         return {
             success: true,
             downloadUrl: `/api/exports/download/${organizationId}`
         };
     } catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
-        logger.error({ error, organizationId }, 'Failed to export organization data');
+        logger.error(
+            { error, organizationId },
+            'Failed to export organization data'
+        );
         return { success: false, error };
     }
 }

@@ -103,11 +103,11 @@ export const auth = betterAuth({
             disableOrganizationDeletion: true,
             organizationHooks: {
                 beforeDeleteOrganization: async (data) => {
-                    const { exportOrganizationData } = await import(
-                        '../../utils/org-export.util.js'
+                    const { exportOrganizationData } =
+                        await import('../../utils/org-export.util.js');
+                    const exportResult = await exportOrganizationData(
+                        data.organization.id
                     );
-                    const exportResult =
-                        await exportOrganizationData(data.organization.id);
 
                     if (exportResult.success && exportResult.downloadUrl) {
                         const owner = await prisma.member.findFirst({

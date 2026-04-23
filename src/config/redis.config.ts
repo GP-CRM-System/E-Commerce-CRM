@@ -7,7 +7,7 @@ const isTestEnv = process.env.NODE_ENV === 'test';
 export const redisConnection = {
     host: env.redisHost,
     port: env.redisPort,
-    connectTimeout: 2000,
+    connectTimeout: 2000
 };
 
 export const isRedisAvailable = isTestEnv
@@ -16,8 +16,7 @@ export const isRedisAvailable = isTestEnv
 
 let redisClient: RedisClientType | null = null;
 let wasAvailable = false;
-let lastHealthCheck: Awaited<ReturnType<typeof checkRedisHealth>> | null =
-    null;
+let lastHealthCheck: Awaited<ReturnType<typeof checkRedisHealth>> | null = null;
 let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 const HEALTH_CHECK_INTERVAL_MS = 60_000; // 1 minute

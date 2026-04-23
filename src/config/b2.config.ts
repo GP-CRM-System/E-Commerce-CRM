@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+    S3Client,
+    PutObjectCommand,
+    GetObjectCommand,
+    DeleteObjectCommand
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from './env.config.js';
 import logger from '../utils/logger.util.js';
@@ -8,12 +13,13 @@ const SIGNED_URL_EXPIRY_SECONDS = 3600;
 export const b2Config = {
     region: env.b2Region || 'us-east-005',
     bucket: env.b2BucketName,
-    credentials: env.b2KeyId && env.b2ApplicationKey
-        ? {
-              accessKeyId: env.b2KeyId,
-              secretAccessKey: env.b2ApplicationKey
-          }
-        : null
+    credentials:
+        env.b2KeyId && env.b2ApplicationKey
+            ? {
+                  accessKeyId: env.b2KeyId,
+                  secretAccessKey: env.b2ApplicationKey
+              }
+            : null
 };
 
 export const isB2Configured = !!(b2Config.credentials && b2Config.bucket);

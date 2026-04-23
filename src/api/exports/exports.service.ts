@@ -189,7 +189,9 @@ export async function processExportJob(
         if (isB2Configured) {
             const uploadResult = await uploadToB2(b2Key, buffer);
             if (!uploadResult.success) {
-                throw new Error(`Failed to upload to B2: ${uploadResult.error}`);
+                throw new Error(
+                    `Failed to upload to B2: ${uploadResult.error}`
+                );
             }
             await prisma.exportJob.update({
                 where: { id: jobId },
@@ -229,7 +231,10 @@ export async function processExportJob(
                 data: { status: 'FAILED' }
             });
         } catch {
-            logger.warn({ jobId }, 'Failed to update job status - job may not exist');
+            logger.warn(
+                { jobId },
+                'Failed to update job status - job may not exist'
+            );
         }
     }
 }
