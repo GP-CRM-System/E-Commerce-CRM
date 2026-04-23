@@ -397,7 +397,9 @@ export async function processSingleCustomerRFM(
     });
 
     if (updated.count === 0) {
-        logger.warn(`Customer ${customerId} not found during update (possibly deleted)`);
+        logger.warn(
+            `Customer ${customerId} not found during update (possibly deleted)`
+        );
         return;
     }
 
