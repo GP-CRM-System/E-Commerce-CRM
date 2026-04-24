@@ -7,6 +7,7 @@ import {
     HttpStatus,
     ResponseHandler,
     AuthorizationError,
+    BadRequestError,
     ErrorCode
 } from '../../utils/response.util.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
@@ -73,7 +74,7 @@ export const createCustomer = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to create customer');
+            throw new BadRequestError('Failed to create customer');
         }
 
         ResponseHandler.success(
@@ -93,7 +94,7 @@ export const getCustomer = asyncHandler(
         const id = req.params.id as string;
 
         if (!id) {
-            throw new Error('Customer ID is required');
+            throw new BadRequestError('Customer ID is required');
         }
 
         if (!activeOrganizationId) {
@@ -133,7 +134,7 @@ export const updateCustomer = asyncHandler(
         const id = req.params.id as string;
 
         if (!id) {
-            throw new Error('Customer ID is required');
+            throw new BadRequestError('Customer ID is required');
         }
 
         if (!activeOrganizationId) {
@@ -177,7 +178,7 @@ export const deleteCustomer = asyncHandler(
         const id = req.params.id as string;
 
         if (!id) {
-            throw new Error('Customer ID is required');
+            throw new BadRequestError('Customer ID is required');
         }
 
         if (!activeOrganizationId) {
@@ -220,7 +221,7 @@ export const getCustomerNotes = asyncHandler(
         const id = req.params.id as string;
 
         if (!id) {
-            throw new Error('Customer ID is required');
+            throw new BadRequestError('Customer ID is required');
         }
 
         if (!activeOrganizationId) {
@@ -230,7 +231,7 @@ export const getCustomerNotes = asyncHandler(
         const response = await customerService.getCustomerNotes(id);
 
         if (!response) {
-            throw new Error('Failed to fetch customer notes');
+            throw new BadRequestError('Failed to fetch customer notes');
         }
 
         ResponseHandler.success(
@@ -251,7 +252,7 @@ export const createNote = asyncHandler(
         const id = req.params.id as string;
 
         if (!id) {
-            throw new Error('Customer ID is required');
+            throw new BadRequestError('Customer ID is required');
         }
 
         if (!activeOrganizationId) {
@@ -261,7 +262,7 @@ export const createNote = asyncHandler(
         const response = await customerService.createNote(id, req.body, userId);
 
         if (!response) {
-            throw new Error('Failed to create note');
+            throw new BadRequestError('Failed to create note');
         }
 
         ResponseHandler.success(
@@ -283,7 +284,7 @@ export const updateNote = asyncHandler(
         const noteId = req.params.noteId as string;
 
         if (!id || !noteId) {
-            throw new Error('Customer ID and Note ID are required');
+            throw new BadRequestError('Customer ID and Note ID are required');
         }
 
         if (!activeOrganizationId) {
@@ -298,7 +299,7 @@ export const updateNote = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to update note');
+            throw new BadRequestError('Failed to update note');
         }
 
         ResponseHandler.success(
@@ -320,7 +321,7 @@ export const deleteNote = asyncHandler(
         const noteId = req.params.noteId as string;
 
         if (!id || !noteId) {
-            throw new Error('Customer ID and Note ID are required');
+            throw new BadRequestError('Customer ID and Note ID are required');
         }
 
         if (!activeOrganizationId) {
@@ -330,7 +331,7 @@ export const deleteNote = asyncHandler(
         const response = await customerService.deleteNote(id, noteId, userId);
 
         if (!response) {
-            throw new Error('Failed to delete note');
+            throw new BadRequestError('Failed to delete note');
         }
 
         ResponseHandler.success(
@@ -349,13 +350,15 @@ export const getCustomerEvents = asyncHandler(
 
         const customerId = req.params.id as string;
         if (!customerId || !activeOrganizationId) {
-            throw new Error('Customer ID and Organization ID are required');
+            throw new BadRequestError(
+                'Customer ID and Organization ID are required'
+            );
         }
 
         const response = await customerService.getCustomerEvents(customerId);
 
         if (!response) {
-            throw new Error('Failed to fetch customer events');
+            throw new BadRequestError('Failed to fetch customer events');
         }
 
         ResponseHandler.success(
@@ -375,7 +378,9 @@ export const createEvent = asyncHandler(
         const customerId = req.params.id as string;
 
         if (!customerId || !activeOrganizationId) {
-            throw new Error('Customer ID and Organization ID are required');
+            throw new BadRequestError(
+                'Customer ID and Organization ID are required'
+            );
         }
 
         const response = await customerService.createEvent(
@@ -384,7 +389,7 @@ export const createEvent = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to create event');
+            throw new BadRequestError('Failed to create event');
         }
 
         ResponseHandler.success(
@@ -405,7 +410,7 @@ export const updateEvent = asyncHandler(
         const eventId = req.params.eventId as string;
 
         if (!customerId || !eventId || !activeOrganizationId) {
-            throw new Error(
+            throw new BadRequestError(
                 'Customer ID, Event ID and Organization ID are required'
             );
         }
@@ -417,7 +422,7 @@ export const updateEvent = asyncHandler(
         );
 
         if (!response) {
-            throw new Error('Failed to update event');
+            throw new BadRequestError('Failed to update event');
         }
 
         ResponseHandler.success(
@@ -438,7 +443,7 @@ export const deleteEvent = asyncHandler(
         const eventId = req.params.eventId as string;
 
         if (!customerId || !eventId || !activeOrganizationId) {
-            throw new Error(
+            throw new BadRequestError(
                 'Customer ID, Event ID and Organization ID are required'
             );
         }
@@ -446,7 +451,7 @@ export const deleteEvent = asyncHandler(
         const response = await customerService.deleteEvent(customerId, eventId);
 
         if (!response) {
-            throw new Error('Failed to delete event');
+            throw new BadRequestError('Failed to delete event');
         }
 
         ResponseHandler.success(

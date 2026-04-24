@@ -115,17 +115,26 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "sortBy",
                         "in": "query",
-                        "schema": { "type": "string", "default": "createdAt" }
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
                     },
                     {
                         "name": "sortOrder",
@@ -139,28 +148,42 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "city",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "source",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "segmentId",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of customers" }
+                    "200": {
+                        "description": "List of customers"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createCustomer",
@@ -174,14 +197,22 @@
                                 "type": "object",
                                 "required": ["name"],
                                 "properties": {
-                                    "name": { "type": "string" },
+                                    "name": {
+                                        "type": "string"
+                                    },
                                     "email": {
                                         "type": "string",
                                         "format": "email"
                                     },
-                                    "phone": { "type": "string" },
-                                    "city": { "type": "string" },
-                                    "address": { "type": "string" },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    },
                                     "source": {
                                         "type": "string",
                                         "enum": [
@@ -200,9 +231,15 @@
                     }
                 },
                 "responses": {
-                    "201": { "description": "Customer created" }
+                    "201": {
+                        "description": "Customer created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}": {
@@ -215,14 +252,24 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Customer details" },
-                    "404": { "description": "Customer not found" }
+                    "200": {
+                        "description": "Customer details"
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateCustomer",
@@ -233,7 +280,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -242,20 +291,36 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "email": { "type": "string" },
-                                    "phone": { "type": "string" },
-                                    "city": { "type": "string" },
-                                    "address": { "type": "string" }
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Customer updated" }
+                    "200": {
+                        "description": "Customer updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteCustomer",
@@ -266,13 +331,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Customer deleted" }
+                    "200": {
+                        "description": "Customer deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}/notes": {
@@ -285,13 +358,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of notes" }
+                    "200": {
+                        "description": "List of notes"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createNote",
@@ -302,7 +383,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -312,15 +395,25 @@
                             "schema": {
                                 "type": "object",
                                 "required": ["body"],
-                                "properties": { "body": { "type": "string" } }
+                                "properties": {
+                                    "body": {
+                                        "type": "string"
+                                    }
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Note created" }
+                    "201": {
+                        "description": "Note created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}/notes/{noteId}": {
@@ -333,13 +426,17 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "noteId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -347,15 +444,25 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "properties": { "body": { "type": "string" } }
+                                "properties": {
+                                    "body": {
+                                        "type": "string"
+                                    }
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Note updated" }
+                    "200": {
+                        "description": "Note updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteNote",
@@ -366,19 +473,29 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "noteId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Note deleted" }
+                    "200": {
+                        "description": "Note deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}/events": {
@@ -391,13 +508,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of events" }
+                    "200": {
+                        "description": "List of events"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createEvent",
@@ -408,7 +533,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -419,19 +546,33 @@
                                 "type": "object",
                                 "required": ["eventType", "description"],
                                 "properties": {
-                                    "eventType": { "type": "string" },
-                                    "description": { "type": "string" },
-                                    "metadata": { "type": "object" },
-                                    "source": { "type": "string" }
+                                    "eventType": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "metadata": {
+                                        "type": "object"
+                                    },
+                                    "source": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Event created" }
+                    "201": {
+                        "description": "Event created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}/events/{eventId}": {
@@ -444,13 +585,17 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "eventId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -459,18 +604,30 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "eventType": { "type": "string" },
-                                    "description": { "type": "string" },
-                                    "metadata": { "type": "object" }
+                                    "eventType": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "metadata": {
+                                        "type": "object"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Event updated" }
+                    "200": {
+                        "description": "Event updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteEvent",
@@ -481,19 +638,29 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "eventId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Event deleted" }
+                    "200": {
+                        "description": "Event deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/analytics/compute": {
@@ -517,9 +684,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "RFM computation completed" }
+                    "200": {
+                        "description": "RFM computation completed"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/analytics/rfm": {
@@ -528,9 +701,15 @@
                 "summary": "Get RFM segment distribution",
                 "tags": ["Customers"],
                 "responses": {
-                    "200": { "description": "RFM distribution fetched" }
+                    "200": {
+                        "description": "RFM distribution fetched"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/customers/{id}/analytics": {
@@ -543,13 +722,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Customer analytics fetched" }
+                    "200": {
+                        "description": "Customer analytics fetched"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/cron/rfm": {
@@ -568,9 +755,15 @@
                     }
                 },
                 "responses": {
-                    "202": { "description": "RFM job queued" }
+                    "202": {
+                        "description": "RFM job queued"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/cron/lifecycle": {
@@ -589,9 +782,15 @@
                     }
                 },
                 "responses": {
-                    "202": { "description": "Lifecycle check complete" }
+                    "202": {
+                        "description": "Lifecycle check complete"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/cron/vip": {
@@ -610,9 +809,15 @@
                     }
                 },
                 "responses": {
-                    "202": { "description": "VIP recalculation complete" }
+                    "202": {
+                        "description": "VIP recalculation complete"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/cron/cleanup/idempotency": {
@@ -621,9 +826,15 @@
                 "summary": "Cleanup expired webhook idempotency keys",
                 "tags": ["Cron"],
                 "responses": {
-                    "200": { "description": "Cleanup complete" }
+                    "200": {
+                        "description": "Cleanup complete"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations": {
@@ -635,13 +846,22 @@
                     {
                         "name": "provider",
                         "in": "query",
-                        "schema": { "type": "string", "enum": ["shopify"] }
+                        "schema": {
+                            "type": "string",
+                            "enum": ["shopify"]
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of integrations" }
+                    "200": {
+                        "description": "List of integrations"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/shopify/connect": {
@@ -657,19 +877,33 @@
                                 "type": "object",
                                 "required": ["shopDomain", "accessToken"],
                                 "properties": {
-                                    "shopDomain": { "type": "string" },
-                                    "accessToken": { "type": "string" },
-                                    "name": { "type": "string" },
-                                    "apiSecret": { "type": "string" }
+                                    "shopDomain": {
+                                        "type": "string"
+                                    },
+                                    "accessToken": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "apiSecret": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Shopify store connected" }
+                    "201": {
+                        "description": "Shopify store connected"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/{integrationId}": {
@@ -682,13 +916,21 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Integration details" }
+                    "200": {
+                        "description": "Integration details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateIntegration",
@@ -699,7 +941,9 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -708,21 +952,31 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "name": { "type": "string" },
+                                    "name": {
+                                        "type": "string"
+                                    },
                                     "syncMode": {
                                         "type": "string",
                                         "enum": ["webhook", "polling", "manual"]
                                     },
-                                    "isActive": { "type": "boolean" }
+                                    "isActive": {
+                                        "type": "boolean"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Integration updated" }
+                    "200": {
+                        "description": "Integration updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteIntegration",
@@ -733,13 +987,21 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Integration deleted" }
+                    "200": {
+                        "description": "Integration deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/{integrationId}/test-connection": {
@@ -752,13 +1014,21 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Connection test result" }
+                    "200": {
+                        "description": "Connection test result"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/{integrationId}/webhooks/register": {
@@ -771,7 +1041,9 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -784,7 +1056,9 @@
                                 "properties": {
                                     "topics": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             }
@@ -792,9 +1066,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Webhooks registered" }
+                    "200": {
+                        "description": "Webhooks registered"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/{integrationId}/sync/full": {
@@ -807,7 +1087,9 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -833,9 +1115,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Sync completed" }
+                    "200": {
+                        "description": "Sync completed"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/integrations/{integrationId}/sync/logs": {
@@ -848,13 +1136,21 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Sync logs" }
+                    "200": {
+                        "description": "Sync logs"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/webhooks/shopify/{integrationId}": {
@@ -867,11 +1163,15 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Webhook received" }
+                    "200": {
+                        "description": "Webhook received"
+                    }
                 }
             }
         },
@@ -885,13 +1185,21 @@
                         "name": "integrationId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Webhook logs" }
+                    "200": {
+                        "description": "Webhook logs"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments": {
@@ -903,23 +1211,37 @@
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 50 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
                     },
                     {
                         "name": "offset",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 0 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
                     },
                     {
                         "name": "search",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of segments" }
+                    "200": {
+                        "description": "List of segments"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createSegment",
@@ -936,9 +1258,15 @@
                     }
                 },
                 "responses": {
-                    "201": { "description": "Segment created" }
+                    "201": {
+                        "description": "Segment created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments/{id}": {
@@ -951,13 +1279,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Segment details" }
+                    "200": {
+                        "description": "Segment details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateSegment",
@@ -968,7 +1304,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -982,9 +1320,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Segment updated" }
+                    "200": {
+                        "description": "Segment updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteSegment",
@@ -995,13 +1339,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "204": { "description": "Segment deleted" }
+                    "204": {
+                        "description": "Segment deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments/{id}/customers": {
@@ -1014,23 +1366,37 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 50 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
                     },
                     {
                         "name": "offset",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 0 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of customers" }
+                    "200": {
+                        "description": "List of customers"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments/{id}/count": {
@@ -1043,13 +1409,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Segment count" }
+                    "200": {
+                        "description": "Segment count"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments/{id}/preview": {
@@ -1062,13 +1436,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Segment preview" }
+                    "200": {
+                        "description": "Segment preview"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/segments/{id}/export": {
@@ -1081,7 +1463,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -1101,9 +1485,15 @@
                     }
                 },
                 "responses": {
-                    "202": { "description": "Export job accepted" }
+                    "202": {
+                        "description": "Export job accepted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/products": {
@@ -1115,17 +1505,26 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "sortBy",
                         "in": "query",
-                        "schema": { "type": "string", "default": "createdAt" }
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
                     },
                     {
                         "name": "sortOrder",
@@ -1139,23 +1538,35 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "category",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "status",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of products" }
+                    "200": {
+                        "description": "List of products"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createProduct",
@@ -1169,12 +1580,24 @@
                                 "type": "object",
                                 "required": ["name", "price"],
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "price": { "type": "number" },
-                                    "description": { "type": "string" },
-                                    "sku": { "type": "string" },
-                                    "category": { "type": "string" },
-                                    "inventory": { "type": "integer" },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "price": {
+                                        "type": "number"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "sku": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "inventory": {
+                                        "type": "integer"
+                                    },
                                     "status": {
                                         "type": "string",
                                         "enum": ["active", "draft", "archived"]
@@ -1185,9 +1608,15 @@
                     }
                 },
                 "responses": {
-                    "201": { "description": "Product created" }
+                    "201": {
+                        "description": "Product created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/products/{id}": {
@@ -1200,14 +1629,24 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Product details" },
-                    "404": { "description": "Product not found" }
+                    "200": {
+                        "description": "Product details"
+                    },
+                    "404": {
+                        "description": "Product not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateProduct",
@@ -1218,21 +1657,31 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "type": "object" }
+                            "schema": {
+                                "type": "object"
+                            }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Product updated" }
+                    "200": {
+                        "description": "Product updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteProduct",
@@ -1243,13 +1692,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Product deleted" }
+                    "200": {
+                        "description": "Product deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/orders": {
@@ -1261,17 +1718,26 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "sortBy",
                         "in": "query",
-                        "schema": { "type": "string", "default": "createdAt" }
+                        "schema": {
+                            "type": "string",
+                            "default": "createdAt"
+                        }
                     },
                     {
                         "name": "sortOrder",
@@ -1285,28 +1751,42 @@
                     {
                         "name": "customerId",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "status",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "minAmount",
                         "in": "query",
-                        "schema": { "type": "number" }
+                        "schema": {
+                            "type": "number"
+                        }
                     },
                     {
                         "name": "maxAmount",
                         "in": "query",
-                        "schema": { "type": "number" }
+                        "schema": {
+                            "type": "number"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of orders" }
+                    "200": {
+                        "description": "List of orders"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createOrder",
@@ -1320,25 +1800,51 @@
                                 "type": "object",
                                 "required": ["customerId"],
                                 "properties": {
-                                    "customerId": { "type": "string" },
-                                    "externalId": { "type": "string" },
-                                    "subtotal": { "type": "number" },
-                                    "taxAmount": { "type": "number" },
-                                    "shippingAmount": { "type": "number" },
-                                    "totalAmount": { "type": "number" },
-                                    "currency": { "type": "string" },
-                                    "fulfillmentStatus": { "type": "string" },
-                                    "note": { "type": "string" },
-                                    "source": { "type": "string" }
+                                    "customerId": {
+                                        "type": "string"
+                                    },
+                                    "externalId": {
+                                        "type": "string"
+                                    },
+                                    "subtotal": {
+                                        "type": "number"
+                                    },
+                                    "taxAmount": {
+                                        "type": "number"
+                                    },
+                                    "shippingAmount": {
+                                        "type": "number"
+                                    },
+                                    "totalAmount": {
+                                        "type": "number"
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    },
+                                    "fulfillmentStatus": {
+                                        "type": "string"
+                                    },
+                                    "note": {
+                                        "type": "string"
+                                    },
+                                    "source": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Order created" }
+                    "201": {
+                        "description": "Order created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/orders/{id}": {
@@ -1351,14 +1857,24 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Order details" },
-                    "404": { "description": "Order not found" }
+                    "200": {
+                        "description": "Order details"
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateOrder",
@@ -1369,21 +1885,31 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "type": "object" }
+                            "schema": {
+                                "type": "object"
+                            }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Order updated" }
+                    "200": {
+                        "description": "Order updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteOrder",
@@ -1394,13 +1920,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Order deleted" }
+                    "200": {
+                        "description": "Order deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/imports": {
@@ -1412,12 +1946,18 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "entityType",
@@ -1444,9 +1984,15 @@
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of import jobs" }
+                    "200": {
+                        "description": "List of import jobs"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createImportJob",
@@ -1468,8 +2014,12 @@
                                         "type": "string",
                                         "format": "binary"
                                     },
-                                    "hasHeader": { "type": "boolean" },
-                                    "mapping": { "type": "string" },
+                                    "hasHeader": {
+                                        "type": "boolean"
+                                    },
+                                    "mapping": {
+                                        "type": "string"
+                                    },
                                     "duplicateStrategy": {
                                         "type": "string",
                                         "enum": ["create_only", "upsert"]
@@ -1484,9 +2034,15 @@
                     }
                 },
                 "responses": {
-                    "201": { "description": "Import job created" }
+                    "201": {
+                        "description": "Import job created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/imports/{id}": {
@@ -1499,14 +2055,24 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Import job details" },
-                    "404": { "description": "Import job not found" }
+                    "200": {
+                        "description": "Import job details"
+                    },
+                    "404": {
+                        "description": "Import job not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/imports/{id}/errors": {
@@ -1519,23 +2085,37 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 100 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 100
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of import errors" }
+                    "200": {
+                        "description": "List of import errors"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/exports": {
@@ -1547,12 +2127,18 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "entityType",
@@ -1577,9 +2163,15 @@
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of export jobs" }
+                    "200": {
+                        "description": "List of export jobs"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createExportJob",
@@ -1603,18 +2195,28 @@
                                     },
                                     "selectedColumns": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     },
-                                    "filters": { "type": "object" }
+                                    "filters": {
+                                        "type": "object"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Export job created" }
+                    "201": {
+                        "description": "Export job created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/exports/{id}": {
@@ -1627,14 +2229,24 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Export job details" },
-                    "404": { "description": "Export job not found" }
+                    "200": {
+                        "description": "Export job details"
+                    },
+                    "404": {
+                        "description": "Export job not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/exports/{id}/download": {
@@ -1647,17 +2259,27 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Export file",
-                        "content": { "application/octet-stream": {} }
+                        "content": {
+                            "application/octet-stream": {}
+                        }
                     },
-                    "404": { "description": "Export not ready or not found" }
+                    "404": {
+                        "description": "Export not ready or not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/roles/permissions": {
@@ -1674,14 +2296,20 @@
                                     "type": "object",
                                     "additionalProperties": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/roles": {
@@ -1721,7 +2349,11 @@
                         }
                     }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createCustomRole",
@@ -1751,9 +2383,15 @@
                     "400": {
                         "description": "Invalid input or reserved role name"
                     },
-                    "403": { "description": "Insufficient permissions" }
+                    "403": {
+                        "description": "Insufficient permissions"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/roles/{id}": {
@@ -1766,7 +2404,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -1780,9 +2420,15 @@
                             }
                         }
                     },
-                    "404": { "description": "Role not found" }
+                    "404": {
+                        "description": "Role not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateCustomRole",
@@ -1793,7 +2439,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -1820,9 +2468,15 @@
                     "400": {
                         "description": "Invalid input or cannot modify default roles"
                     },
-                    "404": { "description": "Role not found" }
+                    "404": {
+                        "description": "Role not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteCustomRole",
@@ -1833,15 +2487,27 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Role deleted" },
-                    "400": { "description": "Cannot delete default roles" },
-                    "404": { "description": "Role not found" }
+                    "200": {
+                        "description": "Role deleted"
+                    },
+                    "400": {
+                        "description": "Cannot delete default roles"
+                    },
+                    "404": {
+                        "description": "Role not found"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/notifications": {
@@ -1853,18 +2519,30 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of notifications" }
+                    "200": {
+                        "description": "List of notifications"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/notifications/unread-count": {
@@ -1873,9 +2551,15 @@
                 "summary": "Get unread notification count",
                 "tags": ["Notifications"],
                 "responses": {
-                    "200": { "description": "Unread count" }
+                    "200": {
+                        "description": "Unread count"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/notifications/{id}": {
@@ -1888,13 +2572,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Notification details" }
+                    "200": {
+                        "description": "Notification details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteNotification",
@@ -1905,13 +2597,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Notification deleted" }
+                    "200": {
+                        "description": "Notification deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/notifications/{id}/read": {
@@ -1924,13 +2624,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Notification marked as read" }
+                    "200": {
+                        "description": "Notification marked as read"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/notifications/mark-all-read": {
@@ -1946,7 +2654,9 @@
                                 "properties": {
                                     "ids": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             }
@@ -1954,9 +2664,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "All notifications marked as read" }
+                    "200": {
+                        "description": "All notifications marked as read"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/templates": {
@@ -1968,23 +2684,37 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "search",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of templates" }
+                    "200": {
+                        "description": "List of templates"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createTemplate",
@@ -1998,19 +2728,33 @@
                                 "type": "object",
                                 "required": ["name", "subject", "body"],
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "subject": { "type": "string" },
-                                    "body": { "type": "string" },
-                                    "category": { "type": "string" }
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "body": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Template created" }
+                    "201": {
+                        "description": "Template created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/templates/{id}": {
@@ -2023,13 +2767,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Template details" }
+                    "200": {
+                        "description": "Template details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateTemplate",
@@ -2040,7 +2792,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2049,19 +2803,33 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "subject": { "type": "string" },
-                                    "body": { "type": "string" },
-                                    "category": { "type": "string" }
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "body": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "200": { "description": "Template updated" }
+                    "200": {
+                        "description": "Template updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteTemplate",
@@ -2072,13 +2840,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Template deleted" }
+                    "200": {
+                        "description": "Template deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/templates/{id}/preview": {
@@ -2091,13 +2867,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Template preview" }
+                    "200": {
+                        "description": "Template preview"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/campaigns": {
@@ -2109,28 +2893,44 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     },
                     {
                         "name": "search",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "status",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of campaigns" }
+                    "200": {
+                        "description": "List of campaigns"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createCampaign",
@@ -2144,10 +2944,18 @@
                                 "type": "object",
                                 "required": ["name", "subject", "templateId"],
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "subject": { "type": "string" },
-                                    "templateId": { "type": "string" },
-                                    "segmentId": { "type": "string" },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "templateId": {
+                                        "type": "string"
+                                    },
+                                    "segmentId": {
+                                        "type": "string"
+                                    },
                                     "scheduledAt": {
                                         "type": "string",
                                         "format": "date-time"
@@ -2158,9 +2966,15 @@
                     }
                 },
                 "responses": {
-                    "201": { "description": "Campaign created" }
+                    "201": {
+                        "description": "Campaign created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/campaigns/{id}": {
@@ -2173,13 +2987,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Campaign details" }
+                    "200": {
+                        "description": "Campaign details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateCampaign",
@@ -2190,7 +3012,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2199,10 +3023,18 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "name": { "type": "string" },
-                                    "subject": { "type": "string" },
-                                    "templateId": { "type": "string" },
-                                    "segmentId": { "type": "string" },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "templateId": {
+                                        "type": "string"
+                                    },
+                                    "segmentId": {
+                                        "type": "string"
+                                    },
                                     "scheduledAt": {
                                         "type": "string",
                                         "format": "date-time"
@@ -2213,9 +3045,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Campaign updated" }
+                    "200": {
+                        "description": "Campaign updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "operationId": "deleteCampaign",
@@ -2226,13 +3064,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Campaign deleted" }
+                    "200": {
+                        "description": "Campaign deleted"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/campaigns/{id}/send": {
@@ -2245,7 +3091,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2256,7 +3104,9 @@
                                 "properties": {
                                     "recipientIds": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
                             }
@@ -2264,9 +3114,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Campaign sent" }
+                    "200": {
+                        "description": "Campaign sent"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/campaigns/{id}/stats": {
@@ -2279,13 +3135,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Campaign statistics" }
+                    "200": {
+                        "description": "Campaign statistics"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/conversations": {
@@ -2297,18 +3161,30 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of conversations" }
+                    "200": {
+                        "description": "List of conversations"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/conversations/{id}/messages": {
@@ -2321,23 +3197,37 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 50 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of messages" }
+                    "200": {
+                        "description": "List of messages"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "sendMessage",
@@ -2348,7 +3238,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2359,17 +3251,27 @@
                                 "type": "object",
                                 "required": ["content"],
                                 "properties": {
-                                    "content": { "type": "string" },
-                                    "mediaUrl": { "type": "string" }
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "mediaUrl": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Message sent" }
+                    "201": {
+                        "description": "Message sent"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/messaging/meta/webhook": {
@@ -2381,21 +3283,29 @@
                     {
                         "name": "hub.mode",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "hub.verify_token",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "hub.challenge",
                         "in": "query",
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Webhook verified" }
+                    "200": {
+                        "description": "Webhook verified"
+                    }
                 }
             },
             "post": {
@@ -2403,7 +3313,9 @@
                 "summary": "Receive Meta webhook events",
                 "tags": ["Messaging"],
                 "responses": {
-                    "200": { "description": "Event received" }
+                    "200": {
+                        "description": "Event received"
+                    }
                 }
             }
         },
@@ -2417,13 +3329,21 @@
                         "name": "orderId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Payment initialized" }
+                    "200": {
+                        "description": "Payment initialized"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/payments/fawry/callback": {
@@ -2432,7 +3352,9 @@
                 "summary": "Handle payment callback from Fawry",
                 "tags": ["Payments"],
                 "responses": {
-                    "200": { "description": "Callback handled" }
+                    "200": {
+                        "description": "Callback handled"
+                    }
                 }
             }
         },
@@ -2445,18 +3367,30 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of tickets" }
+                    "200": {
+                        "description": "List of tickets"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "operationId": "createTicket",
@@ -2470,8 +3404,12 @@
                                 "type": "object",
                                 "required": ["subject", "description"],
                                 "properties": {
-                                    "subject": { "type": "string" },
-                                    "description": { "type": "string" },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
                                     "priority": {
                                         "type": "string",
                                         "enum": [
@@ -2481,16 +3419,24 @@
                                             "urgent"
                                         ]
                                     },
-                                    "customerId": { "type": "string" }
+                                    "customerId": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Ticket created" }
+                    "201": {
+                        "description": "Ticket created"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/tickets/{id}": {
@@ -2503,13 +3449,21 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Ticket details" }
+                    "200": {
+                        "description": "Ticket details"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "patch": {
                 "operationId": "updateTicket",
@@ -2520,7 +3474,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2529,8 +3485,12 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "subject": { "type": "string" },
-                                    "description": { "type": "string" },
+                                    "subject": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
                                     "status": {
                                         "type": "string",
                                         "enum": [
@@ -2555,9 +3515,15 @@
                     }
                 },
                 "responses": {
-                    "200": { "description": "Ticket updated" }
+                    "200": {
+                        "description": "Ticket updated"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/tickets/{id}/notes": {
@@ -2570,7 +3536,9 @@
                         "name": "id",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2581,17 +3549,27 @@
                                 "type": "object",
                                 "required": ["content"],
                                 "properties": {
-                                    "content": { "type": "string" },
-                                    "isInternal": { "type": "boolean" }
+                                    "content": {
+                                        "type": "string"
+                                    },
+                                    "isInternal": {
+                                        "type": "boolean"
+                                    }
                                 }
                             }
                         }
                     }
                 },
                 "responses": {
-                    "201": { "description": "Note added" }
+                    "201": {
+                        "description": "Note added"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/audit-logs": {
@@ -2603,18 +3581,30 @@
                     {
                         "name": "page",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
                     },
                     {
                         "name": "limit",
                         "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "List of audit logs" }
+                    "200": {
+                        "description": "List of audit logs"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/reports/dashboard": {
@@ -2623,9 +3613,15 @@
                 "summary": "Get dashboard statistics",
                 "tags": ["Reports"],
                 "responses": {
-                    "200": { "description": "Dashboard statistics" }
+                    "200": {
+                        "description": "Dashboard statistics"
+                    }
                 },
-                "security": [{ "bearerAuth": [] }]
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/track/open/{recipientId}": {
@@ -2638,13 +3634,17 @@
                         "name": "recipientId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Tracking pixel",
-                        "content": { "image/gif": {} }
+                        "content": {
+                            "image/gif": {}
+                        }
                     }
                 }
             }
@@ -2659,17 +3659,23 @@
                         "name": "recipientId",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     {
                         "name": "url",
                         "in": "query",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "302": { "description": "Redirect to target URL" }
+                    "302": {
+                        "description": "Redirect to target URL"
+                    }
                 }
             }
         },
@@ -2683,12 +3689,93 @@
                         "name": "token",
                         "in": "path",
                         "required": true,
-                        "schema": { "type": "string" }
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": { "description": "Unsubscribed successfully" }
+                    "200": {
+                        "description": "Unsubscribed successfully"
+                    }
                 }
+            }
+        },
+        "/health": {
+            "get": {
+                "operationId": "healthCheck",
+                "summary": "Check system health",
+                "tags": ["Health"],
+                "responses": {
+                    "200": {
+                        "description": "All services healthy"
+                    },
+                    "503": {
+                        "description": "Services unhealthy"
+                    }
+                }
+            }
+        },
+        "/reports/audit": {
+            "get": {
+                "operationId": "getAuditLogs",
+                "summary": "Get audit logs",
+                "tags": ["Audit Logs"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Audit logs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/imports/{id}/rollback": {
+            "post": {
+                "operationId": "rollbackImport",
+                "summary": "Rollback import job",
+                "tags": ["Imports"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Import rolled back"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },
@@ -2774,12 +3861,25 @@
             "Customer": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "email": { "type": "string", "format": "email" },
-                    "phone": { "type": "string" },
-                    "city": { "type": "string" },
-                    "address": { "type": "string" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": "string"
+                    },
                     "source": {
                         "type": "string",
                         "enum": [
@@ -2806,44 +3906,105 @@
                             "WINBACK"
                         ]
                     },
-                    "rfmScore": { "type": "string" },
-                    "rfmSegment": { "type": "string" },
-                    "churnRiskScore": { "type": "number" },
-                    "totalOrders": { "type": "integer" },
-                    "totalSpent": { "type": "number" },
-                    "avgOrderValue": { "type": "number" },
-                    "lastOrderAt": { "type": "string", "format": "date-time" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "rfmScore": {
+                        "type": "string"
+                    },
+                    "rfmSegment": {
+                        "type": "string"
+                    },
+                    "churnRiskScore": {
+                        "type": "number"
+                    },
+                    "totalOrders": {
+                        "type": "integer"
+                    },
+                    "totalSpent": {
+                        "type": "number"
+                    },
+                    "avgOrderValue": {
+                        "type": "number"
+                    },
+                    "lastOrderAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "CustomerAnalytics": {
                 "type": "object",
                 "properties": {
-                    "rfmScore": { "type": "integer" },
-                    "rfmRecency": { "type": "integer" },
-                    "rfmFrequency": { "type": "integer" },
-                    "rfmMonetary": { "type": "integer" },
-                    "lifecycleStage": { "type": "string" },
-                    "churnRisk": { "type": "number" },
-                    "isVip": { "type": "boolean" },
-                    "totalSpent": { "type": "number" },
-                    "orderCount": { "type": "integer" },
-                    "averageOrderValue": { "type": "number" },
-                    "lastOrderDate": { "type": "string", "format": "date-time" }
+                    "rfmScore": {
+                        "type": "integer"
+                    },
+                    "rfmRecency": {
+                        "type": "integer"
+                    },
+                    "rfmFrequency": {
+                        "type": "integer"
+                    },
+                    "rfmMonetary": {
+                        "type": "integer"
+                    },
+                    "lifecycleStage": {
+                        "type": "string"
+                    },
+                    "churnRisk": {
+                        "type": "number"
+                    },
+                    "isVip": {
+                        "type": "boolean"
+                    },
+                    "totalSpent": {
+                        "type": "number"
+                    },
+                    "orderCount": {
+                        "type": "integer"
+                    },
+                    "averageOrderValue": {
+                        "type": "number"
+                    },
+                    "lastOrderDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "Order": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "customerId": { "type": "string" },
-                    "externalId": { "type": "string" },
-                    "subtotal": { "type": "number" },
-                    "taxAmount": { "type": "number" },
-                    "shippingAmount": { "type": "number" },
-                    "totalAmount": { "type": "number" },
-                    "currency": { "type": "string", "default": "USD" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "customerId": {
+                        "type": "string"
+                    },
+                    "externalId": {
+                        "type": "string"
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    },
+                    "taxAmount": {
+                        "type": "number"
+                    },
+                    "shippingAmount": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "default": "USD"
+                    },
                     "paymentStatus": {
                         "type": "string",
                         "enum": ["PENDING", "PAID", "FAILED", "REFUNDED"]
@@ -2858,40 +4019,84 @@
                             "CANCELLED"
                         ]
                     },
-                    "fulfillmentStatus": { "type": "string" },
-                    "source": { "type": "string" },
-                    "note": { "type": "string" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "fulfillmentStatus": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "Product": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "sku": { "type": "string" },
-                    "price": { "type": "number" },
-                    "compareAtPrice": { "type": "number" },
-                    "category": { "type": "string" },
-                    "inventory": { "type": "integer" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "sku": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "compareAtPrice": {
+                        "type": "number"
+                    },
+                    "category": {
+                        "type": "string"
+                    },
+                    "inventory": {
+                        "type": "integer"
+                    },
                     "status": {
                         "type": "string",
                         "enum": ["active", "draft", "archived"]
                     },
-                    "imageUrl": { "type": "string" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "imageUrl": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "ImportJob": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "entityType": { "type": "string" },
-                    "fileName": { "type": "string" },
-                    "fileType": { "type": "string" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "entityType": {
+                        "type": "string"
+                    },
+                    "fileName": {
+                        "type": "string"
+                    },
+                    "fileType": {
+                        "type": "string"
+                    },
                     "status": {
                         "type": "string",
                         "enum": [
@@ -2903,20 +4108,41 @@
                             "CANCELLED"
                         ]
                     },
-                    "totalRows": { "type": "integer" },
-                    "processedRows": { "type": "integer" },
-                    "successfulRows": { "type": "integer" },
-                    "failedRows": { "type": "integer" },
-                    "startedAt": { "type": "string", "format": "date-time" },
-                    "completedAt": { "type": "string", "format": "date-time" },
-                    "createdAt": { "type": "string", "format": "date-time" }
+                    "totalRows": {
+                        "type": "integer"
+                    },
+                    "processedRows": {
+                        "type": "integer"
+                    },
+                    "successfulRows": {
+                        "type": "integer"
+                    },
+                    "failedRows": {
+                        "type": "integer"
+                    },
+                    "startedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "ExportJob": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "entityType": { "type": "string" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "entityType": {
+                        "type": "string"
+                    },
                     "format": {
                         "type": "string",
                         "enum": ["csv", "xlsx"]
@@ -2925,78 +4151,150 @@
                         "type": "string",
                         "enum": ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]
                     },
-                    "totalRows": { "type": "integer" },
-                    "fileName": { "type": "string" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "completedAt": { "type": "string", "format": "date-time" }
+                    "totalRows": {
+                        "type": "integer"
+                    },
+                    "fileName": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "completedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "Segment": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "filter": { "$ref": "#/components/schemas/SegmentFilter" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "filter": {
+                        "$ref": "#/components/schemas/SegmentFilter"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "Integration": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "provider": { "type": "string" },
-                    "name": { "type": "string" },
-                    "shopDomain": { "type": "string" },
-                    "syncStatus": { "type": "string" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "shopDomain": {
+                        "type": "string"
+                    },
+                    "syncStatus": {
+                        "type": "string"
+                    },
                     "syncMode": {
                         "type": "string",
                         "enum": ["webhook", "polling", "manual"]
                     },
-                    "isActive": { "type": "boolean" },
-                    "lastSyncedAt": { "type": "string", "format": "date-time" },
-                    "createdAt": { "type": "string", "format": "date-time" },
-                    "updatedAt": { "type": "string", "format": "date-time" }
+                    "isActive": {
+                        "type": "boolean"
+                    },
+                    "lastSyncedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "Role": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "string" },
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
                     "permissions": {
                         "type": "object",
                         "additionalProperties": {
                             "type": "array",
-                            "items": { "type": "string" }
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     },
-                    "isDefault": { "type": "boolean" },
-                    "createdAt": { "type": "string", "format": "date-time" }
+                    "isDefault": {
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
                 }
             },
             "CreateSegmentRequest": {
                 "type": "object",
                 "required": ["name", "filter"],
                 "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "filter": { "$ref": "#/components/schemas/SegmentFilter" }
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "filter": {
+                        "$ref": "#/components/schemas/SegmentFilter"
+                    }
                 }
             },
             "UpdateSegmentRequest": {
                 "type": "object",
                 "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
-                    "filter": { "$ref": "#/components/schemas/SegmentFilter" }
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "filter": {
+                        "$ref": "#/components/schemas/SegmentFilter"
+                    }
                 }
             },
             "SegmentFilter": {
                 "oneOf": [
-                    { "$ref": "#/components/schemas/SegmentCondition" },
+                    {
+                        "$ref": "#/components/schemas/SegmentCondition"
+                    },
                     {
                         "type": "object",
                         "properties": {
@@ -3027,7 +4325,9 @@
                 "type": "object",
                 "required": ["field", "operator"],
                 "properties": {
-                    "field": { "type": "string" },
+                    "field": {
+                        "type": "string"
+                    },
                     "operator": {
                         "type": "string",
                         "enum": [
@@ -3043,10 +4343,18 @@
                     },
                     "value": {
                         "oneOf": [
-                            { "type": "string" },
-                            { "type": "number" },
-                            { "type": "boolean" },
-                            { "type": "array" }
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "array"
+                            }
                         ]
                     }
                 }
@@ -3055,37 +4363,57 @@
                 "type": "object",
                 "required": ["organizationId"],
                 "properties": {
-                    "organizationId": { "type": "string" },
-                    "customerId": { "type": "string" },
-                    "daysWindow": { "type": "integer", "default": 90 }
+                    "organizationId": {
+                        "type": "string"
+                    },
+                    "customerId": {
+                        "type": "string"
+                    },
+                    "daysWindow": {
+                        "type": "integer",
+                        "default": 90
+                    }
                 }
             },
             "TriggerLifecycleJobRequest": {
                 "type": "object",
                 "required": ["organizationId"],
                 "properties": {
-                    "organizationId": { "type": "string" }
+                    "organizationId": {
+                        "type": "string"
+                    }
                 }
             },
             "TriggerVipJobRequest": {
                 "type": "object",
                 "required": ["organizationId"],
                 "properties": {
-                    "organizationId": { "type": "string" },
-                    "percentile": { "type": "number", "default": 10 }
+                    "organizationId": {
+                        "type": "string"
+                    },
+                    "percentile": {
+                        "type": "number",
+                        "default": 10
+                    }
                 }
             },
             "CreateRoleRequest": {
                 "type": "object",
                 "required": ["name", "permissions"],
                 "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
                     "permissions": {
                         "type": "object",
                         "additionalProperties": {
                             "type": "array",
-                            "items": { "type": "string" }
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -3093,13 +4421,19 @@
             "UpdateRoleRequest": {
                 "type": "object",
                 "properties": {
-                    "name": { "type": "string" },
-                    "description": { "type": "string" },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
                     "permissions": {
                         "type": "object",
                         "additionalProperties": {
                             "type": "array",
-                            "items": { "type": "string" }
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -3110,7 +4444,9 @@
                 "description": "Invalid request parameters",
                 "content": {
                     "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
                     }
                 }
             },
@@ -3118,7 +4454,9 @@
                 "description": "Authentication required",
                 "content": {
                     "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
                     }
                 }
             },
@@ -3126,7 +4464,9 @@
                 "description": "Insufficient permissions",
                 "content": {
                     "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
                     }
                 }
             },
@@ -3134,7 +4474,9 @@
                 "description": "Resource not found",
                 "content": {
                     "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
                     }
                 }
             },
@@ -3142,536 +4484,11 @@
                 "description": "Internal server error",
                 "content": {
                     "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
                     }
                 }
-            }
-        },
-        "/health": {
-            "get": {
-                "operationId": "healthCheck",
-                "summary": "Check system health",
-                "tags": ["Health"],
-                "responses": {
-                    "200": { "description": "All services healthy" },
-                    "503": { "description": "Services unhealthy" }
-                }
-            }
-        },
-        "/reports/dashboard": {
-            "get": {
-                "operationId": "getDashboard",
-                "summary": "Get dashboard statistics",
-                "tags": ["Reports"],
-                "responses": { "200": { "description": "Dashboard stats" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/reports/audit": {
-            "get": {
-                "operationId": "getAuditLogs",
-                "summary": "Get audit logs",
-                "tags": ["Audit Logs"],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
-                    }
-                ],
-                "responses": { "200": { "description": "Audit logs" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/tickets": {
-            "get": {
-                "operationId": "listTickets",
-                "summary": "List all tickets",
-                "tags": ["Tickets"],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
-                    },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "priority",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "assignedToId",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "List of tickets" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "post": {
-                "operationId": "createTicket",
-                "summary": "Create a new ticket",
-                "tags": ["Tickets"],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "customerId",
-                                    "subject",
-                                    "description"
-                                ],
-                                "properties": {
-                                    "customerId": { "type": "string" },
-                                    "orderId": { "type": "string" },
-                                    "subject": { "type": "string" },
-                                    "description": { "type": "string" },
-                                    "priority": {
-                                        "type": "string",
-                                        "enum": [
-                                            "LOW",
-                                            "MEDIUM",
-                                            "HIGH",
-                                            "URGENT"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Ticket created" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/tickets/{id}": {
-            "get": {
-                "operationId": "getTicket",
-                "summary": "Get ticket by ID",
-                "tags": ["Tickets"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Ticket details" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "patch": {
-                "operationId": "updateTicket",
-                "summary": "Update ticket",
-                "tags": ["Tickets"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "OPEN",
-                                            "IN_PROGRESS",
-                                            "PENDING",
-                                            "RESOLVED",
-                                            "CLOSED"
-                                        ]
-                                    },
-                                    "priority": {
-                                        "type": "string",
-                                        "enum": [
-                                            "LOW",
-                                            "MEDIUM",
-                                            "HIGH",
-                                            "URGENT"
-                                        ]
-                                    },
-                                    "assignedToId": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Ticket updated" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/tickets/{id}/notes": {
-            "post": {
-                "operationId": "addTicketNote",
-                "summary": "Add note to ticket",
-                "tags": ["Tickets"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["content"],
-                                "properties": {
-                                    "content": { "type": "string" },
-                                    "isInternal": { "type": "boolean" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Note added" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/imports": {
-            "get": {
-                "operationId": "listImports",
-                "summary": "List import jobs",
-                "tags": ["Imports"],
-                "parameters": [
-                    {
-                        "name": "entityType",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
-                    }
-                ],
-                "responses": { "200": { "description": "Import jobs" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "post": {
-                "operationId": "createImport",
-                "summary": "Create a new import job",
-                "tags": ["Imports"],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["file", "entityType"],
-                                "properties": {
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "entityType": {
-                                        "type": "string",
-                                        "enum": ["customer", "product", "order"]
-                                    },
-                                    "hasHeader": { "type": "boolean" },
-                                    "mapping": { "type": "object" },
-                                    "duplicateStrategy": {
-                                        "type": "string",
-                                        "enum": ["create_only", "upsert"]
-                                    },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": ["create_only", "upsert"]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Import job created" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/imports/{id}": {
-            "get": {
-                "operationId": "getImport",
-                "summary": "Get import job status",
-                "tags": ["Imports"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Import job details" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/imports/{id}/errors": {
-            "get": {
-                "operationId": "getImportErrors",
-                "summary": "Get import job errors",
-                "tags": ["Imports"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Import job errors" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/imports/{id}/rollback": {
-            "post": {
-                "operationId": "rollbackImport",
-                "summary": "Rollback import job",
-                "tags": ["Imports"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Import rolled back" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/exports": {
-            "get": {
-                "operationId": "listExports",
-                "summary": "List export jobs",
-                "tags": ["Exports"],
-                "parameters": [
-                    {
-                        "name": "entityType",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
-                    }
-                ],
-                "responses": { "200": { "description": "Export jobs" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "post": {
-                "operationId": "createExport",
-                "summary": "Create a new export job",
-                "tags": ["Exports"],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["entityType", "format"],
-                                "properties": {
-                                    "entityType": {
-                                        "type": "string",
-                                        "enum": ["customer", "product", "order"]
-                                    },
-                                    "format": {
-                                        "type": "string",
-                                        "enum": ["csv", "xlsx"]
-                                    },
-                                    "selectedColumns": {
-                                        "type": "array",
-                                        "items": { "type": "string" }
-                                    },
-                                    "filters": { "type": "object" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Export job created" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/exports/{id}": {
-            "get": {
-                "operationId": "getExport",
-                "summary": "Get export job status",
-                "tags": ["Exports"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Export job details" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/exports/{id}/download": {
-            "get": {
-                "operationId": "downloadExport",
-                "summary": "Download export file",
-                "tags": ["Exports"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Export file" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/roles": {
-            "get": {
-                "operationId": "listRoles",
-                "summary": "List all roles",
-                "tags": ["Roles"],
-                "responses": { "200": { "description": "List of roles" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/roles/permissions": {
-            "get": {
-                "operationId": "listPermissions",
-                "summary": "List all available permissions",
-                "tags": ["Roles"],
-                "responses": {
-                    "200": { "description": "Available permissions" }
-                },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/roles/{id}": {
-            "get": {
-                "operationId": "getRole",
-                "summary": "Get role by ID",
-                "tags": ["Roles"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Role details" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "patch": {
-                "operationId": "updateRole",
-                "summary": "Update role",
-                "tags": ["Roles"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "200": { "description": "Role updated" } },
-                "security": [{ "bearerAuth": [] }]
-            },
-            "delete": {
-                "operationId": "deleteRole",
-                "summary": "Delete role",
-                "tags": ["Roles"],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": { "204": { "description": "Role deleted" } },
-                "security": [{ "bearerAuth": [] }]
-            }
-        },
-        "/audit-logs": {
-            "get": {
-                "operationId": "listAuditLogs",
-                "summary": "List audit logs",
-                "tags": ["Audit Logs"],
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 1 }
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "schema": { "type": "integer", "default": 20 }
-                    },
-                    {
-                        "name": "targetType",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    },
-                    {
-                        "name": "action",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "List of audit logs" }
-                },
-                "security": [{ "bearerAuth": [] }]
             }
         }
     }

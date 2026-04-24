@@ -11,6 +11,10 @@ import type {
 import type { CustomerFilters } from './customer.schemas.js';
 import { buildPrismaWhere } from '../segments/segment.utils.js';
 import { AuditService } from '../audit/audit.service.js';
+import {
+    NotFoundError,
+    AuthorizationError
+} from '../../utils/response.util.js';
 
 export async function getAllCustomers(
     organizationId: string,
@@ -40,7 +44,7 @@ export async function getAllCustomers(
                 }
             });
             if (!segment) {
-                throw new Error('Segment not found');
+                throw new NotFoundError('Segment not found');
             }
             segmentWhere = buildPrismaWhere(segment.filter);
         }
@@ -271,11 +275,13 @@ export async function updateNote(
         });
 
         if (!note) {
-            throw new Error('Note not found');
+            throw new NotFoundError('Note not found');
         }
 
         if (note.authorId !== userId) {
-            throw new Error('You are not authorized to update this note');
+            throw new AuthorizationError(
+                'You are not authorized to update this note'
+            );
         }
 
         const updatedNote = await prisma.note.update({
@@ -312,11 +318,13 @@ export async function deleteNote(
         });
 
         if (!note) {
-            throw new Error('Note not found');
+            throw new NotFoundError('Note not found');
         }
 
         if (note.authorId !== userId) {
-            throw new Error('You are not authorized to delete this note');
+            throw new AuthorizationError(
+                'You are not authorized to delete this note'
+            );
         }
 
         await prisma.note.delete({
@@ -388,7 +396,7 @@ export async function updateEvent(
         });
 
         if (!event) {
-            throw new Error('Event not found');
+            throw new NotFoundError('Event not found');
         }
 
         const updatedEvent = await prisma.customerEvent.update({
@@ -421,7 +429,7 @@ export async function deleteEvent(
         });
 
         if (!event) {
-            throw new Error('Event not found');
+            throw new NotFoundError('Event not found');
         }
 
         await prisma.customerEvent.delete({

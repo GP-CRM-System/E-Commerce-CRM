@@ -3,6 +3,7 @@ import type { CustomerUncheckedCreateInput } from '../../generated/prisma/models
 import type { ProductUncheckedCreateInput } from '../../generated/prisma/models/Product.js';
 import type { OrderUncheckedCreateInput } from '../../generated/prisma/models/Order.js';
 import type { EntityType, ParsedRow } from '../../types/import.types.js';
+import { AppError } from '../../utils/response.util.js';
 
 type PrismaDb = PrismaClient;
 
@@ -31,7 +32,7 @@ export async function processRow(
         case 'order':
             return processOrderRow(db, row, organizationId, duplicateStrategy);
         default:
-            throw new Error(`Unknown entity type: ${entityType}`);
+            throw new AppError(`Unknown entity type: ${entityType}`);
     }
 }
 
@@ -45,7 +46,7 @@ async function processCustomerRow(
     const name = data.name as string;
 
     if (!name) {
-        throw new Error('Name is required');
+        throw new AppError('Name is required');
     }
 
     const customerData: CustomerUncheckedCreateInput = {
@@ -127,10 +128,10 @@ async function processProductRow(
     const price = data.price as number;
 
     if (!name) {
-        throw new Error('Name is required');
+        throw new AppError('Name is required');
     }
     if (price === undefined || price === null) {
-        throw new Error('Price is required');
+        throw new AppError('Price is required');
     }
 
     const productData: ProductUncheckedCreateInput = {
@@ -214,7 +215,7 @@ async function processOrderRow(
     }
 
     if (!customerId) {
-        throw new Error(
+        throw new AppError(
             'Customer identifier required (customerId, externalId, or customerEmail)'
         );
     }

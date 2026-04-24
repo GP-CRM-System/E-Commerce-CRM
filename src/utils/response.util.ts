@@ -164,7 +164,7 @@ export class ResponseHandler {
         };
 
         logger.info(
-            `[PAGINATED] ${message} - Page: ${page}, Total: ${total} - Path: ${path || 'N/A'}`
+            `[Paginated] ${message} - Page: ${page}, Total: ${total} - Path: ${path || 'N/A'}`
         );
 
         return res.status(HttpStatus.OK).json(response);

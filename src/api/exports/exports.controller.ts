@@ -3,6 +3,10 @@ import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js'
 import prisma from '../../config/prisma.config.js';
 import * as exportService from './exports.service.js';
 import {
+    isB2Configured,
+    getSignedDownloadUrl
+} from '../../config/b2.config.js';
+import {
     ResponseHandler,
     HttpStatus,
     ErrorCode
@@ -160,6 +164,26 @@ export const download = asyncHandler(
             );
         }
 
+        // B2 key starts with "exports/" - check if file is stored in B2
+        if (isB2Configured && job.filePath.startsWith('exports/')) {
+            const signedUrlResult = await getSignedDownloadUrl(job.filePath);
+            if (!signedUrlResult.success) {
+                return ResponseHandler.error(
+                    res,
+                    'Failed to generate download URL',
+                    ErrorCode.SERVER_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+                );
+            }
+            return ResponseHandler.success(
+                res,
+                'Export download signed URL generated',
+                HttpStatus.OK,
+                { downloadUrl: signedUrlResult.url }
+            );
+        }
+
+        // Local file fallback
         const fs = await import('fs');
         const path = await import('path');
 

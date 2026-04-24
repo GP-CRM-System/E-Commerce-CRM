@@ -27,6 +27,7 @@ import {
 import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models/ImportJobError.js';
 import { processRow } from './imports.processor.js';
 import { AuditService } from '../audit/audit.service.js';
+import { BadRequestError, NotFoundError } from '../../utils/response.util.js';
 
 const importQueue: Queue | null = isRedisAvailable
     ? new Queue('import-queue', { connection: redisConnection })
@@ -51,11 +52,13 @@ export async function createImportJob(
         options;
 
     if (!validateFileType(file.originalname)) {
-        throw new Error('Unsupported file type. Allowed: .csv, .xlsx');
+        throw new BadRequestError(
+            'Unsupported file type. Allowed: .csv, .xlsx'
+        );
     }
 
     if (!validateFileSize(file.size)) {
-        throw new Error(
+        throw new BadRequestError(
             `File too large. Max size: ${IMPORT_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB`
         );
     }
@@ -104,7 +107,9 @@ export async function createImportJob(
     });
 
     if (!validateFileType(file.originalname)) {
-        throw new Error('Unsupported file type. Allowed: .csv, .xlsx');
+        throw new BadRequestError(
+            'Unsupported file type. Allowed: .csv, .xlsx'
+        );
     }
 
     const health = await checkRedisHealth();
@@ -162,7 +167,7 @@ async function processImportJob(
 
     if (!existingJob) {
         logger.error({ jobId }, 'Import job not found');
-        throw new Error(`Import job not found: ${jobId}`);
+        throw new NotFoundError(`Import job not found: ${jobId}`);
     }
 
     if (existingJob.status !== 'PENDING') {
@@ -389,7 +394,7 @@ export async function getImportJobErrors(
     const job = await prisma.importJob.findFirst({
         where: { id: jobId, organizationId }
     });
-    if (!job) throw new Error('Job not found');
+    if (!job) throw new NotFoundError('Job not found');
 
     const [errors, total] = await Promise.all([
         prisma.importJobError.findMany({
@@ -419,11 +424,13 @@ export async function rollbackImportJob(
     });
 
     if (!job) {
-        throw new Error('Import job not found');
+        throw new NotFoundError('Import job not found');
     }
 
     if (job.status === 'PROCESSING') {
-        throw new Error('Cannot rollback a job that is currently processing');
+        throw new BadRequestError(
+            'Cannot rollback a job that is currently processing'
+        );
     }
 
     const recordIds = job.createdRecordIds || [];
