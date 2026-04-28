@@ -30,31 +30,30 @@ checkEnv();
 
 const app = express();
 
-app.use(
-    helmet({
-        contentSecurityPolicy: {
-            directives: {
-                'script-src': [
-                    "'self'",
-                    "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'script-src-elem': [
-                    "'self'",
-                    "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'connect-src': [
-                    "'self'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net']
-            }
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            'script-src': [
+                "'self'",
+                "'unsafe-inline'",
+                'https://cdn.jsdelivr.net',
+                'https://api.scalar.com'
+            ],
+            'script-src-elem': [
+                "'self'",
+                "'unsafe-inline'",
+                'https://cdn.jsdelivr.net',
+                'https://api.scalar.com'
+            ],
+            'connect-src': [
+                "'self'",
+                'https://cdn.jsdelivr.net',
+                'https://api.scalar.com'
+            ],
+            'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net']
         }
-    })
+    }
+})
 );
 
 app.use(express.json({ limit: '10mb' }));
@@ -70,10 +69,6 @@ app.use(
 
 // Auth routes
 app.use('/api', apiRouter);
-
-app.get('/aaaa', async (req, res) =>
-    res.json(await auth.api.generateOpenAPISchema())
-);
 
 // Serve combined API documentation with Scalar
 app.get(
