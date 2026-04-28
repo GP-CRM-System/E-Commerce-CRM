@@ -81,7 +81,6 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.4.1",
     "handlebars": "^4.7.9",
-    "helmet": "^8.1.0",
     "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",

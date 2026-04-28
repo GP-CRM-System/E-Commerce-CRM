@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import * as helmet from 'helmet';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
 import prisma from './config/prisma.config.js';
@@ -29,33 +28,6 @@ import { initRateLimitStore } from './config/ratelimit.config.js';
 checkEnv();
 
 const app = express();
-
-app.use(
-    helmet.default({
-        contentSecurityPolicy: {
-            directives: {
-                'script-src': [
-                    "'self'",
-                    "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'script-src-elem': [
-                    "'self'",
-                    "'unsafe-inline'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'connect-src': [
-                    "'self'",
-                    'https://cdn.jsdelivr.net',
-                    'https://api.scalar.com'
-                ],
-                'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net']
-            }
-        }
-    })
-);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
