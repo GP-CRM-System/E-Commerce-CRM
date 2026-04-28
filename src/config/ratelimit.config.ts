@@ -1,4 +1,4 @@
-import {rateLimit, ipKeyGenerator } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { createClient, type RedisClientType } from '@redis/client';
 import type { NextFunction, Request, Response } from 'express';
