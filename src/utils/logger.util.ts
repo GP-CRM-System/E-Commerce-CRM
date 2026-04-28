@@ -3,7 +3,7 @@ import { pino, multistream } from 'pino';
 import pretty from 'pino-pretty';
 import { env } from '../config/env.config.js';
 
-if (env.nodeEnv === 'development') {
+if (env.nodeEnv === 'local') {
     // Ensure logs directory exists
     if (!fs.existsSync('./logs')) {
         fs.mkdirSync('./logs');
