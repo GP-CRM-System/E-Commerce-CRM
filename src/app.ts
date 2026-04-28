@@ -71,6 +71,10 @@ app.use(
 // Auth routes
 app.use('/api', apiRouter);
 
+app.get('/aaaa', async (req, res) =>
+    res.json(await auth.api.generateOpenAPISchema())
+);
+
 // Serve combined API documentation with Scalar
 app.get(
     '/reference',

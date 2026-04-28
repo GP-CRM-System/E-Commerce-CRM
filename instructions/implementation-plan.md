@@ -21,8 +21,8 @@ This plan outlines the phased implementation of an E-Commerce CRM system designe
 | :---------------------------- | :---------- | :--------------------------------------------- |
 | Multi-tenancy                 | ✅ Complete | `src/api/auth/auth.ts`, `prisma/schema.prisma` |
 | Customers (CRUD)              | ✅ Complete | `src/api/customers/*`                          |
-| Products (CRUD)               | ✅ Complete | Model exists                                   |
-| Orders (CRUD)                 | ✅ Complete | Model exists                                   |
+| Products (CRUD)               | ✅ Complete | `src/api/products/*`                           |
+| Orders (CRUD)                 | ✅ Complete | `src/api/orders/*`                             |
 | Segments                      | ✅ Complete | Model with JSON filters                        |
 | **Segments API**              | ✅ Complete | `src/api/segments/*` with advanced filters     |
 | Tags                          | ✅ Complete | Model exists                                   |
@@ -38,7 +38,7 @@ This plan outlines the phased implementation of an E-Commerce CRM system designe
 | Organization Switching        | ✅ Complete | Users with multiple orgs can switch            |
 | RBAC (root, admin, member)    | ✅ Complete | `src/config/roles.config.ts`                   |
 | Dynamic Access Control        | ✅ Complete | `OrganizationRole` model                       |
-| **Excel Import/Export**       | ✅ Complete | `src/api/import/*`, `src/api/export/*` (async) |
+| **Excel Import/Export**       | ✅ Complete | `src/api/imports/*`, `src/api/exports/*` (async) |
 | **RFM Analysis**              | ✅ Complete | `rfm.queue.ts`, `rfm.processor.ts`             |
 | **Lifecycle Stages**          | ✅ Complete | `lifecycle.service.ts`                         |
 | Customer fields for RFM/Churn | ✅ Complete | Schema has fields (logic implemented)          |

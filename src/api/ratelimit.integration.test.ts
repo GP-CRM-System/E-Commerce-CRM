@@ -1,283 +1,97 @@
-import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
-import prisma from '../config/prisma.config.js';
-import { auth } from './auth/auth.js';
-import { fromNodeHeaders } from 'better-auth/node';
+import express from 'express';
+import request from 'supertest';
+import { describe, it, expect } from 'bun:test';
+import rateLimit from 'express-rate-limit';
+import {
+    rateLimitHandler,
+    authRateLimitHandler
+} from '../config/ratelimit.config.js';
 import { ErrorCode, HttpStatus } from '../utils/response.util.js';
 
-interface MockRequest {
-    method: string;
-    path: string;
-}
+type RateLimitErrorBody = {
+    message?: string;
+    code?: string;
+    status?: number;
+    timestamp?: string;
+    path?: string;
+};
 
-interface MockResponse {
-    status: (code: number) => MockResponse;
-    json: (data: unknown) => MockResponse;
-}
+const createLimitedApp = (
+    limit: number,
+    handler: (req: express.Request, res: express.Response) => unknown,
+    route: string,
+    method: 'get' | 'post'
+) => {
+    const app = express();
 
-let authToken: string;
-let testOrgId: string;
-let testUserId: string;
+    app.use(
+        rateLimit({
+            windowMs: 60 * 1000,
+            limit,
+            skip: () => false,
+            standardHeaders: true,
+            legacyHeaders: false,
+            handler
+        })
+    );
+
+    if (method === 'get') {
+        app.get(route, (_req, res) => {
+            return res.status(HttpStatus.OK).json({ success: true });
+        });
+    } else {
+        app.post(route, (_req, res) => {
+            return res.status(HttpStatus.OK).json({ success: true });
+        });
+    }
+
+    return app;
+};
 
 describe('Rate Limiting Integration Tests', () => {
-    beforeAll(async () => {
-        await prisma.customer.deleteMany({
-            where: { organization: { slug: { startsWith: 'rl-test-org' } } }
-        });
-        await prisma.member.deleteMany({
-            where: { user: { email: 'rl-test@test.com' } }
-        });
-        await prisma.session.deleteMany({
-            where: { user: { email: 'rl-test@test.com' } }
-        });
-        await prisma.account.deleteMany({
-            where: { user: { email: 'rl-test@test.com' } }
-        });
-        await prisma.organization.deleteMany({
-            where: { slug: { startsWith: 'rl-test-org' } }
-        });
-        await prisma.user.deleteMany({ where: { email: 'rl-test@test.com' } });
+    it('should throttle API requests and return 429 error contract', async () => {
+        const app = createLimitedApp(2, rateLimitHandler, '/limited', 'get');
 
-        const signup = await auth.api.signUpEmail({
-            body: {
-                email: 'rl-test@test.com',
-                password: 'Password123!',
-                name: 'RL Test User'
-            }
-        });
+        const first = await request(app).get('/limited');
+        const second = await request(app).get('/limited');
+        const third = await request(app).get('/limited');
 
-        if (!signup) throw new Error('Signup failed');
-        authToken = signup.token!;
-        testUserId = signup.user.id;
+        expect(first.status).toBe(HttpStatus.OK);
+        expect(second.status).toBe(HttpStatus.OK);
+        expect(third.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
 
-        await prisma.user.update({
-            where: { id: testUserId },
-            data: { emailVerified: true }
-        });
-
-        const org = await auth.api.createOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: {
-                name: 'RL Test Org',
-                slug: 'rl-test-org-' + Date.now()
-            }
-        });
-
-        const orgResponse = org as {
-            organization?: { id: string };
-            id?: string;
-        };
-        testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
-
-        await auth.api.setActiveOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: { organizationId: testOrgId }
-        });
-
-        const signin = await auth.api.signInEmail({
-            body: { email: 'rl-test@test.com', password: 'Password123!' }
-        });
-
-        if (!signin || !signin.token) throw new Error('Signin failed');
-        authToken = signin.token;
+        const body = third.body as RateLimitErrorBody;
+        expect(body.message).toBe(
+            'Too many requests from this IP, please try again later'
+        );
+        expect(body.code).toBe(ErrorCode.RATE_LIMIT_EXCEEDED);
+        expect(body.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+        expect(body.path).toBe('GET /limited');
+        expect(typeof body.timestamp).toBe('string');
+        expect((body.timestamp ?? '').length).toBeGreaterThan(0);
     });
 
-    afterAll(async () => {
-        if (!testOrgId) return;
-        await prisma.conversation.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.ticketNote.deleteMany({
-            where: { ticket: { organizationId: testOrgId } }
-        });
-        await prisma.supportTicket.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.transaction.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.notification.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.customerEvent.deleteMany({
-            where: { customer: { organizationId: testOrgId } }
-        });
-        await prisma.note.deleteMany({
-            where: { customer: { organizationId: testOrgId } }
-        });
-        await prisma.orderItem.deleteMany({
-            where: { order: { organizationId: testOrgId } }
-        });
-        await prisma.order.deleteMany({ where: { organizationId: testOrgId } });
-        await prisma.customer.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.productVariant.deleteMany({
-            where: { product: { organizationId: testOrgId } }
-        });
-        await prisma.product.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.segment.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.importJobError.deleteMany({
-            where: { importJob: { organizationId: testOrgId } }
-        });
-        await prisma.importJob.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.exportJob.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.syncLog.deleteMany({
-            where: { integration: { orgId: testOrgId } }
-        });
-        await prisma.integration.deleteMany({ where: { orgId: testOrgId } });
-        await prisma.webhookLog.deleteMany({
-            where: { integration: { orgId: testOrgId } }
-        });
-        await prisma.campaignRecipient.deleteMany({
-            where: { campaign: { organizationId: testOrgId } }
-        });
-        await prisma.campaign.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.emailTemplate.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.member.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.organizationRole.deleteMany({
-            where: { organizationId: testOrgId }
-        });
-        await prisma.session.deleteMany({
-            where: { user: { email: 'rl-test@test.com' } }
-        });
-        await prisma.account.deleteMany({
-            where: { user: { email: 'rl-test@test.com' } }
-        });
-        await prisma.organization.deleteMany({ where: { id: testOrgId } });
-        await prisma.user.deleteMany({ where: { email: 'rl-test@test.com' } });
-    });
+    it('should throttle auth attempts and return auth-specific 429 message', async () => {
+        const app = createLimitedApp(
+            1,
+            authRateLimitHandler,
+            '/auth-limited',
+            'post'
+        );
 
-    describe('Rate Limit Handler Response Format', () => {
-        it('should return correct status code for rate limit', async () => {
-            const capturedReq: MockRequest = {
-                method: 'POST',
-                path: '/api/customers'
-            };
-            let capturedStatus: number | undefined;
+        const first = await request(app).post('/auth-limited');
+        const second = await request(app).post('/auth-limited');
 
-            const { rateLimitHandler } =
-                await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (
-                req: MockRequest,
-                res: MockResponse
-            ) => unknown;
+        expect(first.status).toBe(HttpStatus.OK);
+        expect(second.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
 
-            const mockRes: MockResponse = {
-                status: function (code: number) {
-                    capturedStatus = code;
-                    return this;
-                },
-                json: function () {
-                    return this;
-                }
-            };
-
-            handlerFn(capturedReq, mockRes);
-            expect(capturedStatus).toBe(HttpStatus.TOO_MANY_REQUESTS);
-        });
-
-        it('should include method and path in rate limit error response', async () => {
-            const capturedReq: MockRequest = {
-                method: 'GET',
-                path: '/api/test-endpoint'
-            };
-            let capturedBody: unknown;
-
-            const { rateLimitHandler } =
-                await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (
-                req: MockRequest,
-                res: MockResponse
-            ) => unknown;
-
-            const mockRes: MockResponse = {
-                status: function () {
-                    return this;
-                },
-                json: function (data: unknown) {
-                    capturedBody = data;
-                    return this;
-                }
-            };
-
-            handlerFn(capturedReq, mockRes);
-            const body = capturedBody as { path?: string };
-            expect(body.path).toContain('GET /api/test-endpoint');
-        });
-    });
-
-    describe('Rate Limit Configuration', () => {
-        it('should have correct default limits configured', async () => {
-            const { createRateLimiter, createAuthRateLimiter } =
-                await import('../config/ratelimit.config.js');
-
-            const apiLimiter = await createRateLimiter();
-            const authLimiter = await createAuthRateLimiter();
-
-            expect(apiLimiter).toBeDefined();
-            expect(authLimiter).toBeDefined();
-
-            expect(apiLimiter).toBeTypeOf('function');
-            expect(authLimiter).toBeTypeOf('function');
-        });
-    });
-
-    describe('Error Contract Validation', () => {
-        it('should return valid error contract for 429 responses', async () => {
-            const capturedReq: MockRequest = {
-                method: 'GET',
-                path: '/api/test'
-            };
-            let capturedStatus: number | undefined;
-            let capturedBody: unknown;
-
-            const { rateLimitHandler } =
-                await import('../config/ratelimit.config.js');
-            const handlerFn = rateLimitHandler as (
-                req: MockRequest,
-                res: MockResponse
-            ) => unknown;
-
-            const mockRes: MockResponse = {
-                status: function (code: number) {
-                    capturedStatus = code;
-                    return this;
-                },
-                json: function (data: unknown) {
-                    capturedBody = data;
-                    return this;
-                }
-            };
-
-            handlerFn(capturedReq, mockRes);
-
-            expect(capturedStatus).toBe(HttpStatus.TOO_MANY_REQUESTS);
-            const body = capturedBody as {
-                message?: string;
-                code?: string;
-                status?: number;
-                timestamp?: Date;
-            };
-            expect(body).toHaveProperty('message');
-            expect(body).toHaveProperty('code');
-            expect(body).toHaveProperty('status');
-            expect(body).toHaveProperty('timestamp');
-            expect(body.status).toBe(429);
-            expect(body.code).toBe(ErrorCode.RATE_LIMIT_EXCEEDED);
-        });
+        const body = second.body as RateLimitErrorBody;
+        expect(body.message).toBe(
+            'Too many authentication attempts, please try again later'
+        );
+        expect(body.code).toBe(ErrorCode.RATE_LIMIT_EXCEEDED);
+        expect(body.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+        expect(body.path).toBe('POST /auth-limited');
+        expect(typeof body.timestamp).toBe('string');
     });
 });

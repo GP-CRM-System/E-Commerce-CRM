@@ -22,10 +22,7 @@ export const env = {
     smtpFrom: process.env.SMTP_FROM,
 
     // Redis Configuration (for BullMQ)
-    redisHost: process.env.REDIS_HOST,
-    redisPort: process.env.REDIS_PORT
-        ? parseInt(process.env.REDIS_PORT, 10)
-        : undefined,
+    redisUrl: process.env.REDIS_URL,
 
     // Google OAuth Configuration
     appUrl: process.env.APP_URL,
@@ -69,7 +66,7 @@ export function checkEnv(): void {
         );
     }
 
-    const hasRedis = env.redisHost && env.redisPort;
+    const hasRedis = env.redisUrl;
     const hasB2 = env.b2KeyId && env.b2ApplicationKey && env.b2BucketName;
     if (!hasRedis) {
         // Warning log omitted to avoid circular dependency with logger

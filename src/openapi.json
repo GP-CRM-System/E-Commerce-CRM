@@ -16,7 +16,19 @@
     "servers": [
         {
             "url": "/api",
-            "description": "Main API server"
+            "description": "Current environment"
+        },
+        {
+            "url": "https://dev.api.example.com/api",
+            "description": "Development server"
+        },
+        {
+            "url": "https://staging.api.example.com/api",
+            "description": "Staging server"
+        },
+        {
+            "url": "https://api.example.com/api",
+            "description": "Production server"
         }
     ],
     "tags": [
@@ -97,6 +109,10 @@
             "description": "Dashboard and analytics reports"
         },
         {
+            "name": "Health",
+            "description": "System health checks"
+        },
+        {
             "name": "Tracking",
             "description": "Campaign email open/click tracking"
         },
@@ -118,7 +134,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -126,7 +143,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "sortBy",
@@ -134,7 +152,8 @@
                         "schema": {
                             "type": "string",
                             "default": "createdAt"
-                        }
+                        },
+                        "description": "Field to sort by"
                     },
                     {
                         "name": "sortOrder",
@@ -143,40 +162,78 @@
                             "type": "string",
                             "enum": ["asc", "desc"],
                             "default": "desc"
-                        }
+                        },
+                        "description": "Sort direction (asc or desc)"
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Search query string"
                     },
                     {
                         "name": "city",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by city"
                     },
                     {
                         "name": "source",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by source"
                     },
                     {
                         "name": "segmentId",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by segment ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of customers"
+                        "description": "List of customers",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Customer"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -232,7 +289,23 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Customer created"
+                        "description": "Customer created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -259,7 +332,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Customer details"
+                        "description": "Customer details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Customer not found"
@@ -313,7 +393,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Customer updated"
+                        "description": "Customer updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -338,7 +434,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Customer deleted"
+                        "description": "Customer deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -360,12 +472,40 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the customer"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of notes"
+                        "description": "List of notes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -385,7 +525,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the customer"
                     }
                 ],
                 "requestBody": {
@@ -407,6 +548,15 @@
                 "responses": {
                     "201": {
                         "description": "Note created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -436,7 +586,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Note ID"
                     }
                 ],
                 "requestBody": {
@@ -455,7 +606,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Note updated"
+                        "description": "Note updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -483,12 +650,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Note ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Note deleted"
+                        "description": "Note deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -515,7 +699,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of events"
+                        "description": "List of events",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -566,6 +766,15 @@
                 "responses": {
                     "201": {
                         "description": "Event created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -595,7 +804,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Event ID"
                     }
                 ],
                 "requestBody": {
@@ -620,7 +830,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Event updated"
+                        "description": "Event updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -648,12 +874,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Event ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Event deleted"
+                        "description": "Event deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -685,7 +928,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "RFM computation completed"
+                        "description": "RFM computation completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -702,7 +961,23 @@
                 "tags": ["Customers"],
                 "responses": {
                     "200": {
-                        "description": "RFM distribution fetched"
+                        "description": "RFM distribution fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -729,7 +1004,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Customer analytics fetched"
+                        "description": "Customer analytics fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerAnalytics"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -757,6 +1048,15 @@
                 "responses": {
                     "202": {
                         "description": "RFM job queued"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -784,6 +1084,15 @@
                 "responses": {
                     "202": {
                         "description": "Lifecycle check complete"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -811,6 +1120,15 @@
                 "responses": {
                     "202": {
                         "description": "VIP recalculation complete"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -827,7 +1145,23 @@
                 "tags": ["Cron"],
                 "responses": {
                     "200": {
-                        "description": "Cleanup complete"
+                        "description": "Cleanup complete",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -849,12 +1183,29 @@
                         "schema": {
                             "type": "string",
                             "enum": ["shopify"]
-                        }
+                        },
+                        "description": "Integration provider"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of integrations"
+                        "description": "List of integrations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -897,6 +1248,15 @@
                 "responses": {
                     "201": {
                         "description": "Shopify store connected"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -918,12 +1278,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the integration"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Integration details"
+                        "description": "Integration details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Integration"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -943,7 +1320,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "requestBody": {
@@ -969,7 +1347,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Integration updated"
+                        "description": "Integration updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -989,12 +1383,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Integration deleted"
+                        "description": "Integration deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1016,12 +1427,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Connection test result"
+                        "description": "Connection test result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1043,7 +1471,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "requestBody": {
@@ -1067,7 +1496,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Webhooks registered"
+                        "description": "Webhooks registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1089,7 +1534,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "requestBody": {
@@ -1116,7 +1562,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Sync completed"
+                        "description": "Sync completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1138,12 +1600,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Sync logs"
+                        "description": "Sync logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1165,12 +1644,20 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Webhook received"
+                        "description": "Webhook received",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1187,12 +1674,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Integration ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Webhook logs"
+                        "description": "Webhook logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1214,7 +1718,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 50
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "offset",
@@ -1222,19 +1727,54 @@
                         "schema": {
                             "type": "integer",
                             "default": 0
-                        }
+                        },
+                        "description": "Offset for pagination"
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Search query string"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of segments"
+                        "description": "List of segments",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Segment"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1260,6 +1800,15 @@
                 "responses": {
                     "201": {
                         "description": "Segment created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1286,7 +1835,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Segment details"
+                        "description": "Segment details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1321,7 +1886,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Segment updated"
+                        "description": "Segment updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1347,6 +1928,15 @@
                 "responses": {
                     "204": {
                         "description": "Segment deleted"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1376,7 +1966,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 50
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "offset",
@@ -1384,12 +1975,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 0
-                        }
+                        },
+                        "description": "Offset for pagination"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of customers"
+                        "description": "List of customers",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1416,7 +2024,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Segment count"
+                        "description": "Segment count",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1443,7 +2067,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Segment preview"
+                        "description": "Segment preview",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1487,6 +2127,15 @@
                 "responses": {
                     "202": {
                         "description": "Export job accepted"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1508,7 +2157,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -1516,7 +2166,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "sortBy",
@@ -1524,7 +2175,8 @@
                         "schema": {
                             "type": "string",
                             "default": "createdAt"
-                        }
+                        },
+                        "description": "Field to sort by"
                     },
                     {
                         "name": "sortOrder",
@@ -1533,14 +2185,16 @@
                             "type": "string",
                             "enum": ["asc", "desc"],
                             "default": "desc"
-                        }
+                        },
+                        "description": "Sort direction (asc or desc)"
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Search query string"
                     },
                     {
                         "name": "category",
@@ -1554,12 +2208,46 @@
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by status"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of products"
+                        "description": "List of products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Product"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1610,6 +2298,15 @@
                 "responses": {
                     "201": {
                         "description": "Product created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1636,7 +2333,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product details"
+                        "description": "Product details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Product"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Product not found"
@@ -1667,14 +2371,54 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object"
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "price": {
+                                        "type": "number"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "sku": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "inventory": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": ["active", "draft", "archived"]
+                                    }
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Product updated"
+                        "description": "Product updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Product"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1694,12 +2438,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the product"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product deleted"
+                        "description": "Product deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1721,7 +2482,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -1729,7 +2491,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "sortBy",
@@ -1737,7 +2500,8 @@
                         "schema": {
                             "type": "string",
                             "default": "createdAt"
-                        }
+                        },
+                        "description": "Field to sort by"
                     },
                     {
                         "name": "sortOrder",
@@ -1746,21 +2510,24 @@
                             "type": "string",
                             "enum": ["asc", "desc"],
                             "default": "desc"
-                        }
+                        },
+                        "description": "Sort direction (asc or desc)"
                     },
                     {
                         "name": "customerId",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Customer ID"
                     },
                     {
                         "name": "status",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by status"
                     },
                     {
                         "name": "minAmount",
@@ -1779,7 +2546,40 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of orders"
+                        "description": "List of orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Order"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1838,6 +2638,15 @@
                 "responses": {
                     "201": {
                         "description": "Order created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1864,7 +2673,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order details"
+                        "description": "Order details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Order"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Order not found"
@@ -1895,14 +2711,59 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object"
+                                "type": "object",
+                                "properties": {
+                                    "externalId": {
+                                        "type": "string"
+                                    },
+                                    "subtotal": {
+                                        "type": "number"
+                                    },
+                                    "taxAmount": {
+                                        "type": "number"
+                                    },
+                                    "shippingAmount": {
+                                        "type": "number"
+                                    },
+                                    "totalAmount": {
+                                        "type": "number"
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    },
+                                    "fulfillmentStatus": {
+                                        "type": "string"
+                                    },
+                                    "note": {
+                                        "type": "string"
+                                    },
+                                    "source": {
+                                        "type": "string"
+                                    }
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Order updated"
+                        "description": "Order updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Order"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1922,12 +2783,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the order"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order deleted"
+                        "description": "Order deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -1949,7 +2827,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -1957,7 +2836,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "entityType",
@@ -1980,12 +2860,46 @@
                                 "PARTIALLY_FAILED",
                                 "CANCELLED"
                             ]
-                        }
+                        },
+                        "description": "Filter by status"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of import jobs"
+                        "description": "List of import jobs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ImportJob"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2036,6 +2950,15 @@
                 "responses": {
                     "201": {
                         "description": "Import job created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2057,12 +2980,20 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "The unique identifier of the import job"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Import job details"
+                        "description": "Import job details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Import job not found"
@@ -2095,7 +3026,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -2103,12 +3035,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 100
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of import errors"
+                        "description": "List of import errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2130,7 +3079,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -2138,7 +3088,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "entityType",
@@ -2159,12 +3110,46 @@
                                 "COMPLETED",
                                 "FAILED"
                             ]
-                        }
+                        },
+                        "description": "Filter by status"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of export jobs"
+                        "description": "List of export jobs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ExportJob"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2210,6 +3195,15 @@
                 "responses": {
                     "201": {
                         "description": "Export job created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2236,7 +3230,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Export job details"
+                        "description": "Export job details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Export job not found"
@@ -2268,7 +3269,11 @@
                     "200": {
                         "description": "Export file",
                         "content": {
-                            "application/octet-stream": {}
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
                         }
                     },
                     "404": {
@@ -2303,6 +3308,15 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2347,6 +3361,15 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2494,7 +3517,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Role deleted"
+                        "description": "Role deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     },
                     "400": {
                         "description": "Cannot delete default roles"
@@ -2522,7 +3552,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -2530,12 +3561,46 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of notifications"
+                        "description": "List of notifications",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2552,7 +3617,23 @@
                 "tags": ["Notifications"],
                 "responses": {
                     "200": {
-                        "description": "Unread count"
+                        "description": "Unread count",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2579,7 +3660,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Notification details"
+                        "description": "Notification details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2604,7 +3701,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Notification deleted"
+                        "description": "Notification deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2631,7 +3744,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Notification marked as read"
+                        "description": "Notification marked as read",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2665,7 +3794,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "All notifications marked as read"
+                        "description": "All notifications marked as read",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2687,7 +3832,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -2695,19 +3841,54 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Search query string"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of templates"
+                        "description": "List of templates",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2748,6 +3929,15 @@
                 "responses": {
                     "201": {
                         "description": "Template created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2774,7 +3964,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Template details"
+                        "description": "Template details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2822,7 +4028,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Template updated"
+                        "description": "Template updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2847,7 +4069,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Template deleted"
+                        "description": "Template deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2874,7 +4112,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Template preview"
+                        "description": "Template preview",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2896,7 +4150,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -2904,26 +4159,62 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Search query string"
                     },
                     {
                         "name": "status",
                         "in": "query",
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Filter by status"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of campaigns"
+                        "description": "List of campaigns",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2968,6 +4259,15 @@
                 "responses": {
                     "201": {
                         "description": "Campaign created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -2994,7 +4294,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Campaign details"
+                        "description": "Campaign details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3046,7 +4362,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Campaign updated"
+                        "description": "Campaign updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3071,7 +4403,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Campaign deleted"
+                        "description": "Campaign deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3115,7 +4463,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Campaign sent"
+                        "description": "Campaign sent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3142,7 +4506,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Campaign statistics"
+                        "description": "Campaign statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3164,7 +4544,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -3172,12 +4553,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of conversations"
+                        "description": "List of conversations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3207,7 +4605,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -3215,12 +4614,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 50
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of messages"
+                        "description": "List of messages",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3265,6 +4681,15 @@
                 "responses": {
                     "201": {
                         "description": "Message sent"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3304,7 +4729,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Webhook verified"
+                        "description": "Webhook verified",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -3314,7 +4746,14 @@
                 "tags": ["Messaging"],
                 "responses": {
                     "200": {
-                        "description": "Event received"
+                        "description": "Event received",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3331,12 +4770,29 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Order ID"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Payment initialized"
+                        "description": "Payment initialized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3353,7 +4809,14 @@
                 "tags": ["Payments"],
                 "responses": {
                     "200": {
-                        "description": "Callback handled"
+                        "description": "Callback handled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3370,7 +4833,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -3378,12 +4842,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of tickets"
+                        "description": "List of tickets",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3430,6 +4911,15 @@
                 "responses": {
                     "201": {
                         "description": "Ticket created"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3456,7 +4946,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Ticket details"
+                        "description": "Ticket details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3516,7 +5022,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Ticket updated"
+                        "description": "Ticket updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3563,6 +5085,15 @@
                 "responses": {
                     "201": {
                         "description": "Note added"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3584,7 +5115,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -3592,12 +5124,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of audit logs"
+                        "description": "List of audit logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3614,7 +5163,54 @@
                 "tags": ["Reports"],
                 "responses": {
                     "200": {
-                        "description": "Dashboard statistics"
+                        "description": "Dashboard statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "revenue": {
+                                                    "type": "object"
+                                                },
+                                                "acquisition": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "salesOverview": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/SalesOverview"
+                                                    }
+                                                },
+                                                "ticketStats": {
+                                                    "$ref": "#/components/schemas/TicketStats"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3636,14 +5232,19 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Recipient ID"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Tracking pixel",
                         "content": {
-                            "image/gif": {}
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
                         }
                     }
                 }
@@ -3661,7 +5262,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Recipient ID"
                     },
                     {
                         "name": "url",
@@ -3669,7 +5271,8 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Target URL for redirect"
                     }
                 ],
                 "responses": {
@@ -3691,12 +5294,20 @@
                         "required": true,
                         "schema": {
                             "type": "string"
-                        }
+                        },
+                        "description": "Verification or unsubscribe token"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Unsubscribed successfully"
+                        "description": "Unsubscribed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3708,7 +5319,14 @@
                 "tags": ["Health"],
                 "responses": {
                     "200": {
-                        "description": "All services healthy"
+                        "description": "All services healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
                     },
                     "503": {
                         "description": "Services unhealthy"
@@ -3728,7 +5346,8 @@
                         "schema": {
                             "type": "integer",
                             "default": 1
-                        }
+                        },
+                        "description": "Page number for pagination"
                     },
                     {
                         "name": "limit",
@@ -3736,12 +5355,29 @@
                         "schema": {
                             "type": "integer",
                             "default": 20
-                        }
+                        },
+                        "description": "Number of items per page"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Audit logs"
+                        "description": "Audit logs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -3768,7 +5404,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Import rolled back"
+                        "description": "Import rolled back",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
                 },
                 "security": [
@@ -4437,19 +6089,43 @@
                         }
                     }
                 }
-            }
-        },
-        "responses": {
-            "BadRequest": {
-                "description": "Invalid request parameters",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
+            },
+            "SalesOverview": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "description": "Date in ISO format (YYYY-MM-DD)"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "description": "Number of orders on this date"
+                    },
+                    "revenue": {
+                        "type": "number",
+                        "description": "Total revenue generated on this date"
                     }
                 }
             },
+            "TicketStats": {
+                "type": "object",
+                "properties": {
+                    "open": {
+                        "type": "integer",
+                        "description": "Number of open tickets"
+                    },
+                    "pending": {
+                        "type": "integer",
+                        "description": "Number of pending tickets"
+                    },
+                    "closed": {
+                        "type": "integer",
+                        "description": "Number of closed tickets"
+                    }
+                }
+            }
+        },
+        "responses": {
             "Unauthorized": {
                 "description": "Authentication required",
                 "content": {
@@ -4472,16 +6148,6 @@
             },
             "NotFound": {
                 "description": "Resource not found",
-                "content": {
-                    "application/json": {
-                        "schema": {
-                            "$ref": "#/components/schemas/Error"
-                        }
-                    }
-                }
-            },
-            "InternalServerError": {
-                "description": "Internal server error",
                 "content": {
                     "application/json": {
                         "schema": {

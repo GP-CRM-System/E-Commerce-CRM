@@ -6,7 +6,8 @@ import type {
     Customer,
     Note,
     CustomerEvent,
-    Prisma
+    Prisma,
+    CustomerLifecycleStage
 } from '../../generated/prisma/client.js';
 import type { CustomerFilters } from './customer.schemas.js';
 import { buildPrismaWhere } from '../segments/segment.utils.js';
@@ -15,6 +16,28 @@ import {
     NotFoundError,
     AuthorizationError
 } from '../../utils/response.util.js';
+import type { Decimal } from '../../generated/prisma/internal/prismaNamespace.js';
+
+type CustomerList = {
+    name: string;
+    id: string;
+    phone: string | null;
+    email: string | null;
+    lifecycleStage: CustomerLifecycleStage;
+    totalOrders: number;
+    totalSpent: Decimal;
+    tags: {
+        name: string;
+        id: string;
+        color: string;
+    }[];
+    customerEvents: {
+        id: string;
+        description: string;
+        eventType: string;
+        occurredAt: Date;
+    }[];
+}[];
 
 export async function getAllCustomers(
     organizationId: string,
@@ -22,7 +45,7 @@ export async function getAllCustomers(
     skip: number,
     filters?: CustomerFilters
 ): Promise<{
-    customers: Customer[];
+    customers: CustomerList;
     total: number;
 }> {
     try {
@@ -72,7 +95,35 @@ export async function getAllCustomers(
             },
             take,
             skip,
-            include: { tags: true }
+            // include: { tags: true },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                lifecycleStage: true,
+                tags: {
+                    select: {
+                        id: true,
+                        name: true,
+                        color: true
+                    }
+                },
+                totalOrders: true,
+                totalSpent: true,
+                customerEvents: {
+                    select: {
+                        id: true,
+                        eventType: true,
+                        description: true,
+                        occurredAt: true
+                    },
+                    take: 1,
+                    orderBy: {
+                        occurredAt: 'desc'
+                    }
+                }
+            }
         });
 
         const total = await prisma.customer.count({ where });

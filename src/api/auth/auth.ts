@@ -36,7 +36,7 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
-        requireEmailVerification: process.env.NODE_ENV !== 'test',
+        requireEmailVerification: process.env.NODE_ENV === 'production',
         sendResetPassword: async ({ user, url }) => {
             await sendEmail({
                 to: user.email,
@@ -59,7 +59,7 @@ export const auth = betterAuth({
                     subject: 'Verify your email address',
                     html: `
     					<p>Hi ${user.name ?? 'there'},</p>
-    					<p>Welcome to our CRM! Please verify your email address by clicking the button below:</p>
+    					<p>Welcome to Briefly CRM! Please verify your email address by clicking the button below:</p>
     					<br/>
     					<a href="${url}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
     				`

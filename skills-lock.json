@@ -141,6 +141,11 @@
       "sourceType": "github",
       "computedHash": "3384bbf87660a1e633ad72e56f0fb520c4d93956e41eb4ef8d70187a29955fb8"
     },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "72e9ab72627e4fd8ed26a582e82309a98ecdc4f6e1c99418430ac05682c9e91d"
+    },
     "two-factor-authentication-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",

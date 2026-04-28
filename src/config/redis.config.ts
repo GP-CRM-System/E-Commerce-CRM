@@ -6,14 +6,13 @@ import logger from '../utils/logger.util.js';
 const isTestEnv = process.env.NODE_ENV === 'test';
 
 export const redisConnection = {
-    host: env.redisHost,
-    port: env.redisPort,
+    url: env.redisUrl,
     connectTimeout: 2000
 };
 
 export const isRedisAvailable = isTestEnv
     ? false
-    : !!(env.redisHost && env.redisPort);
+    : !!(env.redisUrl && env.redisUrl.length > 0);
 
 let redisClient: RedisClientType | null = null;
 let wasAvailable = false;

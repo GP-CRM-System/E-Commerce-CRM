@@ -51,9 +51,9 @@ export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
     redisInitPromise = (async () => {
         try {
             const client = createClient({
+                url: redisConnection.url,
                 socket: {
-                    host: redisConnection.host,
-                    port: redisConnection.port
+                    connectTimeout: redisConnection.connectTimeout
                 }
             });
 
