@@ -3,7 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type {
     SupportTicketStatus,
     SupportTicketPriority
-} from '../../generated/prisma/client.js';
+} from '../../generated/prisma/enums.js';
 
 export async function createTicket(data: {
     organizationId: string;
