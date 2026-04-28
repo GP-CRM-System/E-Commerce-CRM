@@ -36,8 +36,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "test": "bun test",
-    "seed": "bun src/scripts/seed.script.ts",
-    "prepare": "[ \"$CI\" != \"true\" ] && husky install"
+    "seed": "bun src/scripts/seed.script.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

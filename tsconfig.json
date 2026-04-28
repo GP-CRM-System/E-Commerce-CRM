@@ -3,12 +3,12 @@
         "lib": ["ESNext"],
         "types": ["bun", "node"],
         "target": "ESNext",
-        "module": "nodenext",
+        "module": "preserve",
         "moduleDetection": "force",
         "allowJs": true,
 
-        "moduleResolution": "nodenext",
-        "verbatimModuleSyntax": true,
+        "moduleResolution": "bundler",
+        "verbatimModuleSyntax": false,
 
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
