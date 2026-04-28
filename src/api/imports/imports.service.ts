@@ -24,7 +24,7 @@ import {
     isRedisAvailable,
     checkRedisHealth
 } from '../../config/redis.config.js';
-import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models/ImportJobError.js';
+import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models.js';
 import { processRow } from './imports.processor.js';
 import { AuditService } from '../audit/audit.service.js';
 import { BadRequestError, NotFoundError } from '../../utils/response.util.js';

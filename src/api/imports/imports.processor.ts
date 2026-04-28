@@ -1,7 +1,9 @@
+import type {
+    CustomerUncheckedCreateInput,
+    OrderUncheckedCreateInput,
+    ProductUncheckedCreateInput
+} from '../../generated/prisma/models.js';
 import type { Prisma, PrismaClient } from '../../generated/prisma/client.js';
-import type { CustomerUncheckedCreateInput } from '../../generated/prisma/models/Customer.js';
-import type { ProductUncheckedCreateInput } from '../../generated/prisma/models/Product.js';
-import type { OrderUncheckedCreateInput } from '../../generated/prisma/models/Order.js';
 import type { EntityType, ParsedRow } from '../../types/import.types.js';
 import { AppError } from '../../utils/response.util.js';
 

@@ -1,6 +1,6 @@
 import prisma from '../../config/prisma.config.js';
 import logger from '../../utils/logger.util.js';
-import type { CustomerLifecycleStage } from '../../generated/prisma/enums.js';
+import type { CustomerLifecycleStage } from '../../generated/prisma/client.js';
 
 export const LIFECYCLE_RULES = {
     ONE_TIME_THRESHOLD: 1,

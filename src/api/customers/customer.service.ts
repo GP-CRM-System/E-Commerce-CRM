@@ -1,14 +1,8 @@
+import { Decimal } from '@prisma/client-runtime-utils';
 import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
 import { z } from 'zod';
 import * as customerSchema from './customer.schemas.js';
-import type {
-    Customer,
-    Note,
-    CustomerEvent,
-    Prisma,
-    CustomerLifecycleStage
-} from '../../generated/prisma/client.js';
 import type { CustomerFilters } from './customer.schemas.js';
 import { buildPrismaWhere } from '../segments/segment.utils.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -16,7 +10,13 @@ import {
     NotFoundError,
     AuthorizationError
 } from '../../utils/response.util.js';
-import type { Decimal } from '../../generated/prisma/internal/prismaNamespace.js';
+import type {
+    Customer,
+    Note,
+    CustomerEvent,
+    Prisma,
+    CustomerLifecycleStage
+} from '../../generated/prisma/client.js';
 
 type CustomerList = {
     name: string;
