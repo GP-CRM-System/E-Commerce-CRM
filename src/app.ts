@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import * as helmet from 'helmet';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
 import prisma from './config/prisma.config.js';
@@ -31,7 +31,7 @@ checkEnv();
 const app = express();
 
 app.use(
-    helmet({
+    helmet.default({
         contentSecurityPolicy: {
             directives: {
                 'script-src': [
