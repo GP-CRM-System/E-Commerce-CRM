@@ -1,7 +1,7 @@
-import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator, type RateLimitRequestHandler } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { createClient, type RedisClientType } from '@redis/client';
-import type { NextFunction, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import {
     ErrorCode,
     HttpStatus,
@@ -35,6 +35,44 @@ export const authRateLimitHandler = (req: Request, res: Response) => {
 
 let redisClient: RedisClientType | null = null;
 let redisInitPromise: Promise<RedisClientType | null> | null = null;
+let apiLimiter: RateLimitRequestHandler | null = null;
+let authLimiter: RateLimitRequestHandler | null = null;
+
+const createStore = (prefix: string) => {
+    if (!redisClient || isTestEnv) return undefined;
+    return new RedisStore({
+        prefix,
+        sendCommand: (...args: string[]) => redisClient!.sendCommand(args)
+    });
+};
+
+const createApiLimiter = (): RateLimitRequestHandler => {
+    return rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 100,
+        handler: rateLimitHandler,
+        skip: () => isTestEnv,
+        standardHeaders: true,
+        legacyHeaders: false,
+        store: createStore('rl:api:'),
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+    });
+};
+
+const createAuthLimiter = (): RateLimitRequestHandler => {
+    return rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: 15,
+        handler: authRateLimitHandler,
+        skip: () => isTestEnv,
+        standardHeaders: true,
+        legacyHeaders: false,
+        store: createStore('rl:auth:'),
+        keyGenerator: (req) =>
+            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+    });
+};
 
 export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
     if (!isRedisAvailable || isTestEnv) {
@@ -64,6 +102,10 @@ export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
 
             await client.connect();
             redisClient = client;
+
+            apiLimiter = createApiLimiter();
+            authLimiter = createAuthLimiter();
+
             return redisClient;
         } catch (err) {
             logger.error({ err }, 'Failed to connect Redis for rate limiter');
@@ -74,52 +116,37 @@ export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
     return redisInitPromise;
 };
 
-const createStore = (prefix: string) => {
-    if (!redisClient || isTestEnv) return undefined;
-    return new RedisStore({
-        prefix,
-        sendCommand: (...args: string[]) => redisClient!.sendCommand(args)
-    });
+export const getRateLimiter = (): RateLimitRequestHandler => {
+    if (!apiLimiter) {
+        // Create without Redis store if not initialized yet
+        return rateLimit({
+            windowMs: 15 * 60 * 1000,
+            limit: 100,
+            handler: rateLimitHandler,
+            skip: () => isTestEnv,
+            standardHeaders: true,
+            legacyHeaders: false,
+            keyGenerator: (req) =>
+                ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        });
+    }
+    return apiLimiter;
 };
 
-export const rateLimiter = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    if (!redisClient) await initRateLimitStore();
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 100,
-        handler: rateLimitHandler,
-        skip: () => isTestEnv,
-        standardHeaders: true,
-        legacyHeaders: false,
-        store: createStore('rl:api:'),
-        keyGenerator: (req) =>
-            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
-    });
-    return limiter(req, res, next);
-};
-
-export const authRateLimiter = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    if (!redisClient) await initRateLimitStore();
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 15,
-        handler: authRateLimitHandler,
-        skip: () => isTestEnv,
-        standardHeaders: true,
-        legacyHeaders: false,
-        store: createStore('rl:auth:'),
-        keyGenerator: (req) =>
-            ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
-    });
-    return limiter(req, res, next);
+export const getAuthLimiter = (): RateLimitRequestHandler => {
+    if (!authLimiter) {
+        return rateLimit({
+            windowMs: 15 * 60 * 1000,
+            limit: 15,
+            handler: authRateLimitHandler,
+            skip: () => isTestEnv,
+            standardHeaders: true,
+            legacyHeaders: false,
+            keyGenerator: (req) =>
+                ipKeyGenerator(req.ip ?? req.socket.remoteAddress ?? 'unknown')
+        });
+    }
+    return authLimiter;
 };
 
 export const createRateLimiter = async () => {

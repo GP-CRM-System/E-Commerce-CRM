@@ -29,8 +29,6 @@ export function getRedisConnectionOptions(): ConnectionOptions {
     return opts;
 }
 
-const _redisConnectionOptions = parseRedisUrl();
-
 export const isRedisAvailable = isTestEnv
     ? false
     : !!(env.redisUrl && env.redisUrl.length > 0);

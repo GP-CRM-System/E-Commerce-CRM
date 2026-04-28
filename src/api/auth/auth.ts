@@ -15,6 +15,8 @@ import {
 } from '../../config/roles.config.js';
 import loggerUtil from '../../utils/logger.util.js';
 import { AuditService } from '../audit/audit.service.js';
+import { getRedisClient, isRedisAvailable } from '../../config/redis.config.js';
+import { redisStorage } from '@better-auth/redis-storage';
 
 const ac = createAccessControl(AVAILABLE_PERMISSIONS);
 
@@ -23,6 +25,9 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: 'postgresql'
     }),
+    secondaryStorage: isRedisAvailable
+        ? redisStorage({ client: await getRedisClient()! })
+        : undefined,
     rateLimit: {
         window: 10,
         max: 100
