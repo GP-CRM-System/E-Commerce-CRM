@@ -33,7 +33,7 @@
     "build": "tsc",
     "test": "bun test",
     "seed": "bun src/scripts/seed.script.ts",
-    "prepare": "husky"
+    "prepare": "[ \"$CI\" != \"true\" ] && husky install"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
