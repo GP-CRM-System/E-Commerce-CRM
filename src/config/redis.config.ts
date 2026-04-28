@@ -1,3 +1,4 @@
+import type { ConnectionOptions } from 'bullmq';
 import { env } from '../config/env.config.js';
 import { createClient, type RedisClientType } from '@redis/client';
 import * as Sentry from '@sentry/bun';
@@ -5,10 +6,30 @@ import logger from '../utils/logger.util.js';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
-export const redisConnection = {
-    url: env.redisUrl,
-    connectTimeout: 2000
-};
+export const redisConnection: string | undefined = env.redisUrl;
+
+function parseRedisUrl(): ConnectionOptions | undefined {
+    if (!env.redisUrl) return undefined;
+    try {
+        const url = new URL(env.redisUrl);
+        return {
+            host: url.hostname,
+            port: parseInt(url.port) || (url.protocol === 'rediss:' ? 443 : 6379)
+        };
+    } catch {
+        return undefined;
+    }
+}
+
+export function getRedisConnectionOptions(): ConnectionOptions {
+    const opts = parseRedisUrl();
+    if (!opts) {
+        throw new Error('Redis not configured');
+    }
+    return opts;
+}
+
+const _redisConnectionOptions = parseRedisUrl();
 
 export const isRedisAvailable = isTestEnv
     ? false
@@ -64,7 +85,7 @@ export async function getRedisClient(): Promise<RedisClientType | null> {
     if (!isRedisAvailable) return null;
 
     if (!redisClient) {
-        redisClient = createClient({ socket: redisConnection });
+        redisClient = createClient({ url: env.redisUrl });
         redisClient.on('error', (err: Error) => {
             logger.error({ err }, 'Redis client error');
             redisClient = null;

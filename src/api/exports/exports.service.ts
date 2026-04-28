@@ -6,9 +6,9 @@ import type {
     CustomerLifecycleStage
 } from '../../generated/prisma/client.js';
 import {
-    redisConnection,
     isRedisAvailable,
-    checkRedisHealth
+    checkRedisHealth,
+    getRedisConnectionOptions
 } from '../../config/redis.config.js';
 import { toCSV, toExcel } from '../../utils/parser.util.js';
 import logger from '../../utils/logger.util.js';
@@ -17,7 +17,7 @@ import { AuditService } from '../audit/audit.service.js';
 
 function getExportQueue(): Queue | null {
     if (!isRedisAvailable) return null;
-    return new Queue('export-queue', { connection: redisConnection });
+    return new Queue('export-queue', { connection: getRedisConnectionOptions() });
 }
 
 export async function createExportJob(

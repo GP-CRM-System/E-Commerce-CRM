@@ -7,7 +7,8 @@ import {
     HttpStatus,
     ResponseHandler
 } from '../utils/response.util.js';
-import { redisConnection, isRedisAvailable } from './redis.config.js';
+import { isRedisAvailable } from './redis.config.js';
+import { env } from './env.config.js';
 import logger from '../utils/logger.util.js';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
@@ -51,9 +52,9 @@ export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
     redisInitPromise = (async () => {
         try {
             const client = createClient({
-                url: redisConnection.url,
+                url: env.redisUrl,
                 socket: {
-                    connectTimeout: redisConnection.connectTimeout
+                    connectTimeout: 2000
                 }
             });
 

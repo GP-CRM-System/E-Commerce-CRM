@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import { redisConnection } from '../../config/redis.config.js';
+import { getRedisConnectionOptions } from '../../config/redis.config.js';
 import { processExportJob } from './exports.service.js';
 import logger from '../../utils/logger.util.js';
 
@@ -24,7 +24,7 @@ export function initExportWorker() {
                 organizationId
             );
         },
-        { connection: redisConnection }
+        { connection: getRedisConnectionOptions() }
     );
 
     worker.on('completed', (job) => {

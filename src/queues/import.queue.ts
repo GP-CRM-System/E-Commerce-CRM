@@ -6,7 +6,7 @@ import {
     IMPORT_JOB_STATUS
 } from '../constants/import.constants.js';
 import type { EntityType, ColumnMapping } from '../types/import.types.js';
-import { redisConnection } from '../config/redis.config.js';
+import { getRedisConnectionOptions } from '../config/redis.config.js';
 import { processRow } from '../api/imports/imports.processor.js';
 import type { ImportJobErrorUncheckedCreateInput } from '../generated/prisma/models/ImportJobError.js';
 import { parseFile, applyMapping } from '../utils/parser.util.js';
@@ -164,7 +164,7 @@ export const importWorker = new Worker<ImportJobData>(
         }
     },
     {
-        connection: redisConnection,
+        connection: getRedisConnectionOptions(),
         concurrency: 5
     }
 );

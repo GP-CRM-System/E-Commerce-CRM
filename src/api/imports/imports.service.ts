@@ -20,9 +20,9 @@ import type {
     ParsedRow
 } from '../../types/import.types.js';
 import {
-    redisConnection,
     isRedisAvailable,
-    checkRedisHealth
+    checkRedisHealth,
+    getRedisConnectionOptions
 } from '../../config/redis.config.js';
 import type { ImportJobErrorUncheckedCreateInput } from '../../generated/prisma/models.js';
 import { processRow } from './imports.processor.js';
@@ -30,7 +30,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { BadRequestError, NotFoundError } from '../../utils/response.util.js';
 
 const importQueue: Queue | null = isRedisAvailable
-    ? new Queue('import-queue', { connection: redisConnection })
+    ? new Queue('import-queue', { connection: getRedisConnectionOptions() })
     : null;
 
 export async function createImportJob(

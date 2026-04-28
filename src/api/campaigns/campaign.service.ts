@@ -1,8 +1,8 @@
 import { Queue } from 'bullmq';
 import prisma from '../../config/prisma.config.js';
 import {
-    redisConnection,
-    isRedisAvailable
+    isRedisAvailable,
+    getRedisConnectionOptions
 } from '../../config/redis.config.js';
 import {
     renderTemplate,
@@ -20,7 +20,7 @@ export interface CampaignJobData {
 }
 
 const campaignQueue: Queue<CampaignJobData> | null = isRedisAvailable
-    ? new Queue('campaign-send-queue', { connection: redisConnection })
+    ? new Queue('campaign-send-queue', { connection: getRedisConnectionOptions() })
     : null;
 
 export async function createCampaign(

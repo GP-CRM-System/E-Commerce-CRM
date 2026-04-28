@@ -293,10 +293,10 @@ export async function addRFMScoreJob(
 ): Promise<void> {
     try {
         const { Queue } = await import('bullmq');
-        const { redisConnection } = await import('../config/redis.config.js');
+        const { getRedisConnectionOptions } = await import('../config/redis.config.js');
 
         const rfmQueue = new Queue<RFMJobData>('rfm-score-queue', {
-            connection: redisConnection
+            connection: getRedisConnectionOptions()
         });
         await rfmQueue.add('rfm-scoring', {
             organizationId,

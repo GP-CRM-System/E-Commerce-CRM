@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq';
-import { redisConnection } from '../config/redis.config.js';
+import { getRedisConnectionOptions } from '../config/redis.config.js';
 import logger from '../utils/logger.util.js';
 import {
     processRFMSynchronously,
@@ -42,7 +42,7 @@ export const rfmWorker = new Worker<RFMJobData>(
         }
     },
     {
-        connection: redisConnection,
+        connection: getRedisConnectionOptions(),
         concurrency: 3
     }
 );
