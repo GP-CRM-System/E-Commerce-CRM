@@ -22,6 +22,10 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "bun": ">=1.1.0"
+  },
   "scripts": {
     "dev": "bun --watch run src/index.ts --preload ./src/instrument.ts",
     "start": "bun run src/index.ts --preload ./src/instrument.ts",
@@ -33,7 +37,7 @@
     "build": "tsc",
     "test": "bun test",
     "seed": "bun src/scripts/seed.script.ts",
-    "prepare": "[ \"$CI\" != \"true\" ] && husky install"
+    "postinstall": "bun run generate"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
