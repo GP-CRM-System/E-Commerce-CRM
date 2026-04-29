@@ -32,7 +32,7 @@ export const env = {
 
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
-    metaAccessToken: process.env.META_ACCESS_TOKEN,
+    metaAppSecret: process.env.META_APP_SECRET,
 
     // Backblaze B2 Configuration
     b2KeyId: process.env.B2_KEY_ID,

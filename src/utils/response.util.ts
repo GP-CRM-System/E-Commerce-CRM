@@ -7,6 +7,7 @@ export enum HttpStatus {
     CREATED = 201,
     ACCEPTED = 202,
     NO_CONTENT = 204,
+    PAYMENT_REQUIRED = 402,
 
     // Client errors
     BAD_REQUEST = 400,
@@ -47,7 +48,8 @@ export enum ErrorCode {
     SERVER_ERROR = 'SRV_OO1',
     NOT_IMPLEMENTED = 'SRV_OO2',
     DATABASE_ERROR = 'SRV_OO3',
-    RATE_LIMIT_EXCEEDED = 'SRV_OO4'
+    RATE_LIMIT_EXCEEDED = 'SRV_OO4',
+    SUBSCRIPTION_REQUIRED = 'SRV_005'
 }
 
 export interface SuccessResponse<T> {

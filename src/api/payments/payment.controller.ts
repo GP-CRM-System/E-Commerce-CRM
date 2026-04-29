@@ -9,8 +9,16 @@ import {
     ErrorCode
 } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
+import { z } from 'zod';
 
 type OrderWithCustomer = Order & { customer: Customer | null };
+
+const fawryCallbackSchema = z.object({
+    merchantRefNum: z.string().min(1),
+    fawryRefNo: z.string().min(1),
+    orderStatus: z.enum(['PAID', 'FAILED']),
+    checksum: z.string().min(1)
+});
 
 export const initialize = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -59,16 +67,19 @@ export const initialize = asyncHandler(
 );
 
 export const callback = asyncHandler(async (req: Request, res: Response) => {
-    const data = req.body;
+    const parsed = fawryCallbackSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+        return ResponseHandler.error(
+            res,
+            'Invalid callback payload',
+            ErrorCode.VALIDATION_ERROR,
+            HttpStatus.BAD_REQUEST
+        );
+    }
 
     try {
-        await fawryService.verifyFawryPayment({
-            merchantRefNum: data.merchantRefNum,
-            fawryRefNo: data.fawryRefNo,
-            orderStatus: data.orderStatus,
-            checksum: data.checksum
-        });
-
+        await fawryService.verifyFawryPayment(parsed.data);
         return res.status(200).send('OK');
     } catch {
         return res.status(400).send('Verification Failed');

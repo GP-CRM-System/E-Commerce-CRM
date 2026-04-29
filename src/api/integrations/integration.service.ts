@@ -226,18 +226,19 @@ export function verifyShopifyWebhook(
 
 export async function registerWebhooks(
     integrationId: string,
+    orgId: string,
     topics: string[],
     webhookUrl: string
 ): Promise<{
     registered: string[];
     failed: { topic: string; error: string }[];
 }> {
-    const integration = await prisma.integration.findUnique({
-        where: { id: integrationId }
+    const integration = await prisma.integration.findFirst({
+        where: { id: integrationId, orgId }
     });
 
     if (!integration || integration.provider !== 'shopify') {
-        throw new Error('Shopify integration not found');
+        throw new NotFoundError('Integration not found');
     }
 
     const { apiCall } = await getShopifyClient(integration);

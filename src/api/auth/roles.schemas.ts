@@ -31,6 +31,7 @@ export const permissionSchemas: Record<
     ac: z.array(z.enum(['read', 'create', 'update', 'delete'])),
     customers: z.array(z.enum(['read', 'write', 'delete'])),
     orders: z.array(z.enum(['read', 'write', 'delete'])),
+    payments: z.array(z.enum(['read', 'write', 'delete'])),
     products: z.array(z.enum(['read', 'write', 'delete'])),
     imports: z.array(z.enum(['read', 'write'])),
     exports: z.array(z.enum(['read', 'write'])),
@@ -44,7 +45,8 @@ export const permissionSchemas: Record<
     reports: z.array(z.enum(['read'])),
     notifications: z.array(z.enum(['read', 'write', 'delete'])),
     templates: z.array(z.enum(['read', 'write', 'delete'])),
-    conversations: z.array(z.enum(['read', 'write', 'delete']))
+    conversations: z.array(z.enum(['read', 'write', 'delete'])),
+    subscriptions: z.array(z.enum(['read', 'write']))
 };
 
 export const createRoleSchema = z.object({

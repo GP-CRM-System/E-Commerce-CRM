@@ -39,6 +39,8 @@ async function resetDatabase() {
     await safeDelete(() => prisma.transaction.deleteMany());
     await safeDelete(() => prisma.message.deleteMany());
     await safeDelete(() => prisma.conversation.deleteMany());
+    await safeDelete(() => prisma.subscription.deleteMany());
+    await safeDelete(() => prisma.plan.deleteMany());
     await safeDelete(() => prisma.ticketNote.deleteMany());
     await safeDelete(() => prisma.notification.deleteMany());
     await safeDelete(() => prisma.emailTemplate.deleteMany());
@@ -648,27 +650,13 @@ async function createCampaignRecipients(organizationId: string) {
     logger.info('[SEED] Created campaign recipients\n');
 }
 
-async function createAuditLogs(organizationId: string, adminUserId: string) {
+async function createAuditLogs() {
     logger.info('[SEED] Creating audit logs...');
-    const actions = [
-        'customer.create',
-        'order.create',
-        'product.update',
-        'user.login',
-        'settings.update'
-    ];
-    const logs = [];
-    for (let i = 0; i < 50; i++) {
-        logs.push({
-            organizationId,
-            userId: adminUserId,
-            action: faker.helpers.arrayElement(actions),
-            targetId: faker.string.nanoid(),
-            targetType: 'SYSTEM',
-            createdAt: faker.date.recent({ days: 7 })
-        });
-    }
-    await prisma.auditLog.createMany({ data: logs });
+    // Placeholder - no audit logs to seed
+}
+
+async function createPlans() {
+    logger.info('[SEED] Skipping - plans already seeded');
 }
 
 async function main() {
@@ -689,7 +677,8 @@ async function main() {
     await createSegmentsAndCampaigns(mainOrgId);
     await createSupportTickets(organizations, adminUserId);
     await createCampaignRecipients(mainOrgId);
-    await createAuditLogs(mainOrgId, adminUserId);
+    await createAuditLogs();
+    await createPlans();
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     logger.info(`[SEED] COMPLETED in ${duration}s`);

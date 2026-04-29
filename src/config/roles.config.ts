@@ -6,6 +6,7 @@ export type RolePermissions = {
     ac: ('read' | 'create' | 'update' | 'delete')[];
     customers: ('read' | 'write' | 'delete')[];
     orders: ('read' | 'write' | 'delete')[];
+    payments: ('read' | 'write' | 'delete')[];
     products: ('read' | 'write' | 'delete')[];
     imports: ('read' | 'write')[];
     exports: ('read' | 'write')[];
@@ -20,6 +21,7 @@ export type RolePermissions = {
     notifications: ('read' | 'write' | 'delete')[];
     templates: ('read' | 'write' | 'delete')[];
     conversations: ('read' | 'write' | 'delete')[];
+    subscriptions: ('read' | 'write')[];
 };
 
 export const DEFAULT_ROLES = {
@@ -31,6 +33,7 @@ export const DEFAULT_ROLES = {
         ac: ['create', 'read', 'update', 'delete'],
         customers: ['read', 'write', 'delete'],
         orders: ['read', 'write', 'delete'],
+        payments: ['read', 'write', 'delete'],
         products: ['read', 'write', 'delete'],
         imports: ['read', 'write'],
         exports: ['read', 'write'],
@@ -44,7 +47,8 @@ export const DEFAULT_ROLES = {
         reports: ['read'],
         notifications: ['read', 'write', 'delete'],
         templates: ['read', 'write', 'delete'],
-        conversations: ['read', 'write', 'delete']
+        conversations: ['read', 'write', 'delete'],
+        subscriptions: ['read', 'write']
     },
     admin: {
         organization: ['read', 'update'],
@@ -54,6 +58,7 @@ export const DEFAULT_ROLES = {
         ac: ['read'],
         customers: ['read', 'write', 'delete'],
         orders: ['read', 'write', 'delete'],
+        payments: ['read', 'write', 'delete'],
         products: ['read', 'write', 'delete'],
         imports: ['read', 'write'],
         exports: ['read', 'write'],
@@ -67,7 +72,8 @@ export const DEFAULT_ROLES = {
         reports: ['read'],
         notifications: ['read', 'write', 'delete'],
         templates: ['read', 'write', 'delete'],
-        conversations: ['read', 'write', 'delete']
+        conversations: ['read', 'write', 'delete'],
+        subscriptions: ['read', 'write']
     },
     member: {
         organization: [],
@@ -77,6 +83,7 @@ export const DEFAULT_ROLES = {
         ac: [],
         customers: ['read'],
         orders: ['read'],
+        payments: [],
         products: ['read'],
         imports: [],
         exports: ['read'],
@@ -90,7 +97,8 @@ export const DEFAULT_ROLES = {
         reports: [],
         notifications: ['read'],
         templates: ['read'],
-        conversations: ['read']
+        conversations: ['read'],
+        subscriptions: ['read']
     }
 } as const satisfies Record<string, RolePermissions>;
 
@@ -104,6 +112,7 @@ export const AVAILABLE_PERMISSIONS: RolePermissions = {
     ac: ['read', 'create', 'update', 'delete'],
     customers: ['read', 'write', 'delete'],
     orders: ['read', 'write', 'delete'],
+    payments: ['read', 'write', 'delete'],
     products: ['read', 'write', 'delete'],
     imports: ['read', 'write'],
     exports: ['read', 'write'],
@@ -117,5 +126,6 @@ export const AVAILABLE_PERMISSIONS: RolePermissions = {
     reports: ['read'],
     notifications: ['read', 'write', 'delete'],
     templates: ['read', 'write', 'delete'],
-    conversations: ['read', 'write', 'delete']
+    conversations: ['read', 'write', 'delete'],
+    subscriptions: ['read', 'write']
 };

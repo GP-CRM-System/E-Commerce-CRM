@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { type Request } from 'express';
 import cors from 'cors';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
@@ -29,7 +29,14 @@ checkEnv();
 
 const app = express();
 
-app.use(express.json({ limit: '10mb' }));
+app.use(
+    express.json({
+        limit: '10mb',
+        verify: (req, res, buf) => {
+            (req as Request & { rawBody?: Buffer }).rawBody = buf;
+        }
+    })
+);
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(
     cors({

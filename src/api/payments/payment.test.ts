@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
+import crypto from 'crypto';
 import request from 'supertest';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
@@ -71,13 +72,22 @@ describe('Payment API', () => {
     });
 
     it('should handle fawry callback', async () => {
+        const merchantCode = process.env.FAWRY_MERCHANT_CODE || 'TEST';
+        const securityKey = process.env.FAWRY_SECURITY_KEY || 'TEST';
+        const fawryRefNo = 'FAWRY123';
+        const orderStatus = 'PAID';
+        const checksum = crypto
+            .createHash('sha256')
+            .update(`${merchantCode}${orderId}${fawryRefNo}${orderStatus}${securityKey}`)
+            .digest('hex');
+
         const response = await request(app)
             .post('/api/payments/fawry/callback')
             .send({
                 merchantRefNum: orderId,
-                fawryRefNo: 'FAWRY123',
-                orderStatus: 'PAID',
-                checksum: 'DUMMY'
+                fawryRefNo,
+                orderStatus,
+                checksum
             });
 
         expect(response.status).toBe(200);
@@ -87,5 +97,19 @@ describe('Payment API', () => {
             where: { id: orderId }
         });
         expect(updatedOrder?.paymentStatus).toBe('PAID');
+    });
+
+    it('should reject invalid fawry callback checksum', async () => {
+        const response = await request(app)
+            .post('/api/payments/fawry/callback')
+            .send({
+                merchantRefNum: orderId,
+                fawryRefNo: 'FAWRY123',
+                orderStatus: 'PAID',
+                checksum: 'invalid'
+            });
+
+        expect(response.status).toBe(400);
+        expect(response.text).toBe('Verification Failed');
     });
 });

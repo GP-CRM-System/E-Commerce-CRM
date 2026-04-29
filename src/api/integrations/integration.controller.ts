@@ -234,6 +234,7 @@ export const registerWebhooks = asyncHandler(
         const webhookUrl = `${env.appUrl}`;
         const result = await integrationService.registerWebhooks(
             integrationId,
+            activeOrganizationId,
             req.body.topics,
             webhookUrl
         );

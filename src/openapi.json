@@ -113,6 +113,10 @@
             "description": "System health checks"
         },
         {
+            "name": "Subscriptions",
+            "description": "Subscription plan management and billing"
+        },
+        {
             "name": "Tracking",
             "description": "Campaign email open/click tracking"
         },
@@ -5429,8 +5433,509 @@
                     }
                 ]
             }
-        }
-    },
+        },
+        "/subscriptions/plans": {
+            "get": {
+                "operationId": "listSubscriptionPlans",
+                "summary": "List all subscription plans",
+                "tags": ["Subscriptions"],
+                "parameters": [
+                    {
+                        "name": "includeInactive",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "description": "Include inactive plans"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of subscription plans",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SubscriptionPlan"
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/current": {
+            "get": {
+                "operationId": "getCurrentSubscription",
+                "summary": "Get current organization subscription",
+                "tags": ["Subscriptions"],
+                "responses": {
+                    "200": {
+                        "description": "Current subscription details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "nullable": true,
+                                            "$ref": "#/components/schemas/Subscription"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/subscriptions": {
+            "post": {
+                "operationId": "subscribeToPlan",
+                "summary": "Subscribe to a plan",
+                "tags": ["Subscriptions"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["planId"],
+                                "properties": {
+                                    "planId": {
+                                        "type": "string",
+                                        "description": "Plan ID to subscribe to"
+                                    },
+                                    "billingCycle": {
+                                        "type": "string",
+                                        "enum": ["monthly", "yearly"],
+                                        "default": "monthly"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscription activated or payment required",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "paymentRequired": {
+                                                    "type": "boolean"
+                                                },
+                                                "subscription": {
+                                                    "$ref": "#/components/schemas/Subscription"
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/subscriptions/cancel": {
+            "patch": {
+                "operationId": "cancelSubscription",
+                "summary": "Cancel current subscription",
+                "tags": ["Subscriptions"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "immediately": {
+                                        "type": "boolean",
+                                        "default": false,
+                                        "description": "Cancel immediately or at end of billing period"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscription canceled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Subscription"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/subscriptions/initialize": {
+            "post": {
+                "operationId": "initializeSubscription",
+                "summary": "Initialize subscription with payment if required",
+                "tags": ["Subscriptions"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["planId"],
+                                "properties": {
+                                    "planId": {
+                                        "type": "string",
+                                        "description": "Plan ID to subscribe to"
+                                    },
+                                    "billingCycle": {
+                                        "type": "string",
+                                        "enum": ["monthly", "yearly"],
+                                        "default": "monthly"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscription activated (free plan)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "paymentRequired": {
+                                                    "type": "boolean",
+                                                    "const": false
+                                                },
+                                                "subscription": {
+                                                    "$ref": "#/components/schemas/Subscription"
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "402": {
+                        "description": "Payment required with Fawry payment details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "subscription": {
+                                                    "$ref": "#/components/schemas/Subscription"
+                                                },
+                                                "fawry": {
+                                                    "$ref": "#/components/schemas/FawryPayment"
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/subscriptions/fawry/callback": {
+            "post": {
+                "operationId": "subscriptionPaymentCallback",
+                "summary": "Handle Fawry payment callback for subscriptions",
+                "tags": ["Subscriptions"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["merchantRefNum", "fawryRefNo", "orderStatus", "checksum"],
+                                "properties": {
+                                    "merchantRefNum": {
+                                        "type": "string",
+                                        "description": "Merchant reference number (organization ID)"
+                                    },
+                                    "fawryRefNo": {
+                                        "type": "string",
+                                        "description": "Fawry reference number"
+                                    },
+                                    "orderStatus": {
+                                        "type": "string",
+                                        "enum": ["PAID", "CANCELLED", "FAILED"],
+                                        "description": "Payment status"
+                                    },
+                                    "checksum": {
+                                        "type": "string",
+                                        "description": "Checksum for verification"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Callback handled successfully"
+                    },
+                    "400": {
+                        "description": "Missing required fields"
+                    },
+                    "403": {
+                        "description": "Invalid checksum"
+                    }
+                }
+                }
+            },
+            "SubscriptionPlan": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Internal plan name (e.g., free, basic, pro)"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "Display name for the plan"
+                    },
+                    "price": {
+                        "type": "number",
+                        "description": "Price amount"
+                    },
+                    "billingCycle": {
+                        "type": "string",
+                        "enum": ["monthly", "yearly"]
+                    },
+                    "features": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "description": "Plan feature limits and settings"
+                    },
+                    "isActive": {
+                        "type": "boolean",
+                        "description": "Whether the plan is available for subscription"
+                    }
+                }
+            },
+            "Subscription": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "organizationId": {
+                        "type": "string"
+                    },
+                    "planId": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["active", "canceled", "past_due", "trialing"]
+                    },
+                    "billingCycle": {
+                        "type": "string",
+                        "enum": ["monthly", "yearly"]
+                    },
+                    "currentPeriodStart": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "currentPeriodEnd": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "cancelAtPeriodEnd": {
+                        "type": "boolean",
+                        "description": "Whether subscription cancels at period end"
+                    },
+                    "paymentReference": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "External payment reference (e.g., Fawry ref)"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "plan": {
+                        "$ref": "#/components/schemas/SubscriptionPlan"
+                    }
+                }
+            },
+            "FawryPayment": {
+                "type": "object",
+                "properties": {
+                    "merchantCode": {
+                        "type": "string",
+                        "description": "Fawry merchant code"
+                    },
+                    "merchantRefNum": {
+                        "type": "string",
+                        "description": "Merchant reference number (organization ID)"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "description": "Payment amount"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "Request signature for verification"
+                    },
+                    "fawryUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Fawry payment page URL"
+                    }
+                }
+            }
+        },
     "components": {
         "securitySchemes": {
             "bearerAuth": {

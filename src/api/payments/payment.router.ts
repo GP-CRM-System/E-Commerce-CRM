@@ -7,7 +7,7 @@ const router = Router();
 // API routes (Protected)
 router.post(
     '/initialize/:orderId',
-    requirePermission('orders:write'),
+    requirePermission('payments:write'),
     paymentController.initialize
 );
 

@@ -106,8 +106,54 @@ model Organization {
   emailTemplates EmailTemplate[]
   conversations  Conversation[]
   transactions   Transaction[]
+  subscription   Subscription?
 
   @@map("organization")
+}
+
+model Plan {
+  id           String        @id @default(nanoid())
+  name        String        // 'free', 'basic', 'professional'
+  displayName String
+  price       Decimal       @db.Decimal(10, 2)
+  billingCycle String       @default("monthly") // 'monthly', 'yearly'
+  features    Json         // Feature flags: { users: 5, customers: 1000, apiCalls: 1000, etc }
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  subscriptions Subscription[]
+
+  @@map("plan")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  TRIALING
+}
+
+model Subscription {
+  id               String             @id @default(nanoid())
+  organizationId   String
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planId           String
+  plan             Plan              @relation(fields: [planId], references: [id])
+  status          SubscriptionStatus @default(TRIALING)
+  startDate       DateTime           @default(now())
+  endDate         DateTime?
+  cancelAt        DateTime?
+  fawryRefNo      String?           // Reference from payment provider
+  transactionId  String?           // Our transaction record
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([planId])
+  @@map("subscription")
 }
 
 model OrganizationRole {
@@ -811,6 +857,7 @@ model Message {
   content        String
   type           String           @default("text") // 'text', 'image', 'video', 'template'
   status         MessageStatus    @default(SENT)
+  errorMessage   String? // Error message if delivery failed
   metadata       Json? // Media URLs, template names, etc.
   createdAt      DateTime         @default(now())
 
