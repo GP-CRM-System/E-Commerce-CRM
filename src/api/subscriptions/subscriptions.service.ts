@@ -76,9 +76,10 @@ export async function subscribeOrganization(
     return {
         subscription,
         paymentRequired: true,
-        amount: billingCycle === 'yearly'
-            ? Number(plan.price) * 12 * 0.9
-            : Number(plan.price),
+        amount:
+            billingCycle === 'yearly'
+                ? Number(plan.price) * 12 * 0.9
+                : Number(plan.price),
         billingCycle
     };
 }
@@ -110,7 +111,10 @@ export async function cancelSubscription(
     });
 }
 
-export async function activateSubscription(organizationId: string, fawryRefNo: string) {
+export async function activateSubscription(
+    organizationId: string,
+    fawryRefNo: string
+) {
     const subscription = await prisma.subscription.findUnique({
         where: { organizationId }
     });
@@ -131,13 +135,17 @@ export async function activateSubscription(organizationId: string, fawryRefNo: s
 }
 
 export function hasFeature(
-    subscription: { status: string; plan: { name: string; features: Record<string, number> } } | null,
+    subscription: {
+        status: string;
+        plan: { name: string; features: Record<string, number> };
+    } | null,
     feature: string
 ): boolean {
     if (subscription === null || subscription.status !== 'ACTIVE') {
         return subscription?.plan.name === 'free' || false;
     }
-    const features = (subscription.plan.features as Record<string, number>) || {};
+    const features =
+        (subscription.plan.features as Record<string, number>) || {};
     return (features[feature] ?? 0) > 0;
 }
 

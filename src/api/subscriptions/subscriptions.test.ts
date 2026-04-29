@@ -11,8 +11,6 @@ import {
 let auth: TestAuth;
 
 describe('Subscriptions API', () => {
-
-
     beforeAll(async () => {
         auth = await createTestUser(
             `sub-${Date.now()}@test.com`,
@@ -28,8 +26,7 @@ describe('Subscriptions API', () => {
 
     describe('GET /api/subscriptions/plans', () => {
         it('should list subscription plans', async () => {
-            const response = await request(app)
-                .get('/api/subscriptions/plans');
+            const response = await request(app).get('/api/subscriptions/plans');
 
             expect(response.status).toBe(200);
             expect(response.body.message).toBeDefined();
@@ -50,8 +47,10 @@ describe('Subscriptions API', () => {
 
     describe('POST /api/subscriptions', () => {
         it('should subscribe to free plan without payment', async () => {
-            const freePlan = await prisma.plan.findFirst({ where: { name: 'free' } });
-            
+            const freePlan = await prisma.plan.findFirst({
+                where: { name: 'free' }
+            });
+
             const response = await request(app)
                 .post('/api/subscriptions')
                 .set('Authorization', `Bearer ${auth.token}`)
@@ -73,8 +72,10 @@ describe('Subscriptions API', () => {
 
     describe('POST /api/subscriptions/initialize', () => {
         it('should return payment required for paid plans', async () => {
-            const basicPlan = await prisma.plan.findFirst({ where: { name: 'basic' } });
-            
+            const basicPlan = await prisma.plan.findFirst({
+                where: { name: 'basic' }
+            });
+
             const response = await request(app)
                 .post('/api/subscriptions/initialize')
                 .set('Authorization', `Bearer ${auth.token}`)
@@ -85,8 +86,10 @@ describe('Subscriptions API', () => {
         });
 
         it('should activate free plan immediately', async () => {
-            const freePlan = await prisma.plan.findFirst({ where: { name: 'free' } });
-            
+            const freePlan = await prisma.plan.findFirst({
+                where: { name: 'free' }
+            });
+
             const response = await request(app)
                 .post('/api/subscriptions/initialize')
                 .set('Authorization', `Bearer ${auth.token}`)

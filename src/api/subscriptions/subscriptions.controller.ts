@@ -1,10 +1,7 @@
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import * as subscriptionService from './subscriptions.service.js';
-import {
-    ResponseHandler,
-    HttpStatus
-} from '../../utils/response.util.js';
+import { ResponseHandler, HttpStatus } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 
 export const listPlans = asyncHandler(
@@ -16,7 +13,7 @@ export const listPlans = asyncHandler(
             res,
             'Plans fetched successfully',
             HttpStatus.OK,
-            plans.map(p => ({
+            plans.map((p) => ({
                 id: p.id,
                 name: p.name,
                 displayName: p.displayName,
@@ -33,9 +30,8 @@ export const listPlans = asyncHandler(
 export const getCurrentSubscription = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
-        const subscription = await subscriptionService.getCurrentSubscription(
-            organizationId
-        );
+        const subscription =
+            await subscriptionService.getCurrentSubscription(organizationId);
 
         ResponseHandler.success(
             res,

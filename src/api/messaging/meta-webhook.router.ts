@@ -1,4 +1,9 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import {
+    Router,
+    type Request,
+    type Response,
+    type NextFunction
+} from 'express';
 import crypto from 'crypto';
 import logger from '../../utils/logger.util.js';
 import { env } from '../../config/env.config.js';
@@ -38,9 +43,15 @@ interface MetaWebhookBody {
     }>;
 }
 
-const verifyMetaSignature = (req: Request, res: Response, next: NextFunction) => {
+const verifyMetaSignature = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     if (!env.metaAppSecret) {
-        logger.warn('META_APP_SECRET is not configured, skipping signature verification');
+        logger.warn(
+            'META_APP_SECRET is not configured, skipping signature verification'
+        );
         return next();
     }
 
@@ -61,7 +72,12 @@ const verifyMetaSignature = (req: Request, res: Response, next: NextFunction) =>
         .update(rawBody)
         .digest('hex')}`;
 
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    if (
+        !crypto.timingSafeEqual(
+            Buffer.from(signature),
+            Buffer.from(expectedSignature)
+        )
+    ) {
         logger.warn('Invalid Meta webhook signature');
         return res.status(403).send('Invalid signature');
     }
@@ -82,20 +98,30 @@ router.get('/meta/webhook', (req: Request, res: Response) => {
     return res.status(403).send('Forbidden');
 });
 
-router.post('/meta/webhook', verifyMetaSignature, async (req: Request, res: Response) => {
-    const body = req.body;
-    res.status(200).send('EVENT_RECEIVED');
+router.post(
+    '/meta/webhook',
+    verifyMetaSignature,
+    async (req: Request, res: Response) => {
+        const body = req.body;
+        res.status(200).send('EVENT_RECEIVED');
 
-    try {
-        await processMetaWebhook(body);
-    } catch (err) {
-        logger.error({ err, body: JSON.stringify(body) }, 'Error processing Meta webhook');
+        try {
+            await processMetaWebhook(body);
+        } catch (err) {
+            logger.error(
+                { err, body: JSON.stringify(body) },
+                'Error processing Meta webhook'
+            );
+        }
     }
-});
+);
 
 async function processMetaWebhook(body: MetaWebhookBody) {
     if (body.object !== 'whatsapp_business_account' && body.object !== 'page') {
-        logger.debug({ object: body.object }, 'Received non-messaging webhook object');
+        logger.debug(
+            { object: body.object },
+            'Received non-messaging webhook object'
+        );
         return;
     }
 
@@ -104,7 +130,9 @@ async function processMetaWebhook(body: MetaWebhookBody) {
             const value = change.value;
             if (value && value.messages && value.metadata) {
                 const phoneNumberId = value.metadata.phone_number_id;
-                const integrations = await prisma.$queryRaw<{ orgId: string }[]>`
+                const integrations = await prisma.$queryRaw<
+                    { orgId: string }[]
+                >`
                     SELECT "orgId" FROM "Integration" 
                     WHERE provider = 'meta' 
                     AND metadata->>'whatsappPhoneNumberId' = ${phoneNumberId}
@@ -113,16 +141,22 @@ async function processMetaWebhook(body: MetaWebhookBody) {
 
                 const organizationId = integrations[0]?.orgId;
                 if (!organizationId) {
-                    logger.warn({ phoneNumberId }, 'Received WhatsApp webhook for unknown phone number ID');
+                    logger.warn(
+                        { phoneNumberId },
+                        'Received WhatsApp webhook for unknown phone number ID'
+                    );
                     continue;
                 }
 
                 for (const msg of value.messages || []) {
                     const customerPhone = msg.from;
                     let messageContent: string;
-                    if (msg.type === 'text') messageContent = msg.text?.body || '';
-                    else if (msg.type === 'image') messageContent = '[Image Message]';
-                    else if (msg.type === 'document') messageContent = '[Document Message]';
+                    if (msg.type === 'text')
+                        messageContent = msg.text?.body || '';
+                    else if (msg.type === 'image')
+                        messageContent = '[Image Message]';
+                    else if (msg.type === 'document')
+                        messageContent = '[Document Message]';
                     else messageContent = `[${msg.type} Message]`;
 
                     await handleInboundMessage({
@@ -133,7 +167,7 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                         content: messageContent,
                         type: msg.type,
                         metadata: msg,
-                        customerPhone,
+                        customerPhone
                     });
                 }
             }
@@ -150,7 +184,10 @@ async function processMetaWebhook(body: MetaWebhookBody) {
 
             const organizationId = integrations[0]?.orgId;
             if (!organizationId) {
-                logger.warn({ pageId }, 'Received Messenger webhook for unknown page ID');
+                logger.warn(
+                    { pageId },
+                    'Received Messenger webhook for unknown page ID'
+                );
                 continue;
             }
 
@@ -167,7 +204,7 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                         provider: 'facebook',
                         content,
                         type: msgEvent.message.text ? 'text' : 'attachment',
-                        metadata: msgEvent,
+                        metadata: msgEvent
                     });
                 }
             }

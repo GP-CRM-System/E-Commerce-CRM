@@ -88,12 +88,16 @@ export async function sendOutboundMessage(data: {
     });
 
     if (!integration) {
-        throw new AppError('Meta integration not configured or inactive', 400, 'INTEGRATION_ERROR');
+        throw new AppError(
+            'Meta integration not configured or inactive',
+            400,
+            'INTEGRATION_ERROR'
+        );
     }
 
     const { accessToken, metadata: integrationMetadata } = integration;
     const metaConfig = (integrationMetadata as Record<string, string>) || {};
-    
+
     let externalMessageId = `local-${Date.now()}`;
     let messageStatus: 'SENT' | 'FAILED' = 'SENT';
     let errorMessage: string | undefined;
@@ -102,23 +106,30 @@ export async function sendOutboundMessage(data: {
         if (conversation.provider === 'whatsapp') {
             const phoneNumberId = metaConfig.whatsappPhoneNumberId;
             if (!phoneNumberId) {
-                throw new Error('WhatsApp Phone Number ID not configured for this integration');
+                throw new Error(
+                    'WhatsApp Phone Number ID not configured for this integration'
+                );
             }
 
-            const response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messaging_product: 'whatsapp',
-                    recipient_type: 'individual',
-                    to: conversation.externalId,
-                    type: data.type === 'template' ? 'template' : 'text',
-                    ...(data.type === 'template' ? { template: data.metadata?.template } : { text: { body: data.content } })
-                })
-            });
+            const response = await fetch(
+                `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        recipient_type: 'individual',
+                        to: conversation.externalId,
+                        type: data.type === 'template' ? 'template' : 'text',
+                        ...(data.type === 'template'
+                            ? { template: data.metadata?.template }
+                            : { text: { body: data.content } })
+                    })
+                }
+            );
 
             const result = (await response.json()) as {
                 error?: { message?: string };
@@ -131,24 +142,28 @@ export async function sendOutboundMessage(data: {
             if (result.messages && result.messages.length > 0) {
                 externalMessageId = result.messages[0]?.id ?? externalMessageId;
             }
-
         } else if (conversation.provider === 'facebook') {
             const pageId = metaConfig.facebookPageId;
             if (!pageId) {
-                throw new Error('Facebook Page ID not configured for this integration');
+                throw new Error(
+                    'Facebook Page ID not configured for this integration'
+                );
             }
 
-            const response = await fetch(`https://graph.facebook.com/v18.0/${pageId}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    recipient: { id: conversation.externalId },
-                    message: { text: data.content }
-                })
-            });
+            const response = await fetch(
+                `https://graph.facebook.com/v18.0/${pageId}/messages`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipient: { id: conversation.externalId },
+                        message: { text: data.content }
+                    })
+                }
+            );
 
             const result = (await response.json()) as {
                 error?: { message?: string };
@@ -164,7 +179,10 @@ export async function sendOutboundMessage(data: {
         }
     } catch (error) {
         const err = error as Error;
-        logger.error({ err, conversationId: conversation.id }, 'Outbound message failed');
+        logger.error(
+            { err, conversationId: conversation.id },
+            'Outbound message failed'
+        );
         messageStatus = 'FAILED';
         errorMessage = err.message;
     }
@@ -188,7 +206,11 @@ export async function sendOutboundMessage(data: {
     });
 
     if (messageStatus === 'FAILED') {
-        throw new AppError(`Message delivery failed: ${errorMessage}`, 500, 'DELIVERY_FAILED');
+        throw new AppError(
+            `Message delivery failed: ${errorMessage}`,
+            500,
+            'DELIVERY_FAILED'
+        );
     }
 
     return message;

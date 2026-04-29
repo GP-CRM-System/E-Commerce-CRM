@@ -17,7 +17,9 @@ import { AuditService } from '../audit/audit.service.js';
 
 function getExportQueue(): Queue | null {
     if (!isRedisAvailable) return null;
-    return new Queue('export-queue', { connection: getRedisConnectionOptions() });
+    return new Queue('export-queue', {
+        connection: getRedisConnectionOptions()
+    });
 }
 
 export async function createExportJob(

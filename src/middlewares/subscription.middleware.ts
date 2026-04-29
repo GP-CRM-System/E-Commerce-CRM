@@ -17,28 +17,44 @@ export function requireActiveSubscription() {
         }
 
         try {
-            const subscription = await subscriptionService.getCurrentSubscription(organizationId);
-            const isActive = subscriptionService.isSubscriptionActive(subscription);
+            const subscription =
+                await subscriptionService.getCurrentSubscription(
+                    organizationId
+                );
+            const isActive =
+                subscriptionService.isSubscriptionActive(subscription);
 
             if (!isActive) {
-                logger.info({ organizationId }, 'Inactive subscription blocked access');
+                logger.info(
+                    { organizationId },
+                    'Inactive subscription blocked access'
+                );
                 return res.status(402).json({
                     success: false,
                     message: 'Active subscription required',
                     code: 'SRV_005',
                     data: {
-                        subscription: subscription ? {
-                            status: subscription.status,
-                            plan: subscription.plan.name
-                        } : null
+                        subscription: subscription
+                            ? {
+                                  status: subscription.status,
+                                  plan: subscription.plan.name
+                              }
+                            : null
                     }
                 });
             }
 
-            (req as AuthenticatedRequest & { subscription?: typeof subscription }).subscription = subscription;
+            (
+                req as AuthenticatedRequest & {
+                    subscription?: typeof subscription;
+                }
+            ).subscription = subscription;
             next();
         } catch (error) {
-            logger.error({ error, organizationId }, 'Error checking subscription');
+            logger.error(
+                { error, organizationId },
+                'Error checking subscription'
+            );
             return res.status(500).json({
                 success: false,
                 message: 'Error verifying subscription',

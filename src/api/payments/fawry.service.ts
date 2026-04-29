@@ -13,7 +13,8 @@ function getFawryConfig(): FawryConfig {
     return {
         merchantCode: process.env.FAWRY_MERCHANT_CODE || 'TEST',
         securityKey: process.env.FAWRY_SECURITY_KEY || 'TEST',
-        baseUrl: process.env.FAWRY_BASE_URL || 'https://atfawry.fawrystaging.com'
+        baseUrl:
+            process.env.FAWRY_BASE_URL || 'https://atfawry.fawrystaging.com'
     };
 }
 
@@ -105,7 +106,10 @@ export async function verifyFawryPayment(data: {
     });
 
     if (!timingSafeEqualHex(data.checksum, expectedChecksum)) {
-        logger.warn({ merchantRefNum: data.merchantRefNum }, 'Invalid Fawry callback checksum');
+        logger.warn(
+            { merchantRefNum: data.merchantRefNum },
+            'Invalid Fawry callback checksum'
+        );
         throw new Error('Invalid callback checksum');
     }
 
@@ -156,7 +160,10 @@ export async function verifyFawryPayment(data: {
             }
         }),
         prisma.order.update({
-            where: { id: transaction.orderId, organizationId: transaction.organizationId },
+            where: {
+                id: transaction.orderId,
+                organizationId: transaction.organizationId
+            },
             data: {
                 paymentStatus: isSuccess ? 'PAID' : 'FAILED'
             }

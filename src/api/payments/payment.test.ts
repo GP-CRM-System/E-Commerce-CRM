@@ -78,7 +78,9 @@ describe('Payment API', () => {
         const orderStatus = 'PAID';
         const checksum = crypto
             .createHash('sha256')
-            .update(`${merchantCode}${orderId}${fawryRefNo}${orderStatus}${securityKey}`)
+            .update(
+                `${merchantCode}${orderId}${fawryRefNo}${orderStatus}${securityKey}`
+            )
             .digest('hex');
 
         const response = await request(app)

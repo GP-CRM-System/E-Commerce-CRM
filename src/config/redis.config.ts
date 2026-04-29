@@ -14,7 +14,8 @@ function parseRedisUrl(): ConnectionOptions | undefined {
         const url = new URL(env.redisUrl);
         return {
             host: url.hostname,
-            port: parseInt(url.port) || (url.protocol === 'rediss:' ? 443 : 6379)
+            port:
+                parseInt(url.port) || (url.protocol === 'rediss:' ? 443 : 6379)
         };
     } catch {
         return undefined;

@@ -42,11 +42,16 @@ export const initializeSubscription = asyncHandler(
                 const config = {
                     merchantCode: process.env.FAWRY_MERCHANT_CODE || 'TEST',
                     securityKey: process.env.FAWRY_SECURITY_KEY || 'TEST',
-                    baseUrl: process.env.FAWRY_BASE_URL || 'https://atfawry.fawrystaging.com'
+                    baseUrl:
+                        process.env.FAWRY_BASE_URL ||
+                        'https://atfawry.fawrystaging.com'
                 };
 
                 const signatureSource = `${config.merchantCode}${organizationId}${result.amount}${config.securityKey}`;
-                const signature = crypto.createHash('sha256').update(signatureSource).digest('hex');
+                const signature = crypto
+                    .createHash('sha256')
+                    .update(signatureSource)
+                    .digest('hex');
 
                 return ResponseHandler.success(
                     res,
@@ -59,7 +64,8 @@ export const initializeSubscription = asyncHandler(
                             merchantRefNum: organizationId,
                             amount: result.amount,
                             signature,
-                            fawryUrl: config.baseUrl + '/atfawry/plugin/fawry-pay.js'
+                            fawryUrl:
+                                config.baseUrl + '/atfawry/plugin/fawry-pay.js'
                         }
                     },
                     req.url
@@ -74,7 +80,10 @@ export const initializeSubscription = asyncHandler(
                 req.url
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to initialize subscription';
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to initialize subscription';
             return ResponseHandler.error(
                 res,
                 message,
@@ -85,30 +94,37 @@ export const initializeSubscription = asyncHandler(
     }
 );
 
-export const subscriptionCallback = asyncHandler(async (req: Request, res: Response) => {
-    const { merchantRefNum, fawryRefNo, orderStatus, checksum } = req.body;
+export const subscriptionCallback = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { merchantRefNum, fawryRefNo, orderStatus, checksum } = req.body;
 
-    if (!merchantRefNum || !fawryRefNo || !orderStatus || !checksum) {
-        return res.status(400).send('Missing required fields');
+        if (!merchantRefNum || !fawryRefNo || !orderStatus || !checksum) {
+            return res.status(400).send('Missing required fields');
+        }
+
+        const config = {
+            merchantCode: process.env.FAWRY_MERCHANT_CODE || 'TEST',
+            securityKey: process.env.FAWRY_SECURITY_KEY || 'TEST'
+        };
+
+        const expectedChecksum = crypto
+            .createHash('sha256')
+            .update(
+                `${config.merchantCode}${merchantRefNum}${fawryRefNo}${orderStatus}${config.securityKey}`
+            )
+            .digest('hex');
+
+        if (checksum !== expectedChecksum) {
+            return res.status(403).send('Invalid checksum');
+        }
+
+        if (orderStatus === 'PAID') {
+            await subscriptionService.activateSubscription(
+                merchantRefNum,
+                fawryRefNo
+            );
+        }
+
+        return res.status(200).send('OK');
     }
-
-    const config = {
-        merchantCode: process.env.FAWRY_MERCHANT_CODE || 'TEST',
-        securityKey: process.env.FAWRY_SECURITY_KEY || 'TEST'
-    };
-
-    const expectedChecksum = crypto
-        .createHash('sha256')
-        .update(`${config.merchantCode}${merchantRefNum}${fawryRefNo}${orderStatus}${config.securityKey}`)
-        .digest('hex');
-
-    if (checksum !== expectedChecksum) {
-        return res.status(403).send('Invalid checksum');
-    }
-
-    if (orderStatus === 'PAID') {
-        await subscriptionService.activateSubscription(merchantRefNum, fawryRefNo);
-    }
-
-    return res.status(200).send('OK');
-});
+);

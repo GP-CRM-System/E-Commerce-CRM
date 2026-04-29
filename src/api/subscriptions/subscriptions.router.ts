@@ -43,9 +43,6 @@ router.post(
     paymentController.initializeSubscription
 );
 
-router.post(
-    '/fawry/callback',
-    paymentController.subscriptionCallback
-);
+router.post('/fawry/callback', paymentController.subscriptionCallback);
 
 export default router;

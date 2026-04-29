@@ -5789,7 +5789,12 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": ["merchantRefNum", "fawryRefNo", "orderStatus", "checksum"],
+                                "required": [
+                                    "merchantRefNum",
+                                    "fawryRefNo",
+                                    "orderStatus",
+                                    "checksum"
+                                ],
                                 "properties": {
                                     "merchantRefNum": {
                                         "type": "string",
@@ -5824,118 +5829,118 @@
                         "description": "Invalid checksum"
                     }
                 }
-                }
-            },
-            "SubscriptionPlan": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Internal plan name (e.g., free, basic, pro)"
-                    },
-                    "displayName": {
-                        "type": "string",
-                        "description": "Display name for the plan"
-                    },
-                    "price": {
-                        "type": "number",
-                        "description": "Price amount"
-                    },
-                    "billingCycle": {
-                        "type": "string",
-                        "enum": ["monthly", "yearly"]
-                    },
-                    "features": {
-                        "type": "object",
-                        "additionalProperties": true,
-                        "description": "Plan feature limits and settings"
-                    },
-                    "isActive": {
-                        "type": "boolean",
-                        "description": "Whether the plan is available for subscription"
-                    }
-                }
-            },
-            "Subscription": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "organizationId": {
-                        "type": "string"
-                    },
-                    "planId": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "type": "string",
-                        "enum": ["active", "canceled", "past_due", "trialing"]
-                    },
-                    "billingCycle": {
-                        "type": "string",
-                        "enum": ["monthly", "yearly"]
-                    },
-                    "currentPeriodStart": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "currentPeriodEnd": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "cancelAtPeriodEnd": {
-                        "type": "boolean",
-                        "description": "Whether subscription cancels at period end"
-                    },
-                    "paymentReference": {
-                        "type": "string",
-                        "nullable": true,
-                        "description": "External payment reference (e.g., Fawry ref)"
-                    },
-                    "createdAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "plan": {
-                        "$ref": "#/components/schemas/SubscriptionPlan"
-                    }
-                }
-            },
-            "FawryPayment": {
-                "type": "object",
-                "properties": {
-                    "merchantCode": {
-                        "type": "string",
-                        "description": "Fawry merchant code"
-                    },
-                    "merchantRefNum": {
-                        "type": "string",
-                        "description": "Merchant reference number (organization ID)"
-                    },
-                    "amount": {
-                        "type": "number",
-                        "description": "Payment amount"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "Request signature for verification"
-                    },
-                    "fawryUrl": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "Fawry payment page URL"
-                    }
+            }
+        },
+        "SubscriptionPlan": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Internal plan name (e.g., free, basic, pro)"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name for the plan"
+                },
+                "price": {
+                    "type": "number",
+                    "description": "Price amount"
+                },
+                "billingCycle": {
+                    "type": "string",
+                    "enum": ["monthly", "yearly"]
+                },
+                "features": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Plan feature limits and settings"
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "description": "Whether the plan is available for subscription"
                 }
             }
         },
+        "Subscription": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "organizationId": {
+                    "type": "string"
+                },
+                "planId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["active", "canceled", "past_due", "trialing"]
+                },
+                "billingCycle": {
+                    "type": "string",
+                    "enum": ["monthly", "yearly"]
+                },
+                "currentPeriodStart": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "currentPeriodEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "cancelAtPeriodEnd": {
+                    "type": "boolean",
+                    "description": "Whether subscription cancels at period end"
+                },
+                "paymentReference": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "External payment reference (e.g., Fawry ref)"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "plan": {
+                    "$ref": "#/components/schemas/SubscriptionPlan"
+                }
+            }
+        },
+        "FawryPayment": {
+            "type": "object",
+            "properties": {
+                "merchantCode": {
+                    "type": "string",
+                    "description": "Fawry merchant code"
+                },
+                "merchantRefNum": {
+                    "type": "string",
+                    "description": "Merchant reference number (organization ID)"
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "Payment amount"
+                },
+                "signature": {
+                    "type": "string",
+                    "description": "Request signature for verification"
+                },
+                "fawryUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Fawry payment page URL"
+                }
+            }
+        }
+    },
     "components": {
         "securitySchemes": {
             "bearerAuth": {
