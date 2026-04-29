@@ -23,13 +23,13 @@ import paymentRouter from './payments/payment.router.js';
 import ticketRouter from './tickets/ticket.router.js';
 import auditRouter from './audit/audit.router.js';
 import reportRouter from './reports/report.router.js';
-import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
+// import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
 router.use('/health', healthRouter);
-router.use(getRateLimiter());
+// router.use(getRateLimiter());
 
-router.use('/auth', getAuthLimiter());
+// router.use('/auth', getAuthLimiter());
 router.use('/auth', authRouter);
 router.use('/roles', rolesRouter);
 router.use('/customers', customerRouter);
