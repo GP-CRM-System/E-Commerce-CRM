@@ -656,7 +656,75 @@ async function createAuditLogs() {
 }
 
 async function createPlans() {
-    logger.info('[SEED] Skipping - plans already seeded');
+    logger.info('[SEED] Creating subscription plans...');
+
+    const plans = [
+        {
+            name: 'free',
+            displayName: 'Free',
+            price: new Prisma.Decimal(0),
+            billingCycle: 'monthly',
+            features: {
+                customers: 100,
+                products: 50,
+                orders: 100,
+                apiCalls: 1000,
+                exports: false,
+                imports: false
+            },
+            isActive: true,
+            sortOrder: 1
+        },
+        {
+            name: 'basic',
+            displayName: 'Basic',
+            price: new Prisma.Decimal(29.99),
+            billingCycle: 'monthly',
+            features: {
+                customers: 1000,
+                products: 500,
+                orders: 5000,
+                apiCalls: 10000,
+                exports: true,
+                imports: true
+            },
+            isActive: true,
+            sortOrder: 2
+        },
+        {
+            name: 'professional',
+            displayName: 'Professional',
+            price: new Prisma.Decimal(79.99),
+            billingCycle: 'monthly',
+            features: {
+                customers: 10000,
+                products: 5000,
+                orders: 50000,
+                apiCalls: 100000,
+                exports: true,
+                imports: true,
+                support: true
+            },
+            isActive: true,
+            sortOrder: 3
+        }
+    ];
+
+    for (const plan of plans) {
+        const existing = await prisma.plan.findFirst({
+            where: { name: plan.name }
+        });
+        if (existing) {
+            await prisma.plan.update({
+                where: { id: existing.id },
+                data: plan
+            });
+        } else {
+            await prisma.plan.create({ data: plan });
+        }
+    }
+
+    logger.info(`[SEED] Created ${plans.length} subscription plans\n`);
 }
 
 async function main() {
