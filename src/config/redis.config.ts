@@ -19,7 +19,7 @@ function parseRedisUrl(): ConnectionOptions | undefined {
             port: parseInt(url.port) || (isTLS ? 6379 : 6379),
             password: url.password || undefined,
             username: url.username || undefined,
-            tls: isTLS ? { rejectUnauthorized: false } : undefined,
+            tls: isTLS ? { rejectUnauthorized: false } : undefined
         };
     } catch {
         return undefined;
@@ -91,30 +91,28 @@ export async function getRedisClient(): Promise<RedisClientType | null> {
     if (!redisClient) {
         redisClient = createClient({
             url: env.redisUrl,
-            socket: isTLS
-                ? { tls: true, rejectUnauthorized: false }
-                : undefined,
+            socket: isTLS ? { tls: true, rejectUnauthorized: false } : undefined
         });
-    redisClient.on('error', (err: Error) => {
-        logger.error({ err }, 'Redis client error');
-        redisClient = null;
-    });
-}
-
-if (!redisClient.isOpen) {
-    try {
-        await redisClient.connect();
-    } catch (err) {
-        logger.warn(
-            { err },
-            'Failed to connect to Redis, will retry on next health check'
-        );
-        redisClient = null;
-        return null;
+        redisClient.on('error', (err: Error) => {
+            logger.error({ err }, 'Redis client error');
+            redisClient = null;
+        });
     }
-}
 
-return redisClient;
+    if (!redisClient.isOpen) {
+        try {
+            await redisClient.connect();
+        } catch (err) {
+            logger.warn(
+                { err },
+                'Failed to connect to Redis, will retry on next health check'
+            );
+            redisClient = null;
+            return null;
+        }
+    }
+
+    return redisClient;
 }
 
 export async function checkRedisHealth(): Promise<{
