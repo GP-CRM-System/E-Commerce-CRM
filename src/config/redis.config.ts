@@ -12,16 +12,19 @@ function parseRedisUrl(): ConnectionOptions | undefined {
     if (!env.redisUrl) return undefined;
     try {
         const url = new URL(env.redisUrl);
+        const isTLS = url.protocol === 'rediss:';
+
         return {
             host: url.hostname,
-            port:
-                parseInt(url.port) || (url.protocol === 'rediss:' ? 443 : 6379)
+            port: parseInt(url.port) || (isTLS ? 6379 : 6379),
+            password: url.password || undefined,
+            username: url.username || undefined,
+            tls: isTLS ? { rejectUnauthorized: false } : undefined,
         };
     } catch {
         return undefined;
     }
 }
-
 export function getRedisConnectionOptions(): ConnectionOptions {
     const opts = parseRedisUrl();
     if (!opts) {
@@ -80,31 +83,38 @@ export function stopRedisHealthMonitor(): void {
 
 export { lastHealthCheck };
 
+const isTLS = env.redisUrl?.startsWith('rediss://') ?? false;
+
 export async function getRedisClient(): Promise<RedisClientType | null> {
     if (!isRedisAvailable) return null;
 
     if (!redisClient) {
-        redisClient = createClient({ url: env.redisUrl });
-        redisClient.on('error', (err: Error) => {
-            logger.error({ err }, 'Redis client error');
-            redisClient = null;
+        redisClient = createClient({
+            url: env.redisUrl,
+            socket: isTLS
+                ? { tls: true, rejectUnauthorized: false }
+                : undefined,
         });
-    }
+    redisClient.on('error', (err: Error) => {
+        logger.error({ err }, 'Redis client error');
+        redisClient = null;
+    });
+}
 
-    if (!redisClient.isOpen) {
-        try {
-            await redisClient.connect();
-        } catch (err) {
-            logger.warn(
-                { err },
-                'Failed to connect to Redis, will retry on next health check'
-            );
-            redisClient = null;
-            return null;
-        }
+if (!redisClient.isOpen) {
+    try {
+        await redisClient.connect();
+    } catch (err) {
+        logger.warn(
+            { err },
+            'Failed to connect to Redis, will retry on next health check'
+        );
+        redisClient = null;
+        return null;
     }
+}
 
-    return redisClient;
+return redisClient;
 }
 
 export async function checkRedisHealth(): Promise<{
