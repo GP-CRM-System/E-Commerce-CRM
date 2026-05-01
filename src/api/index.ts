@@ -23,6 +23,7 @@ import paymentRouter from './payments/payment.router.js';
 import ticketRouter from './tickets/ticket.router.js';
 import auditRouter from './audit/audit.router.js';
 import reportRouter from './reports/report.router.js';
+import analyticsRouter from './analytics/analytics.router.js';
 // import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
@@ -51,7 +52,9 @@ router.use('/payments', paymentRouter);
 router.use('/tickets', ticketRouter);
 router.use('/audit-logs', auditRouter);
 router.use('/reports', reportRouter);
+router.use('/analytics', analyticsRouter);
 router.use('/track', trackingRouter);
+
 router.use('/unsubscribe', unsubscribeRouter);
 
 export default router;

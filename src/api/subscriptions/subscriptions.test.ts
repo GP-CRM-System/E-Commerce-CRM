@@ -57,8 +57,14 @@ describe('Subscriptions API', () => {
     });
 
     afterAll(async () => {
+        // First delete subscriptions using these plans across ALL organizations, 
+        // since test plans might be shared or persisted from failed runs.
         await prisma.subscription.deleteMany({
-            where: { organizationId: auth.orgId }
+            where: {
+                plan: {
+                    name: { in: testPlans.map((p) => p.name) }
+                }
+            }
         });
         await prisma.plan.deleteMany({
             where: { name: { in: testPlans.map((p) => p.name) } }
