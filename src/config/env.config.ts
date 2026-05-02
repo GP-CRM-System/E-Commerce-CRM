@@ -34,6 +34,9 @@ export const env = {
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
     metaAppSecret: process.env.META_APP_SECRET,
 
+    // Sentry Monitoring
+    sentryDsn: process.env.SENTRY_DSN,
+
     // Backblaze B2 Configuration
     b2KeyId: process.env.B2_KEY_ID,
     b2ApplicationKey: process.env.B2_APPLICATION_KEY,

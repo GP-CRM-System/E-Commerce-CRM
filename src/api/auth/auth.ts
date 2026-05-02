@@ -166,7 +166,8 @@ export const auth = betterAuth({
         cookiePrefix: 'better-auth',
         ...(process.env.NODE_ENV === 'production' && {
             useSecureCookies: true
-        })
+        }),
+        disableCSRFCheck: true
     },
     databaseHooks: {
         session: {

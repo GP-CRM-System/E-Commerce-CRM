@@ -57,7 +57,7 @@ describe('Subscriptions API', () => {
     });
 
     afterAll(async () => {
-        // First delete subscriptions using these plans across ALL organizations, 
+        // First delete subscriptions using these plans across ALL organizations,
         // since test plans might be shared or persisted from failed runs.
         await prisma.subscription.deleteMany({
             where: {
