@@ -28,8 +28,10 @@ export type AuthenticatedRequest = Request & {
         ipAddress?: string | null | undefined;
         userAgent?: string | null | undefined;
         activeOrganizationId?: string | null | undefined;
+        role: string | null;
+        permissions: Record<string, string[]> | null;
     };
-    membership?: unknown; // Optional, as it's only attached by requirePermission
+    membership?: unknown;
 };
 
 /**
@@ -54,7 +56,7 @@ export const protect = asyncHandler<AuthenticatedRequest>(
         }
 
         req.user = session.user;
-        req.session = session.session;
+        req.session = session as AuthenticatedRequest['session'];
 
         next();
     }
@@ -84,7 +86,9 @@ export const requirePermission = (...permissions: string[]) =>
             );
         }
 
-        const activeOrganizationId = session.session.activeOrganizationId;
+        const activeOrganizationId = (
+            session as { activeOrganizationId?: string }
+        ).activeOrganizationId;
 
         if (!activeOrganizationId) {
             throw new AuthorizationError(
@@ -139,7 +143,7 @@ export const requirePermission = (...permissions: string[]) =>
         });
 
         req.user = session.user;
-        req.session = session.session;
+        req.session = session as AuthenticatedRequest['session'];
         req.membership = membership;
 
         next();

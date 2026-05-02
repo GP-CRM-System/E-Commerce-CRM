@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { bearer } from 'better-auth/plugins/bearer';
 import { organization } from 'better-auth/plugins/organization';
-import { openAPI } from 'better-auth/plugins';
+import { openAPI, customSession } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import prisma from '../../config/prisma.config.js';
@@ -79,6 +79,30 @@ export const auth = betterAuth({
         accountLinking: { enabled: true }
     },
     plugins: [
+        customSession(async ({ user, session }) => {
+            const sessionWithOrg = session as typeof session & {
+                activeOrganizationId?: string;
+            };
+            const activeOrgId = sessionWithOrg.activeOrganizationId;
+
+            const member = await prisma.member.findFirst({
+                where: {
+                    userId: user.id,
+                    organizationId: activeOrgId || undefined
+                }
+            });
+            const role = member?.role || null;
+            const permissions =
+                role && role in DEFAULT_ROLES
+                    ? DEFAULT_ROLES[role as keyof typeof DEFAULT_ROLES]
+                    : null;
+            return {
+                ...session,
+                user,
+                role,
+                permissions
+            };
+        }),
         bearer(),
         organization({
             ac: ac,

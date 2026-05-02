@@ -83,14 +83,14 @@ describe('Auth Middleware', () => {
     describe('protect', () => {
         it('should allow authenticated request', async () => {
             const response = await request(app)
-                .get('/api/auth/me')
+                .get('/api/me')
                 .set('Authorization', `Bearer ${authToken}`);
 
             expect(response.status).toBe(200);
         });
 
         it('should reject unauthenticated request', async () => {
-            const response = await request(app).get('/api/auth/me');
+            const response = await request(app).get('/api/me');
             expect(response.status).toBe(401);
         });
     });

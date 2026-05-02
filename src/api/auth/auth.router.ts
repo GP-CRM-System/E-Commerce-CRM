@@ -1,15 +1,8 @@
 import { Router } from 'express';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth.js';
-import { protect } from '../../middlewares/auth.middleware.js';
-import * as AuthController from './auth.controller.js';
 
 const authRouter = Router();
-
-/**
- * Return the current authenticated user and session, if any.
- */
-authRouter.get('/me', protect, AuthController.getMe);
 
 /**
  * Forward all Better Auth API routes.

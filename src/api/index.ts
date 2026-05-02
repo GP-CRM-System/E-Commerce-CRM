@@ -24,6 +24,7 @@ import ticketRouter from './tickets/ticket.router.js';
 import auditRouter from './audit/audit.router.js';
 import reportRouter from './reports/report.router.js';
 import analyticsRouter from './analytics/analytics.router.js';
+import meRouter from './auth/me.router.js';
 
 // import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
 
@@ -33,6 +34,7 @@ router.use('/health', healthRouter);
 
 // router.use('/auth', getAuthLimiter());
 router.use('/auth', authRouter);
+router.use('/me', meRouter);
 router.use('/roles', rolesRouter);
 router.use('/customers', customerRouter);
 router.use('/products', productRouter);

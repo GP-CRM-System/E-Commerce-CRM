@@ -33,6 +33,10 @@
     ],
     "tags": [
         {
+            "name": "Auth",
+            "description": "Authentication and authorization endpoints"
+        },
+        {
             "name": "Customers",
             "description": "Customer management, notes, events, and RFM analytics"
         },
@@ -130,6 +134,25 @@
         }
     ],
     "paths": {
+        "/me": {
+            "get": {
+                "operationId": "me",
+                "summary": "Get current user",
+                "tags": ["Auth"],
+                "responses": {
+                    "200": {
+                        "description": "User fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/analytics": {
             "get": {
                 "operationId": "getGeneralAnalytics",
@@ -6128,6 +6151,20 @@
                     "fawryUrl": {
                         "type": "string",
                         "format": "uri"
+                    }
+                }
+            },
+            "MeResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
                     }
                 }
             },
