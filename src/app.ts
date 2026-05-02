@@ -41,7 +41,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN?.split(',') || [],
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        methods: ['GET', 'POST', 'PUT',"PATCH", 'DELETE'],
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization']
     })
