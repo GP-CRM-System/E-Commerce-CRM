@@ -95,7 +95,6 @@ export async function getAllCustomers(
             },
             take,
             skip,
-            // include: { tags: true },
             select: {
                 id: true,
                 name: true,
