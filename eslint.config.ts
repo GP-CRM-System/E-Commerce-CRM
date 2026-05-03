@@ -4,9 +4,9 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-    globalIgnores(['src/generated/**']),
+    globalIgnores(['src/generated/**', '.agents/skills/**']),
     {
-        ignores: ['src/generated/**'],
+        ignores: ['src/generated/**', '.agents/skills/**'],
         files: ['src/**/*.{js,mjs,cjs,ts,mts,cts}'],
         plugins: { js, tseslint },
         extends: ['js/recommended'],

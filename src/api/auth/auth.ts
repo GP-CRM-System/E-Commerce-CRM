@@ -194,7 +194,7 @@ export const auth = betterAuth({
         disableCSRFCheck: true,
         defaultCookieAttributes: {
             secure: process.env.NODE_ENV === 'production',
-            sameSite: "None"
+            sameSite: 'None'
         }
     },
     databaseHooks: {
