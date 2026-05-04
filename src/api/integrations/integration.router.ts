@@ -3,8 +3,12 @@ import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as integrationController from './integration.controller.js';
 import * as integrationSchema from './integration.schemas.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
+import shopifyRouter from './shopify/shopify.router.js';
 
 const router = Router();
+
+// Mount Shopify OAuth flow
+router.use('/shopify', shopifyRouter);
 
 router.post(
     '/shopify/connect',

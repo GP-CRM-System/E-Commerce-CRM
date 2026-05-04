@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Request } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
 import prisma from './config/prisma.config.js';
@@ -38,6 +39,7 @@ app.use(
     })
 );
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cookieParser(env.betterAuthSecret));
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN?.split(',') || [],
