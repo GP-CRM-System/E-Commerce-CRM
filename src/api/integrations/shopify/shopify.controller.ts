@@ -12,6 +12,7 @@ import {
     HttpStatus
 } from '../../../utils/response.util.js';
 import logger from '../../../utils/logger.util.js';
+import { addShopifyFullSyncJob } from '../../../queues/shopify-sync.queue.js';
 
 function generateNonce(): string {
     return crypto.randomBytes(32).toString('hex');
@@ -168,7 +169,12 @@ export const callback = asyncHandler(
                 metadata: { provider: 'shopify', shop: session.shop }
             });
 
-            // 8. Redirect back to the frontend
+            // 8. Enqueue initial data sync (fire-and-forget)
+            addShopifyFullSyncJob(integration.id).catch((err) => {
+                logger.warn({ err }, 'Failed to enqueue initial Shopify sync');
+            });
+
+            // 9. Redirect back to the frontend
             const frontendUrl = env.appUrl || 'http://localhost:5173';
             res.redirect(
                 `${frontendUrl}/settings/integrations?success=true&provider=shopify`

@@ -44,8 +44,8 @@ export const env = {
     b2BucketName: process.env.B2_BUCKET_NAME,
 
     // Shopify Configuration
-    shopifyApiKey: process.env.SHOPIFY_API_KEY,
-    shopifyApiSecret: process.env.SHOPIFY_API_SECRET,
+    shopifyClientId: process.env.SHOPIFY_CLIENT_ID,
+    shopifyClientSecret: process.env.SHOPIFY_CLIENT_SECRET,
     shopifyScopes:
         process.env.SHOPIFY_SCOPES ||
         'read_customers,read_orders,read_products,read_inventory',
@@ -73,8 +73,8 @@ export function checkEnv(): void {
     if (!env.googleClientSecret) missingVars.push('GOOGLE_CLIENT_SECRET');
     if (!env.googleCallbackUrl) missingVars.push('GOOGLE_CALLBACK_URL');
     if (env.nodeEnv !== 'test') {
-        if (!env.shopifyApiKey) missingVars.push('SHOPIFY_API_KEY');
-        if (!env.shopifyApiSecret) missingVars.push('SHOPIFY_API_SECRET');
+        if (!env.shopifyClientId) missingVars.push('SHOPIFY_CLIENT_ID');
+        if (!env.shopifyClientSecret) missingVars.push('SHOPIFY_CLIENT_SECRET');
         if (!env.encryptionKey) missingVars.push('ENCRYPTION_KEY');
     }
 

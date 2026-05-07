@@ -1,6 +1,5 @@
 import type { Response } from 'express';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
-import * as syncService from './sync.service.js';
 import {
     HttpStatus,
     ResponseHandler,
@@ -9,6 +8,7 @@ import {
 } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { addShopifyFullSyncJob } from '../../queues/shopify-sync.queue.js';
 
 export const triggerFullSync = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -28,18 +28,28 @@ export const triggerFullSync = asyncHandler(
             throw new NotFoundError('Integration not found');
         }
 
-        const stats = await syncService.fullSync(
+        const result = await addShopifyFullSyncJob(
             integrationId,
             entities || ['customers', 'orders', 'products']
         );
 
-        ResponseHandler.success(
-            res,
-            'Full sync completed',
-            HttpStatus.OK,
-            stats,
-            req.url
-        );
+        if (result.queued) {
+            ResponseHandler.success(
+                res,
+                'Full sync job queued',
+                HttpStatus.ACCEPTED,
+                { jobId: result.jobId },
+                req.url
+            );
+        } else {
+            ResponseHandler.success(
+                res,
+                'Full sync completed',
+                HttpStatus.OK,
+                undefined,
+                req.url
+            );
+        }
     }
 );
 

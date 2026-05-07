@@ -15,6 +15,7 @@ import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
 import { importWorker } from './queues/import.queue.js';
 import { rfmWorker } from './queues/rfm.processor.js';
+import { shopifySyncWorker } from './queues/shopify-sync.worker.js';
 import { initExportWorker } from './api/exports/exports.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import {
@@ -135,6 +136,7 @@ export async function startServer(): Promise<void> {
                 await Sentry.close(2000);
                 await importWorker.close();
                 await rfmWorker.close();
+                await shopifySyncWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
@@ -148,6 +150,7 @@ export async function startServer(): Promise<void> {
                 await Sentry.close(2000);
                 await importWorker.close();
                 await rfmWorker.close();
+                await shopifySyncWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
