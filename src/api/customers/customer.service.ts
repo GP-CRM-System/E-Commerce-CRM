@@ -197,7 +197,7 @@ export async function getCustomerDetails(id: string, organizationId: string) {
                 notes: true,
                 orders: true,
                 supportTickets: true,
-                customerEvents: true,
+                customerEvents: true
             }
         });
 

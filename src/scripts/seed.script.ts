@@ -154,7 +154,11 @@ async function createSegmentsAndCampaigns(organizationId: string) {
         {
             name: 'New Prospects',
             description: 'Customers in PROSPECT lifecycle stage',
-            filter: { field: 'lifecycleStage', operator: 'eq', value: 'PROSPECT' }
+            filter: {
+                field: 'lifecycleStage',
+                operator: 'eq',
+                value: 'PROSPECT'
+            }
         },
         {
             name: 'VIP Customers',
@@ -179,7 +183,12 @@ async function createSegmentsAndCampaigns(organizationId: string) {
         {
             name: 'Repeat Buyers',
             description: 'Customers with 2-4 orders',
-            filter: { field: 'totalOrders', operator: 'between', min: 2, max: 4 }
+            filter: {
+                field: 'totalOrders',
+                operator: 'between',
+                min: 2,
+                max: 4
+            }
         }
     ];
 
@@ -196,7 +205,9 @@ async function createSegmentsAndCampaigns(organizationId: string) {
         segments.push(segment);
     }
 
-    logger.info(`[SEED] Created ${segments.length} segments with viable filters`);
+    logger.info(
+        `[SEED] Created ${segments.length} segments with viable filters`
+    );
 
     const emailTemplates = [
         {
@@ -335,27 +346,81 @@ async function createCustomers(
             });
 
             const eventTypes = [
-                { type: 'order_placed', desc: 'Placed an order', source: 'shopify' },
-                { type: 'order_completed', desc: 'Order was completed', source: 'shopify' },
-                { type: 'email_opened', desc: 'Opened marketing email', source: 'campaign' },
-                { type: 'email_clicked', desc: 'Clicked on email link', source: 'campaign' },
-                { type: 'tag_added', desc: 'Added to segment', source: 'system' },
-                { type: 'tag_removed', desc: 'Removed from segment', source: 'system' },
-                { type: 'note_added', desc: 'Note added to customer', source: 'manual' },
-                { type: 'support_ticket_created', desc: 'Created support ticket', source: 'support' },
-                { type: 'support_ticket_resolved', desc: 'Support ticket resolved', source: 'support' },
-                { type: 'cart_abandoned', desc: 'Abandoned cart', source: 'shopify' },
-                { type: 'wishlist_added', desc: 'Added item to wishlist', source: 'shopify' },
-                { type: 'review_submitted', desc: 'Submitted product review', source: 'shopify' }
+                {
+                    type: 'order_placed',
+                    desc: 'Placed an order',
+                    source: 'shopify'
+                },
+                {
+                    type: 'order_completed',
+                    desc: 'Order was completed',
+                    source: 'shopify'
+                },
+                {
+                    type: 'email_opened',
+                    desc: 'Opened marketing email',
+                    source: 'campaign'
+                },
+                {
+                    type: 'email_clicked',
+                    desc: 'Clicked on email link',
+                    source: 'campaign'
+                },
+                {
+                    type: 'tag_added',
+                    desc: 'Added to segment',
+                    source: 'system'
+                },
+                {
+                    type: 'tag_removed',
+                    desc: 'Removed from segment',
+                    source: 'system'
+                },
+                {
+                    type: 'note_added',
+                    desc: 'Note added to customer',
+                    source: 'manual'
+                },
+                {
+                    type: 'support_ticket_created',
+                    desc: 'Created support ticket',
+                    source: 'support'
+                },
+                {
+                    type: 'support_ticket_resolved',
+                    desc: 'Support ticket resolved',
+                    source: 'support'
+                },
+                {
+                    type: 'cart_abandoned',
+                    desc: 'Abandoned cart',
+                    source: 'shopify'
+                },
+                {
+                    type: 'wishlist_added',
+                    desc: 'Added item to wishlist',
+                    source: 'shopify'
+                },
+                {
+                    type: 'review_submitted',
+                    desc: 'Submitted product review',
+                    source: 'shopify'
+                }
             ];
             const numEvents = faker.number.int({ min: 1, max: 5 });
-            const selectedEvents = faker.helpers.arrayElements(eventTypes, numEvents);
+            const selectedEvents = faker.helpers.arrayElements(
+                eventTypes,
+                numEvents
+            );
             const eventData = selectedEvents.map((e) => ({
                 customerId: customer.id,
                 eventType: e.type,
                 description: e.desc,
                 source: e.source,
-                metadata: e.type === 'order_placed' ? { orderId: `order_${faker.string.alphanumeric(8)}` } : undefined,
+                metadata:
+                    e.type === 'order_placed'
+                        ? { orderId: `order_${faker.string.alphanumeric(8)}` }
+                        : undefined,
                 occurredAt: faker.date.recent({ days: 60 })
             }));
             if (eventData.length > 0) {
@@ -409,54 +474,60 @@ async function createCustomers(
             }
 
             const tagConfigs = [
-                    { name: 'VIP', color: 'FFD700' },
-                    { name: 'Premium', color: '8B5CF6' },
-                    { name: 'Newsletter', color: '3B82F6' },
-                    { name: 'Bulk Buyer', color: '10B981' },
-                    { name: 'Wholesale', color: 'F59E0B' },
-                    { name: 'New Customer', color: '22C55E' },
-                    { name: 'Loyal', color: '14B8A6' },
-                    { name: 'At Risk', color: 'EF4444' },
-                    { name: 'Inactive', color: '6B7280' },
-                    { name: 'First Time Buyer', color: 'EC4899' },
-                    { name: 'Repeat Customer', color: '6366F1' },
-                    { name: 'High Spender', color: 'F97316' }
-                ];
-                const existingTags = await prisma.tag.findMany({
-                    where: { organizationId: org.id }
-                });
-                let tags = existingTags;
-                if (existingTags.length < tagConfigs.length) {
-                    const newTags = [];
-                    for (const tc of tagConfigs) {
-                        const existing = existingTags.find(t => t.name === tc.name);
-                        if (!existing) {
-                            const tag = await prisma.tag.create({
-                                data: {
-                                    name: tc.name,
-                                    color: tc.color,
-                                    organizationId: org.id
-                                }
-                            });
-                            newTags.push(tag);
-                        }
-                    }
-                    tags = [...existingTags, ...newTags];
-                }
-                const numTags = faker.number.int({ min: 1, max: 3 });
-                const selectedTags = faker.helpers.arrayElements(tags, numTags);
-                if (selectedTags.length > 0) {
-                    const currentTags = await prisma.customer.findUnique({
-                        where: { id: customer.id },
-                        select: { tags: { select: { id: true } } }
-                    });
-                    if (currentTags && currentTags.tags.length === 0) {
-                        await prisma.customer.update({
-                            where: { id: customer.id },
-                            data: { tags: { connect: selectedTags.map(t => ({ id: t.id })) } }
+                { name: 'VIP', color: 'FFD700' },
+                { name: 'Premium', color: '8B5CF6' },
+                { name: 'Newsletter', color: '3B82F6' },
+                { name: 'Bulk Buyer', color: '10B981' },
+                { name: 'Wholesale', color: 'F59E0B' },
+                { name: 'New Customer', color: '22C55E' },
+                { name: 'Loyal', color: '14B8A6' },
+                { name: 'At Risk', color: 'EF4444' },
+                { name: 'Inactive', color: '6B7280' },
+                { name: 'First Time Buyer', color: 'EC4899' },
+                { name: 'Repeat Customer', color: '6366F1' },
+                { name: 'High Spender', color: 'F97316' }
+            ];
+            const existingTags = await prisma.tag.findMany({
+                where: { organizationId: org.id }
+            });
+            let tags = existingTags;
+            if (existingTags.length < tagConfigs.length) {
+                const newTags = [];
+                for (const tc of tagConfigs) {
+                    const existing = existingTags.find(
+                        (t) => t.name === tc.name
+                    );
+                    if (!existing) {
+                        const tag = await prisma.tag.create({
+                            data: {
+                                name: tc.name,
+                                color: tc.color,
+                                organizationId: org.id
+                            }
                         });
+                        newTags.push(tag);
                     }
                 }
+                tags = [...existingTags, ...newTags];
+            }
+            const numTags = faker.number.int({ min: 1, max: 3 });
+            const selectedTags = faker.helpers.arrayElements(tags, numTags);
+            if (selectedTags.length > 0) {
+                const currentTags = await prisma.customer.findUnique({
+                    where: { id: customer.id },
+                    select: { tags: { select: { id: true } } }
+                });
+                if (currentTags && currentTags.tags.length === 0) {
+                    await prisma.customer.update({
+                        where: { id: customer.id },
+                        data: {
+                            tags: {
+                                connect: selectedTags.map((t) => ({ id: t.id }))
+                            }
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -776,11 +847,17 @@ async function createConversations(organizations: { id: string }[]) {
         });
 
         for (const customer of customers) {
-            const shouldCreateConversation = faker.datatype.boolean({ probability: 0.4 });
+            const shouldCreateConversation = faker.datatype.boolean({
+                probability: 0.4
+            });
             if (!shouldCreateConversation) continue;
 
             const provider = faker.helpers.arrayElement(providers);
-            const status = faker.helpers.arrayElement(['OPEN', 'PENDING', 'CLOSED'] as const);
+            const status = faker.helpers.arrayElement([
+                'OPEN',
+                'PENDING',
+                'CLOSED'
+            ] as const);
 
             const conversation = await prisma.conversation.create({
                 data: {
@@ -798,7 +875,9 @@ async function createConversations(organizations: { id: string }[]) {
 
             for (let i = 0; i < numMessages; i++) {
                 const isInbound = i % 2 === 0;
-                const direction: 'INBOUND' | 'OUTBOUND' = isInbound ? 'INBOUND' : 'OUTBOUND';
+                const direction: 'INBOUND' | 'OUTBOUND' = isInbound
+                    ? 'INBOUND'
+                    : 'OUTBOUND';
                 const content = isInbound
                     ? faker.helpers.arrayElement(inboundMessages)
                     : faker.helpers.arrayElement(outboundMessages);

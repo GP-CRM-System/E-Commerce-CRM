@@ -188,7 +188,7 @@ export const auth = betterAuth({
         }
     },
     advanced: {
-        disableCSRFCheck: true,
+        disableCSRFCheck: true
     },
     databaseHooks: {
         session: {

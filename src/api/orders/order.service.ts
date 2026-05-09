@@ -53,12 +53,13 @@ export async function getAllOrders(
                         select: {
                             id: true,
                             name: true
-                        }},
+                        }
+                    },
                     fulfillmentStatus: true,
                     paymentStatus: true,
                     totalAmount: true,
                     source: true,
-                    createdAt: true,
+                    createdAt: true
                 }
             }),
             prisma.order.count({
@@ -140,10 +141,7 @@ export async function createOrder(
     }
 }
 
-export async function getOrderDetails(
-    id: string,
-    organizationId: string
-) {
+export async function getOrderDetails(id: string, organizationId: string) {
     try {
         const order = await prisma.order.findUnique({
             where: {
@@ -168,16 +166,16 @@ export async function getOrderDetails(
                             select: {
                                 id: true,
                                 name: true,
-                                price: true,
+                                price: true
                             }
                         },
-                        quantity: true,
+                        quantity: true
                     }
                 },
                 fulfillmentStatus: true,
                 note: true,
                 supportTickets: true,
-                transactions: true,
+                transactions: true
             }
         });
 

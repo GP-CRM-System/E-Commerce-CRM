@@ -24,10 +24,10 @@ export const initialize = asyncHandler(
         const organizationId = req.session.activeOrganizationId!;
         const orderId = req.params.orderId as string;
 
-        const orderData = (await orderService.getOrderDetails(
+        const orderData = await orderService.getOrderDetails(
             orderId,
             organizationId
-        ));
+        );
 
         if (!orderData || !orderData.customer) {
             return ResponseHandler.error(
