@@ -12,10 +12,7 @@ export async function getAllOrders(
     take: number,
     skip: number,
     filters?: OrderFilters
-): Promise<{
-    orders: Order[];
-    total: number;
-}> {
+) {
     try {
         const search = filters?.search;
         const status = filters?.status;
@@ -50,13 +47,18 @@ export async function getAllOrders(
                 },
                 take,
                 skip,
-                include: {
-                    customer: true,
-                    orderItems: {
-                        include: {
-                            product: true
-                        }
-                    }
+                select: {
+                    id: true,
+                    customer: {
+                        select: {
+                            id: true,
+                            name: true
+                        }},
+                    fulfillmentStatus: true,
+                    paymentStatus: true,
+                    totalAmount: true,
+                    source: true,
+                    createdAt: true,
                 }
             }),
             prisma.order.count({
@@ -141,21 +143,41 @@ export async function createOrder(
 export async function getOrderDetails(
     id: string,
     organizationId: string
-): Promise<Order | null> {
+) {
     try {
         const order = await prisma.order.findUnique({
             where: {
                 id,
                 organizationId
             },
-            include: {
+            select: {
+                id: true,
+                createdAt: true,
+                source: true,
+                paymentStatus: true,
+                subtotal: true,
+                discountAmount: true,
+                taxAmount: true,
+                shippingAmount: true,
+                totalAmount: true,
                 customer: true,
                 orderItems: {
-                    include: {
-                        product: true
+                    select: {
+                        id: true,
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                price: true,
+                            }
+                        },
+                        quantity: true,
                     }
                 },
-                supportTickets: true
+                fulfillmentStatus: true,
+                note: true,
+                supportTickets: true,
+                transactions: true,
             }
         });
 

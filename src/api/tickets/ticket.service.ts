@@ -46,12 +46,16 @@ export async function listTickets(
         prisma.supportTicket.findMany({
             where,
             orderBy: { updatedAt: 'desc' },
-            include: {
-                customer: { select: { name: true } },
-                assignedTo: { select: { name: true } }
-            },
             take,
-            skip
+            skip,
+            select: {
+                id: true,
+                customer: { select: { name: true } },
+                order: { select: { id: true } },
+                status: true,
+                priority: true,
+                updatedAt: true
+            }
         }),
         prisma.supportTicket.count({ where })
     ]);

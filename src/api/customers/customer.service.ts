@@ -171,12 +171,33 @@ export async function getCustomerDetails(id: string, organizationId: string) {
                 id,
                 organizationId
             },
-            include: {
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                source: true,
+                acceptsMarketing: true,
+                address: true,
+                isLoyaltyMember: true,
+                rfmScore: true,
+                rfmSegment: true,
+                cohortMonth: true,
+                totalOrders: true,
+                totalSpent: true,
+                totalRefunded: true,
+                lastOrderAt: true,
+                engagementScore: true,
+                satisfactionScore: true,
+                browsingFrequency: true,
+                cartAbandonmentRate: true,
+                priceSensitivityIndex: true,
+                supportTicketsCount: true,
                 tags: true,
                 notes: true,
                 orders: true,
                 supportTickets: true,
-                customerEvents: true
+                customerEvents: true,
             }
         });
 

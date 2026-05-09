@@ -62,7 +62,8 @@ export async function getCampaign(id: string, organizationId: string) {
             recipients: {
                 take: 10,
                 orderBy: { sentAt: 'desc' }
-            }
+            },
+            segment: true
         }
     });
 }
@@ -82,7 +83,16 @@ export async function listCampaigns(
             where,
             orderBy: { createdAt: 'desc' },
             take,
-            skip
+            skip,
+            select: {
+                id: true,
+                name: true,
+                type: true,
+                segment: true,
+                status: true,
+                scheduledAt: true,
+                metrics: true
+            }
         }),
         prisma.campaign.count({ where })
     ]);

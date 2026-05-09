@@ -31,12 +31,13 @@ export const auth = betterAuth({
         expiresIn: 60 * 60 * 24 * 7,
         updateAge: 60 * 60 * 24,
         cookieCache: {
-            maxAge: 60 * 60 * 24
+            maxAge: 60 * 60 * 24,
+            enabled: true
         }
     },
     emailAndPassword: {
         enabled: true,
-        requireEmailVerification: process.env.NODE_ENV === 'production',
+        requireEmailVerification: false,
         sendResetPassword: async ({ user, url }) => {
             await sendEmail({
                 to: user.email,
@@ -187,15 +188,7 @@ export const auth = betterAuth({
         }
     },
     advanced: {
-        cookiePrefix: 'better-auth',
-        ...(process.env.NODE_ENV === 'production' && {
-            useSecureCookies: true
-        }),
         disableCSRFCheck: true,
-        defaultCookieAttributes: {
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'None'
-        }
     },
     databaseHooks: {
         session: {

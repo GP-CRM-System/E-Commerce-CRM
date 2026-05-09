@@ -138,30 +138,65 @@ async function createUsers() {
 }
 
 async function createSegmentsAndCampaigns(organizationId: string) {
-    logger.info('[SEED] Creating segments and campaigns...');
+    logger.info('[SEED] Creating segments with viable filters...');
 
-    const segments = [];
-    const segmentNames = [
-        'High Value Customers',
-        'At Risk Customers',
-        'New Prospects',
-        'Dormant VIPs',
-        'Recent Purchasers'
+    const segmentConfigs = [
+        {
+            name: 'High Value Customers',
+            description: 'Customers with total spent over 5000 EGP',
+            filter: { field: 'totalSpent', operator: 'gte', value: 5000 }
+        },
+        {
+            name: 'At Risk Customers',
+            description: 'Customers with churn risk score > 0.7',
+            filter: { field: 'churnRiskScore', operator: 'gt', value: 0.7 }
+        },
+        {
+            name: 'New Prospects',
+            description: 'Customers in PROSPECT lifecycle stage',
+            filter: { field: 'lifecycleStage', operator: 'eq', value: 'PROSPECT' }
+        },
+        {
+            name: 'VIP Customers',
+            description: 'Customers with VIP lifecycle stage',
+            filter: { field: 'lifecycleStage', operator: 'eq', value: 'VIP' }
+        },
+        {
+            name: 'Recent Purchasers',
+            description: 'Customers who ordered in the last 30 days',
+            filter: { field: 'lastOrderAt', operator: 'daysAgo', value: 30 }
+        },
+        {
+            name: 'Loyal Customers',
+            description: 'Customers with 5+ orders',
+            filter: { field: 'totalOrders', operator: 'gte', value: 5 }
+        },
+        {
+            name: 'Email Subscribers',
+            description: 'Customers who accept marketing',
+            filter: { field: 'acceptsMarketing', operator: 'eq', value: true }
+        },
+        {
+            name: 'Repeat Buyers',
+            description: 'Customers with 2-4 orders',
+            filter: { field: 'totalOrders', operator: 'between', min: 2, max: 4 }
+        }
     ];
 
-    for (const name of segmentNames) {
+    const segments = [];
+    for (const config of segmentConfigs) {
         const segment = await prisma.segment.create({
             data: {
-                name,
+                name: config.name,
+                description: config.description,
                 organizationId,
-                filter: {
-                    type: 'rfm',
-                    value: name.toLowerCase().replace(/\s+/g, '_')
-                }
+                filter: config.filter
             }
         });
         segments.push(segment);
     }
+
+    logger.info(`[SEED] Created ${segments.length} segments with viable filters`);
 
     const emailTemplates = [
         {
@@ -299,25 +334,32 @@ async function createCustomers(
                 }
             });
 
-            if (faker.datatype.boolean()) {
-                await prisma.customerEvent.createMany({
-                    data: [
-                        {
-                            customerId: customer.id,
-                            eventType: 'order_placed',
-                            description: 'Placed an order',
-                            source: 'shopify',
-                            occurredAt: faker.date.recent({ days: 30 })
-                        },
-                        {
-                            customerId: customer.id,
-                            eventType: 'email_opened',
-                            description: 'Opened marketing email',
-                            source: 'campaign',
-                            occurredAt: faker.date.recent({ days: 7 })
-                        }
-                    ]
-                });
+            const eventTypes = [
+                { type: 'order_placed', desc: 'Placed an order', source: 'shopify' },
+                { type: 'order_completed', desc: 'Order was completed', source: 'shopify' },
+                { type: 'email_opened', desc: 'Opened marketing email', source: 'campaign' },
+                { type: 'email_clicked', desc: 'Clicked on email link', source: 'campaign' },
+                { type: 'tag_added', desc: 'Added to segment', source: 'system' },
+                { type: 'tag_removed', desc: 'Removed from segment', source: 'system' },
+                { type: 'note_added', desc: 'Note added to customer', source: 'manual' },
+                { type: 'support_ticket_created', desc: 'Created support ticket', source: 'support' },
+                { type: 'support_ticket_resolved', desc: 'Support ticket resolved', source: 'support' },
+                { type: 'cart_abandoned', desc: 'Abandoned cart', source: 'shopify' },
+                { type: 'wishlist_added', desc: 'Added item to wishlist', source: 'shopify' },
+                { type: 'review_submitted', desc: 'Submitted product review', source: 'shopify' }
+            ];
+            const numEvents = faker.number.int({ min: 1, max: 5 });
+            const selectedEvents = faker.helpers.arrayElements(eventTypes, numEvents);
+            const eventData = selectedEvents.map((e) => ({
+                customerId: customer.id,
+                eventType: e.type,
+                description: e.desc,
+                source: e.source,
+                metadata: e.type === 'order_placed' ? { orderId: `order_${faker.string.alphanumeric(8)}` } : undefined,
+                occurredAt: faker.date.recent({ days: 60 })
+            }));
+            if (eventData.length > 0) {
+                await prisma.customerEvent.createMany({ data: eventData });
             }
 
             if (faker.datatype.boolean({ probability: 0.4 })) {
@@ -335,42 +377,86 @@ async function createCustomers(
                 });
             }
 
-            if (faker.datatype.boolean({ probability: 0.3 })) {
-                await prisma.note.create({
-                    data: {
-                        customerId: customer.id,
-                        authorId: adminUserId,
-                        body: faker.lorem.sentence()
-                    }
+            const noteBodies = [
+                'Customer requested gift wrapping for all orders.',
+                'Prefers delivery in the morning hours.',
+                'Very satisfied with recent purchase - would recommend to friends.',
+                'Inquired about bulk pricing for corporate orders.',
+                'Requested to be added to VIP mailing list.',
+                'Had issues with previous delivery - resolved.',
+                'Prefers contact via WhatsApp over email.',
+                'Interested in upcoming summer collection.',
+                'Requested personalized discount code.',
+                'Follow up needed on recent support ticket.',
+                'Customer provided positive feedback on new product line.',
+                'Not interested in SMS marketing - prefers email only.',
+                'Annual customer - very loyal and reliable.',
+                'Recently moved to new address - update needed.',
+                'Requested product recommendation based on past purchases.'
+            ];
+            const numNotes = faker.number.int({ min: 1, max: 3 });
+            const noteData = [];
+            for (let n = 0; n < numNotes; n++) {
+                noteData.push({
+                    customerId: customer.id,
+                    authorId: adminUserId,
+                    body: faker.helpers.arrayElement(noteBodies),
+                    createdAt: faker.date.recent({ days: 60 })
                 });
+            }
+            if (noteData.length > 0) {
+                await prisma.note.createMany({ data: noteData });
             }
 
-            if (faker.datatype.boolean({ probability: 0.2 })) {
-                const tagNames = [
-                    'VIP',
-                    'Premium',
-                    'Newsletter',
-                    'Bulk Buyer',
-                    'Wholesale'
+            const tagConfigs = [
+                    { name: 'VIP', color: 'FFD700' },
+                    { name: 'Premium', color: '8B5CF6' },
+                    { name: 'Newsletter', color: '3B82F6' },
+                    { name: 'Bulk Buyer', color: '10B981' },
+                    { name: 'Wholesale', color: 'F59E0B' },
+                    { name: 'New Customer', color: '22C55E' },
+                    { name: 'Loyal', color: '14B8A6' },
+                    { name: 'At Risk', color: 'EF4444' },
+                    { name: 'Inactive', color: '6B7280' },
+                    { name: 'First Time Buyer', color: 'EC4899' },
+                    { name: 'Repeat Customer', color: '6366F1' },
+                    { name: 'High Spender', color: 'F97316' }
                 ];
-                const tagName = faker.helpers.arrayElement(tagNames);
-                await prisma.tag.upsert({
-                    where: {
-                        organizationId_name: {
-                            organizationId: org.id,
-                            name: tagName
-                        }
-                    },
-                    create: {
-                        name: tagName,
-                        color: faker.color
-                            .rgb({ format: 'hex' })
-                            .replace('#', ''),
-                        organizationId: org.id
-                    },
-                    update: {}
+                const existingTags = await prisma.tag.findMany({
+                    where: { organizationId: org.id }
                 });
-            }
+                let tags = existingTags;
+                if (existingTags.length < tagConfigs.length) {
+                    const newTags = [];
+                    for (const tc of tagConfigs) {
+                        const existing = existingTags.find(t => t.name === tc.name);
+                        if (!existing) {
+                            const tag = await prisma.tag.create({
+                                data: {
+                                    name: tc.name,
+                                    color: tc.color,
+                                    organizationId: org.id
+                                }
+                            });
+                            newTags.push(tag);
+                        }
+                    }
+                    tags = [...existingTags, ...newTags];
+                }
+                const numTags = faker.number.int({ min: 1, max: 3 });
+                const selectedTags = faker.helpers.arrayElements(tags, numTags);
+                if (selectedTags.length > 0) {
+                    const currentTags = await prisma.customer.findUnique({
+                        where: { id: customer.id },
+                        select: { tags: { select: { id: true } } }
+                    });
+                    if (currentTags && currentTags.tags.length === 0) {
+                        await prisma.customer.update({
+                            where: { id: customer.id },
+                            data: { tags: { connect: selectedTags.map(t => ({ id: t.id })) } }
+                        });
+                    }
+                }
         }
     }
 
@@ -650,9 +736,89 @@ async function createCampaignRecipients(organizationId: string) {
     logger.info('[SEED] Created campaign recipients\n');
 }
 
-async function createAuditLogs() {
-    logger.info('[SEED] Creating audit logs...');
-    // Placeholder - no audit logs to seed
+async function createConversations(organizations: { id: string }[]) {
+    logger.info('[SEED] Creating conversations and messages...');
+
+    const providers = ['whatsapp', 'facebook', 'instagram'] as const;
+    const messageTypes = ['text', 'image', 'video'] as const;
+    const statuses = ['SENT', 'DELIVERED', 'READ'] as const;
+
+    const inboundMessages = [
+        'Hi, I want to know more about your products.',
+        'Is this item available in blue?',
+        'How much for bulk order of 50 units?',
+        'Can I get a discount?',
+        'Where can I find your physical store?',
+        'When will this be back in stock?',
+        'I need help with my order #12345',
+        'Can I change my delivery address?',
+        'Do you ship internationally?',
+        'What are your return policy?'
+    ];
+
+    const outboundMessages = [
+        'Thank you for reaching out! How can I help you today?',
+        'Yes, we have that in blue. Would you like to order?',
+        'For bulk orders of 50+, we offer 15% off.',
+        'Our best price for this item is 450 EGP.',
+        'Our store is in Cairo, Maadi district.',
+        'This item will be back in stock next week.',
+        'I can help you with that order. Please provide your order number.',
+        'Let me check available delivery options for you.',
+        'Yes, we ship to most countries. Shipping costs apply.',
+        'You can return within 30 days for full refund.'
+    ];
+
+    for (const org of organizations) {
+        const customers = await prisma.customer.findMany({
+            where: { organizationId: org.id },
+            take: 40
+        });
+
+        for (const customer of customers) {
+            const shouldCreateConversation = faker.datatype.boolean({ probability: 0.4 });
+            if (!shouldCreateConversation) continue;
+
+            const provider = faker.helpers.arrayElement(providers);
+            const status = faker.helpers.arrayElement(['OPEN', 'PENDING', 'CLOSED'] as const);
+
+            const conversation = await prisma.conversation.create({
+                data: {
+                    organizationId: org.id,
+                    customerId: customer.id,
+                    externalId: `ext_${faker.string.alphanumeric(12)}`,
+                    provider,
+                    status,
+                    lastMessageAt: faker.date.recent({ days: 30 })
+                }
+            });
+
+            const numMessages = faker.number.int({ min: 2, max: 8 });
+            const messages = [];
+
+            for (let i = 0; i < numMessages; i++) {
+                const isInbound = i % 2 === 0;
+                const direction: 'INBOUND' | 'OUTBOUND' = isInbound ? 'INBOUND' : 'OUTBOUND';
+                const content = isInbound
+                    ? faker.helpers.arrayElement(inboundMessages)
+                    : faker.helpers.arrayElement(outboundMessages);
+
+                messages.push({
+                    conversationId: conversation.id,
+                    externalId: `msg_${faker.string.alphanumeric(12)}`,
+                    direction,
+                    content,
+                    type: faker.helpers.arrayElement(messageTypes),
+                    status: faker.helpers.arrayElement(statuses),
+                    createdAt: faker.date.recent({ days: 30 })
+                });
+            }
+
+            await prisma.message.createMany({ data: messages });
+        }
+    }
+
+    logger.info('[SEED] Created conversations and messages\n');
 }
 
 async function createPlans() {
@@ -745,7 +911,7 @@ async function main() {
     await createSegmentsAndCampaigns(mainOrgId);
     await createSupportTickets(organizations, adminUserId);
     await createCampaignRecipients(mainOrgId);
-    await createAuditLogs();
+    await createConversations(organizations);
     await createPlans();
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);

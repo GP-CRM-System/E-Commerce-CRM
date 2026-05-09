@@ -2,7 +2,7 @@ import type { Response, Request } from 'express';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import * as fawryService from './fawry.service.js';
 import * as orderService from '../orders/order.service.js';
-import type { Customer, Order } from '../../generated/prisma/client.js';
+
 import {
     ResponseHandler,
     HttpStatus,
@@ -10,8 +10,7 @@ import {
 } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { z } from 'zod';
-
-type OrderWithCustomer = Order & { customer: Customer | null };
+import loggerUtil from '../../utils/logger.util.js';
 
 const fawryCallbackSchema = z.object({
     merchantRefNum: z.string().min(1),
@@ -28,7 +27,7 @@ export const initialize = asyncHandler(
         const orderData = (await orderService.getOrderDetails(
             orderId,
             organizationId
-        )) as OrderWithCustomer | null;
+        ));
 
         if (!orderData || !orderData.customer) {
             return ResponseHandler.error(
@@ -55,7 +54,8 @@ export const initialize = asyncHandler(
                 HttpStatus.OK,
                 result
             );
-        } catch {
+        } catch (err) {
+            loggerUtil.error(err);
             return ResponseHandler.error(
                 res,
                 'Failed to initialize payment',
@@ -81,7 +81,8 @@ export const callback = asyncHandler(async (req: Request, res: Response) => {
     try {
         await fawryService.verifyFawryPayment(parsed.data);
         return res.status(200).send('OK');
-    } catch {
-        return res.status(400).send('Verification Failed');
+    } catch (err) {
+        loggerUtil.error(err);
+        return res.status(500).send('Internal Server Error');
     }
 });

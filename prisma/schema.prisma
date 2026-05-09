@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client"
+  output        = "../src/generated/prisma"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -112,15 +112,15 @@ model Organization {
 }
 
 model Plan {
-  id           String        @id @default(nanoid())
-  name        String        // 'free', 'basic', 'professional'
-  displayName String
-  price       Decimal       @db.Decimal(10, 2)
-  billingCycle String       @default("monthly") // 'monthly', 'yearly'
-  features    Json         // Feature flags: { users: 5, customers: 1000, apiCalls: 1000, etc }
-  isActive    Boolean      @default(true)
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
+  id            String         @id @default(nanoid())
+  name          String // 'free', 'basic', 'professional'
+  displayName   String
+  price         Decimal        @db.Decimal(10, 2)
+  billingCycle  String         @default("monthly") // 'monthly', 'yearly'
+  features      Json // Feature flags: { users: 5, customers: 1000, apiCalls: 1000, etc }
+  isActive      Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
   subscriptions Subscription[]
 
   @@map("plan")
@@ -135,20 +135,20 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id               String             @id @default(nanoid())
-  organizationId   String
-  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  planId           String
-  plan             Plan              @relation(fields: [planId], references: [id])
-  status          SubscriptionStatus @default(TRIALING)
-  startDate       DateTime           @default(now())
-  endDate         DateTime?
-  cancelAt        DateTime?
-  fawryRefNo      String?           // Reference from payment provider
-  transactionId  String?           // Our transaction record
-  metadata        Json?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id             String             @id @default(nanoid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planId         String
+  plan           Plan               @relation(fields: [planId], references: [id])
+  status         SubscriptionStatus @default(TRIALING)
+  startDate      DateTime           @default(now())
+  endDate        DateTime?
+  cancelAt       DateTime?
+  fawryRefNo     String? // Reference from payment provider
+  transactionId  String? // Our transaction record
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@unique([organizationId])
   @@index([organizationId])
@@ -451,6 +451,7 @@ model Segment {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organizationId String
+  campaigns      Campaign[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -465,6 +466,7 @@ model Campaign {
   segmentId      String?
   templateId     String?
   template       EmailTemplate?      @relation(fields: [templateId], references: [id])
+  segment        Segment?            @relation(fields: [segmentId], references: [id])
   type           CampaignType        @default(EMAIL)
   status         CampaignStatus      @default(DRAFT)
   subject        String?
