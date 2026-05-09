@@ -328,7 +328,7 @@ model Integration {
 model WebhookLog {
   id            String      @id @default(nanoid())
   integrationId String
-  integration   Integration @relation(fields: [integrationId], references: [id])
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   topic         String // 'orders/create', 'customers/update', etc.
   shopDomain    String
   webhookId     String?
@@ -364,7 +364,7 @@ model WebhookIdempotencyKey {
 model SyncLog {
   id             String      @id @default(nanoid())
   integrationId  String
-  integration    Integration @relation(fields: [integrationId], references: [id])
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   syncType       String // 'full', 'incremental', 'manual'
   entityType     String // 'customers', 'orders', 'products'
   status         String      @default("started") // 'started', 'completed', 'failed'

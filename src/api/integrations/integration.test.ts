@@ -453,7 +453,7 @@ describe('Integrations API', () => {
                 .set('Authorization', `Bearer ${authA.token}`)
                 .send({ entities: ['customers', 'orders'] });
 
-            expect([200, 400, 500]).toContain(response.status);
+            expect([200, 202, 400, 500]).toContain(response.status);
         });
 
         it('should return 404 for non-existent integration', async () => {

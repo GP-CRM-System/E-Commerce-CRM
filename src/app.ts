@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Request } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
 import prisma from './config/prisma.config.js';
@@ -14,6 +15,7 @@ import { apiReference } from '@scalar/express-api-reference';
 import openApi from './openapi.json' with { type: 'json' };
 import { importWorker } from './queues/import.queue.js';
 import { rfmWorker } from './queues/rfm.processor.js';
+import { shopifySyncWorker } from './queues/shopify-sync.worker.js';
 import { initExportWorker } from './api/exports/exports.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import {
@@ -38,6 +40,7 @@ app.use(
     })
 );
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cookieParser(env.betterAuthSecret));
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN?.split(',') || [],
@@ -133,6 +136,7 @@ export async function startServer(): Promise<void> {
                 await Sentry.close(2000);
                 await importWorker.close();
                 await rfmWorker.close();
+                await shopifySyncWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
@@ -146,6 +150,7 @@ export async function startServer(): Promise<void> {
                 await Sentry.close(2000);
                 await importWorker.close();
                 await rfmWorker.close();
+                await shopifySyncWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');

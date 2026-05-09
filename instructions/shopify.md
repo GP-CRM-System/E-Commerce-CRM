@@ -12,7 +12,7 @@ To operate as a SaaS capable of servicing any Shopify store, we must implement a
 
 1. **Shopify Partner Dashboard:** 
    - Register the Public App.
-   - Obtain `SHOPIFY_API_KEY` and `SHOPIFY_API_SECRET`.
+   - Obtain `SHOPIFY_CLIENT_ID` and `SHOPIFY_CLIENT_SECRET`.
    - Configure redirect URIs and necessary permissions.
 2. **OAuth Routes:**
    - `GET /api/integrations/shopify/auth`: Initiates the OAuth flow, redirecting the merchant to Shopify's consent screen.
