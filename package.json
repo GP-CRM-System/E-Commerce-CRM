@@ -27,8 +27,8 @@
         "bun": ">=1.1.0"
     },
     "scripts": {
-        "dev": "bun --watch run src/index.ts --preload ./src/instrument.ts",
-        "start": "bun run src/index.ts --preload ./src/instrument.ts",
+        "dev": "bun --watch run src/index.ts",
+        "start": "bun run src/index.ts",
         "lint": "eslint",
         "format": "prettier --write ./src",
         "format-check": "prettier --check \"src/**/*.ts\"",

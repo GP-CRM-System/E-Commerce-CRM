@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun';
 import { fullSync } from '../api/integrations/sync.service.js';
 import logger from '../utils/logger.util.js';
 
@@ -38,6 +39,10 @@ export async function addShopifyFullSyncJob(
         logger.warn(
             { err: e },
             'BullMQ not available, running Shopify sync synchronously'
+        );
+        Sentry.captureMessage(
+            `Shopify sync fallback to synchronous: Redis unavailable for integration ${integrationId}`,
+            'warning'
         );
         await processShopifyFullSync(integrationId, entityTypes);
         return { queued: false };

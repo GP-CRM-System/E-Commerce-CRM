@@ -66,6 +66,8 @@ export const list = asyncHandler(
     }
 );
 
+import * as productAnalyticsService from './product-analytics.service.js';
+
 export const create = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId;
@@ -278,6 +280,91 @@ export const updateVariant = asyncHandler(
             'Variant updated successfully',
             HttpStatus.OK,
             variant
+        );
+    }
+);
+
+export const getBestSelling = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId;
+        if (!organizationId) {
+            return ResponseHandler.error(
+                res,
+                'No active organization',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const limit = Math.min(
+            Number(req.query.limit) || 10,
+            100
+        );
+        const results =
+            await productAnalyticsService.getBestSellingProducts(
+                organizationId,
+                limit
+            );
+
+        return ResponseHandler.success(
+            res,
+            'Best-selling products fetched',
+            HttpStatus.OK,
+            results
+        );
+    }
+);
+
+export const getCategoryRevenue = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId;
+        if (!organizationId) {
+            return ResponseHandler.error(
+                res,
+                'No active organization',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const results =
+            await productAnalyticsService.getCategoryRevenue(
+                organizationId
+            );
+
+        return ResponseHandler.success(
+            res,
+            'Category revenue fetched',
+            HttpStatus.OK,
+            results
+        );
+    }
+);
+
+export const getCustomerCategorySpend = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId;
+        if (!organizationId) {
+            return ResponseHandler.error(
+                res,
+                'No active organization',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const customerId = req.params.customerId as string;
+        const results =
+            await productAnalyticsService.getCustomerCategorySpend(
+                organizationId,
+                customerId
+            );
+
+        return ResponseHandler.success(
+            res,
+            'Customer category spend fetched',
+            HttpStatus.OK,
+            results
         );
     }
 );

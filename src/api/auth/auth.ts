@@ -119,7 +119,6 @@ export const auth = betterAuth({
             invitationExpiresIn: 60 * 60 * 24 * 7,
             invitationLimit: 100,
             membershipLimit: 100,
-            disableOrganizationDeletion: true,
             organizationHooks: {
                 beforeDeleteOrganization: async (data) => {
                     const { exportOrganizationData } =
@@ -128,32 +127,51 @@ export const auth = betterAuth({
                         data.organization.id
                     );
 
-                    if (exportResult.success && exportResult.downloadUrl) {
-                        const owner = await prisma.member.findFirst({
-                            where: {
-                                organizationId: data.organization.id,
-                                role: 'root'
-                            },
-                            include: { user: true }
+                    if (!exportResult.success) {
+                        await AuditService.log({
+                            organizationId: data.organization.id,
+                            userId: null,
+                            action: 'DELETE_FAILED',
+                            targetId: data.organization.id,
+                            targetType: 'ORGANIZATION'
                         });
-
-                        if (owner?.user.email) {
-                            await sendEmail({
-                                to: owner.user.email,
-                                subject: `Your organization data export is ready`,
-                                html: `
-                                    <p>Hi ${owner.user.name ?? 'there'},</p>
-                                    <p>Your organization <strong>${data.organization.name}</strong> is scheduled for deletion.</p>
-                                    <p>Your data export is ready for download:</p>
-                                    <br/>
-                                    <a href="${exportResult.downloadUrl}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Download Your Data</a>
-                                    <br/><br/>
-                                    <p>This link will expire in 7 days.</p>
-                                    <p><strong>Warning:</strong> Your organization and all associated data will be permanently deleted. This action cannot be undone.</p>
-                                `
-                            });
-                        }
+                        throw new Error(
+                            `Cannot delete organization: data export failed - ${exportResult.error}`
+                        );
                     }
+
+                    const owner = await prisma.member.findFirst({
+                        where: {
+                            organizationId: data.organization.id,
+                            role: 'root'
+                        },
+                        include: { user: true }
+                    });
+
+                    if (owner?.user.email) {
+                        await sendEmail({
+                            to: owner.user.email,
+                            subject: `Your organization data export is ready`,
+                            html: `
+                                <p>Hi ${owner.user.name ?? 'there'},</p>
+                                <p>Your organization <strong>${data.organization.name}</strong> is scheduled for deletion.</p>
+                                <p>Your data export is ready for download:</p>
+                                <br/>
+                                <a href="${exportResult.downloadUrl}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Download Your Data</a>
+                                <br/><br/>
+                                <p>This link will expire in 7 days.</p>
+                                <p><strong>Warning:</strong> Your organization and all associated data will be permanently deleted. This action cannot be undone.</p>
+                            `
+                        });
+                    }
+
+                    await AuditService.log({
+                        organizationId: data.organization.id,
+                        userId: null,
+                        action: 'DELETE',
+                        targetId: data.organization.id,
+                        targetType: 'ORGANIZATION'
+                    });
                 }
             },
             sendInvitationEmail: async (data) => {

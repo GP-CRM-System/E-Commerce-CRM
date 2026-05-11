@@ -25,24 +25,29 @@ export const integrationParams = z.object({
     integrationId: z.string().min(1)
 });
 
+export const ALL_WEBHOOK_TOPICS = [
+    'orders/create',
+    'orders/updated',
+    'orders/paid',
+    'orders/cancelled',
+    'orders/fulfilled',
+    'orders/partially_fulfilled',
+    'orders/refunded',
+    'customers/create',
+    'customers/update',
+    'customers/disable',
+    'products/create',
+    'products/update',
+    'products/delete',
+    'app/uninstalled'
+] as const;
+
+export const REGISTRABLE_WEBHOOK_TOPICS = ALL_WEBHOOK_TOPICS.filter(
+    (t) => t !== 'app/uninstalled'
+);
+
 export const registerWebhookTopics = z.object({
-    topics: z.array(
-        z.enum([
-            'orders/create',
-            'orders/updated',
-            'orders/paid',
-            'orders/cancelled',
-            'orders/fulfilled',
-            'orders/partially_fulfilled',
-            'orders/refunded',
-            'customers/create',
-            'customers/update',
-            'customers/disable',
-            'products/create',
-            'products/update',
-            'products/delete'
-        ])
-    )
+    topics: z.array(z.enum(ALL_WEBHOOK_TOPICS))
 });
 
 export type ConnectShopifyInput = z.infer<typeof connectShopify>;

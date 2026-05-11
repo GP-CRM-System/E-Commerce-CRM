@@ -2,6 +2,13 @@ import crypto from 'crypto';
 import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { Integration } from '../../generated/prisma/client.js';
+import {
+    processOrderWebhook,
+    processCustomerWebhook,
+    processProductWebhook
+} from './sync.service.js';
+import { addRFMScoreJob } from '../../queues/rfm.queue.js';
+import { AuditService } from '../audit/audit.service.js';
 
 const IDEMPOTENCY_KEY_TTL_HOURS = 24;
 
@@ -272,9 +279,46 @@ export async function handleShopifyWebhook(
     try {
         await updateWebhookLogStatus(webhookLogId, 'processing');
 
-        if (topic === 'customers/disable') {
-            await updateWebhookLogStatus(webhookLogId, 'completed');
-            return { success: true, message: 'Customer disable acknowledged' };
+        if (topic.startsWith('orders/')) {
+            const customerId = await processOrderWebhook(
+                integration,
+                topic,
+                payload
+            );
+            await addRFMScoreJob(integration.orgId, undefined, customerId);
+        } else if (topic.startsWith('customers/')) {
+            if (payload.customer) {
+                await processCustomerWebhook(
+                    integration,
+                    topic,
+                    payload.customer as ShopifyWebhookPayload['customer'] & {
+                        id: number;
+                    }
+                );
+            }
+        } else if (topic.startsWith('products/')) {
+            await processProductWebhook(integration, topic, payload);
+        } else if (topic === 'app/uninstalled') {
+            await prisma.integration.update({
+                where: { id: integration.id },
+                data: {
+                    isActive: false,
+                    syncStatus: 'disconnected'
+                }
+            });
+            await AuditService.log({
+                organizationId: integration.orgId,
+                userId: null,
+                action: 'integration.uninstalled',
+                targetId: integration.id,
+                targetType: 'integration',
+                metadata: {
+                    provider: 'shopify',
+                    shop: integration.shopDomain
+                }
+            });
+        } else {
+            logger.warn(`Unknown webhook topic: ${topic}`);
         }
 
         await updateWebhookLogStatus(webhookLogId, 'completed');

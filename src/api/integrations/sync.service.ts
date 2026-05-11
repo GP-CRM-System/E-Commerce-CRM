@@ -4,6 +4,7 @@ import type { Integration } from '../../generated/prisma/client.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import type { ShopifyWebhookPayload } from './webhook.service.js';
 import { getShopifyClient } from './integration.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 interface SyncStats {
     itemsProcessed: number;
@@ -52,7 +53,7 @@ export async function processOrderWebhook(
     integration: Integration,
     topic: string,
     payload: ShopifyWebhookPayload
-) {
+): Promise<string> {
     const orgId = integration.orgId;
     const externalId = payload.id.toString();
 
@@ -262,6 +263,8 @@ export async function processOrderWebhook(
     });
 
     logger.info(`Processed order webhook: ${topic} for order ${externalId}`);
+
+    return customerId;
 }
 
 async function syncOrderItems(
@@ -480,63 +483,128 @@ export async function fullSync(
         itemsFailed: 0
     };
 
-    const { apiCall } = await getShopifyClient(integration);
+    await prisma.integration.update({
+        where: { id: integrationId },
+        data: { syncStatus: 'syncing' }
+    });
+    AuditService.log({
+        organizationId: integration.orgId,
+        userId: null,
+        action: 'integration.sync_started',
+        targetId: integrationId,
+        targetType: 'integration',
+        metadata: { entityTypes, shop: integration.shopDomain }
+    });
+
+    const { apiCallPaginated } = await getShopifyClient(integration);
 
     for (const entityType of entityTypes) {
         const syncLog = await createSyncLog(integrationId, 'full', entityType);
+        const initialEndpoint =
+            entityType === 'customers'
+                ? '/customers.json?limit=250'
+                : entityType === 'orders'
+                  ? '/orders.json?status=any&limit=250'
+                  : '/products.json?limit=250';
+
+        let nextUrl: string | null = initialEndpoint;
 
         try {
-            const endpoint =
-                entityType === 'customers'
-                    ? '/customers.json?limit=250'
-                    : entityType === 'orders'
-                      ? '/orders.json?status=any&limit=250'
-                      : '/products.json?limit=250';
+            while (nextUrl) {
+                const result: {
+                    data: Record<string, unknown[]>;
+                    linkHeader: string | null;
+                } = await apiCallPaginated<Record<string, unknown[]>>(
+                    nextUrl
+                );
+                const data = result.data;
+                const linkHeader: string | null = result.linkHeader;
+                const items = data[entityType] || [];
 
-            const response = await apiCall<{ [key: string]: unknown[] }>(
-                endpoint
-            );
-            const items = response[entityType] || [];
+                for (const item of items) {
+                    try {
+                        stats.itemsProcessed++;
+                        const recordItem = item as Record<string, unknown>;
 
-            for (const item of items) {
-                try {
-                    stats.itemsProcessed++;
-                    const recordItem = item as Record<string, unknown>;
+                        let action: 'created' | 'updated' | 'skipped';
 
-                    if (entityType === 'customers') {
-                        await syncCustomer(integration.orgId, recordItem);
-                        stats.itemsCreated++;
-                    } else if (entityType === 'orders') {
-                        await syncOrder(integration.orgId, recordItem);
-                        stats.itemsCreated++;
-                    } else if (entityType === 'products') {
-                        await syncProduct(integration.orgId, recordItem);
-                        stats.itemsCreated++;
+                        if (entityType === 'customers') {
+                            action = await syncCustomer(
+                                integration.orgId,
+                                recordItem
+                            );
+                        } else if (entityType === 'orders') {
+                            action = await syncOrder(
+                                integration.orgId,
+                                recordItem
+                            );
+                        } else {
+                            action = await syncProduct(
+                                integration.orgId,
+                                recordItem
+                            );
+                        }
+
+                        if (action === 'created') {
+                            stats.itemsCreated++;
+                        } else if (action === 'updated') {
+                            stats.itemsUpdated++;
+                        }
+                    } catch (error) {
+                        stats.itemsFailed++;
+                        logger.error(
+                            `Failed to sync ${entityType} item: ${error}`
+                        );
                     }
-                } catch (error) {
-                    stats.itemsFailed++;
-                    logger.error(`Failed to sync ${entityType} item: ${error}`);
                 }
+
+                const linkMatch = linkHeader?.match(
+                    /<([^>]+)>;\s*rel="next"/
+                );
+                nextUrl = linkMatch?.[1] ?? null;
             }
 
             await updateSyncLog(syncLog.id, stats, 'completed');
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : 'Unknown error';
+            AuditService.log({
+                organizationId: integration.orgId,
+                userId: null,
+                action: 'integration.sync_failed',
+                targetId: integrationId,
+                targetType: 'integration',
+                metadata: { entityType, error: message, stats }
+            });
             await updateSyncLog(syncLog.id, stats, 'failed', message);
+            await prisma.integration.update({
+                where: { id: integrationId },
+                data: { syncStatus: 'failed' }
+            });
             throw error;
         }
     }
 
     await prisma.integration.update({
         where: { id: integrationId },
-        data: { lastSyncedAt: new Date() }
+        data: { syncStatus: 'completed', lastSyncedAt: new Date() }
+    });
+    AuditService.log({
+        organizationId: integration.orgId,
+        userId: null,
+        action: 'integration.sync_completed',
+        targetId: integrationId,
+        targetType: 'integration',
+        metadata: { stats, shop: integration.shopDomain }
     });
 
     return stats;
 }
 
-async function syncCustomer(orgId: string, data: Record<string, unknown>) {
+async function syncCustomer(
+    orgId: string,
+    data: Record<string, unknown>
+): Promise<'created' | 'updated'> {
     const externalId = String(data.id);
     const name =
         [data.first_name, data.last_name].filter(Boolean).join(' ') ||
@@ -545,6 +613,8 @@ async function syncCustomer(orgId: string, data: Record<string, unknown>) {
     const existing = await prisma.customer.findFirst({
         where: { organizationId: orgId, externalId }
     });
+
+    const isUpdate = !!existing;
 
     const customerData = {
         name,
@@ -556,27 +626,47 @@ async function syncCustomer(orgId: string, data: Record<string, unknown>) {
         updatedAt: new Date()
     };
 
+    let customerId: string;
+
     if (existing) {
         await prisma.customer.update({
             where: { id: existing.id },
             data: customerData
         });
+        customerId = existing.id;
     } else {
-        await prisma.customer.create({
+        const created = await prisma.customer.create({
             data: {
                 ...customerData,
                 source: 'ORGANIC',
                 createdAt: new Date()
             }
         });
+        customerId = created.id;
     }
+
+    await prisma.customerEvent.create({
+        data: {
+            customerId,
+            eventType: isUpdate ? 'CUSTOMER_UPDATED' : 'CUSTOMER_CREATED',
+            description: `Customer synced from Shopify: ${name}`,
+            metadata: data as object,
+            source: 'shopify',
+            occurredAt: new Date()
+        }
+    });
+
+    return isUpdate ? 'updated' : 'created';
 }
 
-async function syncOrder(orgId: string, data: Record<string, unknown>) {
+async function syncOrder(
+    orgId: string,
+    data: Record<string, unknown>
+): Promise<'created' | 'updated' | 'skipped'> {
     const externalId = String(data.id);
     const customerData = data.customer as Record<string, unknown> | undefined;
 
-    if (!customerData) return;
+    if (!customerData) return 'skipped';
 
     const customerExternalId = String(customerData.id);
 
@@ -641,9 +731,25 @@ async function syncOrder(orgId: string, data: Record<string, unknown>) {
             }
         });
     }
+
+    await prisma.customerEvent.create({
+        data: {
+            customerId,
+            eventType: existingOrder ? 'ORDER_UPDATED' : 'ORDER_CREATED',
+            description: `Order synced from Shopify: ${externalId}`,
+            metadata: data as object,
+            source: 'shopify',
+            occurredAt: new Date()
+        }
+    });
+
+    return existingOrder ? 'updated' : 'created';
 }
 
-async function syncProduct(orgId: string, data: Record<string, unknown>) {
+async function syncProduct(
+    orgId: string,
+    data: Record<string, unknown>
+): Promise<'created' | 'updated'> {
     const externalId = String(data.id);
 
     const existing = await prisma.product.findFirst({
@@ -689,4 +795,6 @@ async function syncProduct(orgId: string, data: Record<string, unknown>) {
             }
         });
     }
+
+    return existing ? 'updated' : 'created';
 }

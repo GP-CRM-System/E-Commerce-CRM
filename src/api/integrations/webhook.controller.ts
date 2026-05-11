@@ -3,7 +3,6 @@ import { asyncHandler } from '../../middlewares/error.middleware.js';
 import {
     verifyShopifyWebhookSignature,
     createWebhookLog,
-    handleShopifyWebhook,
     generateIdempotencyKey,
     checkAndStoreIdempotencyAtomic
 } from './webhook.service.js';
@@ -11,6 +10,7 @@ import { HttpStatus, ResponseHandler } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import logger from '../../utils/logger.util.js';
+import { addShopifyWebhookJob } from '../../queues/shopify-webhook.queue.js';
 
 export const handleShopifyWebhookRequest = asyncHandler(
     async (req: Request, res: Response) => {
@@ -99,18 +99,12 @@ export const handleShopifyWebhookRequest = asyncHandler(
 
         res.status(HttpStatus.OK).json({ received: true });
 
-        setImmediate(async () => {
-            try {
-                await handleShopifyWebhook(
-                    integration,
-                    topic || 'unknown',
-                    req.body,
-                    webhookLog.id
-                );
-            } catch (error) {
-                logger.error(`Async webhook processing failed: ${error}`);
-            }
-        });
+        addShopifyWebhookJob(
+            integrationId,
+            topic || 'unknown',
+            req.body,
+            webhookLog.id
+        );
     }
 );
 

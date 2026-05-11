@@ -178,6 +178,9 @@ export async function getShopifyClient(integration: Integration): Promise<{
     shop: string;
     accessToken: string;
     apiCall: <T>(endpoint: string, options?: RequestInit) => Promise<T>;
+    apiCallPaginated: <T>(
+        endpointOrUrl: string
+    ) => Promise<{ data: T; linkHeader: string | null }>;
 }> {
     const shop = integration.shopDomain!.replace('.myshopify.com', '');
 
@@ -205,7 +208,37 @@ export async function getShopifyClient(integration: Integration): Promise<{
         return response.json() as Promise<T>;
     };
 
-    return { shop, accessToken: integration.accessToken, apiCall };
+    const apiCallPaginated = async <T>(
+        endpointOrUrl: string
+    ): Promise<{ data: T; linkHeader: string | null }> => {
+        const url = endpointOrUrl.startsWith('http')
+            ? endpointOrUrl
+            : `https://${shop}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}${endpointOrUrl}`;
+
+        const response = await fetch(url, {
+            headers: {
+                'X-Shopify-Access-Token': integration.accessToken,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(
+                `Shopify API error: ${response.status} - ${errorText}`
+            );
+        }
+
+        const data = (await response.json()) as T;
+        return { data, linkHeader: response.headers.get('Link') };
+    };
+
+    return {
+        shop,
+        accessToken: integration.accessToken,
+        apiCall,
+        apiCallPaginated
+    };
 }
 
 export function verifyShopifyWebhook(

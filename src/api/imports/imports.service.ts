@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun';
 import { Queue } from 'bullmq';
 import logger from '../../utils/logger.util.js';
 import prisma from '../../config/prisma.config.js';
@@ -131,9 +132,17 @@ export async function createImportJob(
         logger.warn(
             `Redis unavailable (${health.error}) - running import ${job.id} synchronously. Large imports may timeout.`
         );
+        Sentry.captureMessage(
+            `Import job ${job.id} fallback to synchronous: Redis unavailable (${health.error})`,
+            'warning'
+        );
     } else if (!importQueue) {
         logger.warn(
             `Import queue not initialized - running import ${job.id} synchronously. Large imports may timeout.`
+        );
+        Sentry.captureMessage(
+            `Import job ${job.id} fallback to synchronous: import queue not initialized`,
+            'warning'
         );
     }
     processImportJob(

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun';
 import { Queue } from 'bullmq';
 import prisma from '../../config/prisma.config.js';
 import type {
@@ -14,6 +15,11 @@ import { toCSV, toExcel } from '../../utils/parser.util.js';
 import logger from '../../utils/logger.util.js';
 import { uploadToB2, isB2Configured } from '../../config/b2.config.js';
 import { AuditService } from '../audit/audit.service.js';
+import {
+    isCloudflareConfigured,
+    purgeCloudflareCache,
+    getCloudflarePublicUrl
+} from '../../utils/cloudflare.util.js';
 
 function getExportQueue(): Queue | null {
     if (!isRedisAvailable) return null;
@@ -204,24 +210,22 @@ export async function processExportJob(
                     `Failed to upload to B2: ${uploadResult.error}`
                 );
             }
-            await prisma.exportJob.update({
-                where: { id: jobId },
-                data: {
-                    status: 'COMPLETED',
-                    fileName,
-                    filePath: b2Key,
-                    totalRows: exportData.length,
-                    completedAt: new Date()
+            Sentry.captureMessage(
+                `Export ${jobId}: file uploaded to B2 (${exportData.length} rows)`,
+                'info'
+            );
+
+            // Purge Cloudflare cache if configured
+            if (isCloudflareConfigured) {
+                const publicUrl = getCloudflarePublicUrl(b2Key);
+                if (publicUrl) {
+                    await purgeCloudflareCache([publicUrl]);
                 }
-            });
-        } else {
-            const fs = await import('fs');
-            const path = await import('path');
-            const tempDir = path.join(process.cwd(), 'temp', 'exports');
-            if (!fs.existsSync(tempDir))
-                fs.mkdirSync(tempDir, { recursive: true });
-            const filePath = path.join(tempDir, fileName);
-            fs.writeFileSync(filePath, buffer);
+            }
+
+            const filePath = isCloudflareConfigured
+                ? getCloudflarePublicUrl(b2Key) || b2Key
+                : b2Key;
 
             await prisma.exportJob.update({
                 where: { id: jobId },
@@ -233,6 +237,14 @@ export async function processExportJob(
                     completedAt: new Date()
                 }
             });
+        } else {
+            Sentry.captureMessage(
+                `Export ${jobId}: B2 not configured, export failed`,
+                'error'
+            );
+            throw new Error(
+                'Export storage (B2/Cloudflare) not configured. Set B2_KEY_ID, B2_APPLICATION_KEY, and B2_BUCKET_NAME environment variables.'
+            );
         }
     } catch (error) {
         logger.error({ error, jobId }, 'Export job failed');

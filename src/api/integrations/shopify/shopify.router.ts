@@ -4,6 +4,7 @@ import {
     protect
 } from '../../../middlewares/auth.middleware.js';
 import * as shopifyController from './shopify.controller.js';
+import * as pixelController from './pixel.controller.js';
 
 const router = Router();
 
@@ -20,5 +21,9 @@ router.get(
 // and it might not include the Authorization header for API tokens.
 // However, since we set a signed cookie, we can validate the session through the cookie.
 router.get('/callback', shopifyController.callback);
+
+// /api/integrations/shopify/pixel-ingest
+// No auth middleware - called from storefront web pixel
+router.post('/pixel-ingest', pixelController.ingest);
 
 export default router;

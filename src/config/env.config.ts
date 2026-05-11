@@ -43,12 +43,17 @@ export const env = {
     b2Region: process.env.B2_REGION,
     b2BucketName: process.env.B2_BUCKET_NAME,
 
+    // Cloudflare Configuration
+    cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN,
+    cloudflareZoneId: process.env.CLOUDFLARE_ZONE_ID,
+    cloudflarePublicDomain: process.env.CF_PUBLIC_DOMAIN,
+
     // Shopify Configuration
     shopifyClientId: process.env.SHOPIFY_CLIENT_ID,
     shopifyClientSecret: process.env.SHOPIFY_CLIENT_SECRET,
     shopifyScopes:
         process.env.SHOPIFY_SCOPES ||
-        'read_customers,read_orders,read_products,read_inventory',
+        'read_customers,read_orders,read_products,read_inventory,write_pixels',
 
     // Encryption
     encryptionKey: process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET

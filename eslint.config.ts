@@ -4,9 +4,9 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-    globalIgnores(['src/generated/**', '.agents/skills/**']),
+    globalIgnores(['src/generated/**', '.agents/skills/**', 'shopify-web-pixel/**']),
     {
-        ignores: ['src/generated/**', '.agents/skills/**'],
+        ignores: ['src/generated/**', '.agents/skills/**', 'shopify-web-pixel/**'],
         files: ['src/**/*.{js,mjs,cjs,ts,mts,cts}'],
         plugins: { js, tseslint },
         extends: ['js/recommended'],

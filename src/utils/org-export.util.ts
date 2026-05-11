@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun';
 import prisma from '../config/prisma.config.js';
 import {
     uploadToB2,
@@ -5,6 +6,10 @@ import {
     isB2Configured
 } from '../config/b2.config.js';
 import logger from './logger.util.js';
+import {
+    isCloudflareConfigured,
+    purgeCloudflareCache
+} from './cloudflare.util.js';
 
 export async function exportOrganizationData(organizationId: string): Promise<{
     success: boolean;
@@ -106,6 +111,10 @@ export async function exportOrganizationData(organizationId: string): Promise<{
                 };
             }
 
+            if (isCloudflareConfigured) {
+                await purgeCloudflareCache([b2Key]);
+            }
+
             const urlResult = await getSignedDownloadUrl(
                 b2Key,
                 60 * 60 * 24 * 7
@@ -115,6 +124,10 @@ export async function exportOrganizationData(organizationId: string): Promise<{
                     { organizationId },
                     'Organization data export created in B2'
                 );
+                Sentry.captureMessage(
+                    `Organization ${organizationId} data exported to B2 for deletion`,
+                    'info'
+                );
                 return {
                     success: true,
                     downloadUrl: urlResult.url
@@ -122,23 +135,13 @@ export async function exportOrganizationData(organizationId: string): Promise<{
             }
         }
 
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempDir = path.join(process.cwd(), 'temp', 'exports');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-        const filePath = path.join(
-            tempDir,
-            `org-${organizationId}-export.json`
-        );
-        fs.writeFileSync(filePath, buffer);
-
-        logger.info(
-            { organizationId, filePath },
-            'Organization data exported locally'
+        Sentry.captureMessage(
+            `Organization ${organizationId} data export failed: B2 not configured`,
+            'error'
         );
         return {
-            success: true,
-            downloadUrl: `/api/exports/download/${organizationId}`
+            success: false,
+            error: 'Export storage (B2/Cloudflare) not configured. Cannot delete organization.'
         };
     } catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';

@@ -31,6 +31,24 @@ router
     )
     .delete(requirePermission('products:delete'), productController.remove);
 
+router.get(
+    '/analytics/best-selling',
+    requirePermission('products:read'),
+    productController.getBestSelling
+);
+
+router.get(
+    '/analytics/category-revenue',
+    requirePermission('products:read'),
+    productController.getCategoryRevenue
+);
+
+router.get(
+    '/analytics/customer/:customerId/category-spend',
+    requirePermission('products:read'),
+    productController.getCustomerCategorySpend
+);
+
 router
     .route('/:id/variants')
     .post(

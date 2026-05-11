@@ -13,6 +13,7 @@ import {
 } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
+import { AuditService } from '../audit/audit.service.js';
 
 export const create = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -164,7 +165,7 @@ export const download = asyncHandler(
             );
         }
 
-        // B2 key starts with "exports/" - check if file is stored in B2
+        // Generate signed URL from B2 (no local file fallback)
         if (isB2Configured && job.filePath.startsWith('exports/')) {
             const signedUrlResult = await getSignedDownloadUrl(job.filePath);
             if (!signedUrlResult.success) {
@@ -175,6 +176,15 @@ export const download = asyncHandler(
                     HttpStatus.INTERNAL_SERVER_ERROR
                 );
             }
+
+            await AuditService.log({
+                organizationId: job.organizationId,
+                userId: req.session.userId,
+                action: 'DOWNLOAD',
+                targetId: job.id,
+                targetType: 'EXPORT_JOB'
+            });
+
             return ResponseHandler.success(
                 res,
                 'Export download signed URL generated',
@@ -183,43 +193,11 @@ export const download = asyncHandler(
             );
         }
 
-        // Local file fallback
-        const fs = await import('fs');
-        const path = await import('path');
-
-        // Prevent directory traversal by resolving the path and ensuring it's in the temp directory
-        const resolvedPath = path.resolve(job.filePath);
-        const tempDir = path.resolve(process.cwd(), 'temp');
-
-        if (!resolvedPath.startsWith(tempDir)) {
-            return ResponseHandler.error(
-                res,
-                'Invalid file path',
-                ErrorCode.RESOURCE_NOT_ALLOWED,
-                HttpStatus.FORBIDDEN
-            );
-        }
-
-        if (!fs.existsSync(resolvedPath)) {
-            return ResponseHandler.error(
-                res,
-                'File not found',
-                ErrorCode.RESOURCE_NOT_FOUND,
-                HttpStatus.NOT_FOUND
-            );
-        }
-
-        const fileBuffer = fs.readFileSync(job.filePath);
-        const mimeType =
-            job.format === 'csv'
-                ? 'text/csv'
-                : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        res.setHeader('Content-Type', mimeType);
-        res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${job.fileName}"`
+        return ResponseHandler.error(
+            res,
+            'Export file not available for download. Ensure B2 storage is configured.',
+            ErrorCode.RESOURCE_NOT_FOUND,
+            HttpStatus.NOT_FOUND
         );
-        res.send(fileBuffer);
     }
 );

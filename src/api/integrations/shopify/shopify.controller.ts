@@ -13,6 +13,8 @@ import {
 } from '../../../utils/response.util.js';
 import logger from '../../../utils/logger.util.js';
 import { addShopifyFullSyncJob } from '../../../queues/shopify-sync.queue.js';
+import { registerWebhooks } from '../integration.service.js';
+import { REGISTRABLE_WEBHOOK_TOPICS } from '../integration.schemas.js';
 
 function generateNonce(): string {
     return crypto.randomBytes(32).toString('hex');
@@ -174,7 +176,18 @@ export const callback = asyncHandler(
                 logger.warn({ err }, 'Failed to enqueue initial Shopify sync');
             });
 
-            // 9. Redirect back to the frontend
+            // 9. Auto-register webhooks (fire-and-forget)
+            // app/uninstalled is excluded since Shopify sends it automatically
+            registerWebhooks(
+                integration.id,
+                orgId,
+                REGISTRABLE_WEBHOOK_TOPICS as unknown as string[],
+                env.appUrl || 'http://localhost:3000'
+            ).catch((err) => {
+                logger.warn({ err }, 'Failed to auto-register Shopify webhooks');
+            });
+
+            // 10. Redirect back to the frontend
             const frontendUrl = env.appUrl || 'http://localhost:5173';
             res.redirect(
                 `${frontendUrl}/settings/integrations?success=true&provider=shopify`
