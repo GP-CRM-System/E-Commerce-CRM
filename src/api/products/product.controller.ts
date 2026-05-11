@@ -296,15 +296,11 @@ export const getBestSelling = asyncHandler(
             );
         }
 
-        const limit = Math.min(
-            Number(req.query.limit) || 10,
-            100
+        const limit = Math.min(Number(req.query.limit) || 10, 100);
+        const results = await productAnalyticsService.getBestSellingProducts(
+            organizationId,
+            limit
         );
-        const results =
-            await productAnalyticsService.getBestSellingProducts(
-                organizationId,
-                limit
-            );
 
         return ResponseHandler.success(
             res,
@@ -328,9 +324,7 @@ export const getCategoryRevenue = asyncHandler(
         }
 
         const results =
-            await productAnalyticsService.getCategoryRevenue(
-                organizationId
-            );
+            await productAnalyticsService.getCategoryRevenue(organizationId);
 
         return ResponseHandler.success(
             res,
@@ -354,11 +348,10 @@ export const getCustomerCategorySpend = asyncHandler(
         }
 
         const customerId = req.params.customerId as string;
-        const results =
-            await productAnalyticsService.getCustomerCategorySpend(
-                organizationId,
-                customerId
-            );
+        const results = await productAnalyticsService.getCustomerCategorySpend(
+            organizationId,
+            customerId
+        );
 
         return ResponseHandler.success(
             res,

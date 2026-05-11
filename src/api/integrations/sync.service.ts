@@ -514,9 +514,7 @@ export async function fullSync(
                 const result: {
                     data: Record<string, unknown[]>;
                     linkHeader: string | null;
-                } = await apiCallPaginated<Record<string, unknown[]>>(
-                    nextUrl
-                );
+                } = await apiCallPaginated<Record<string, unknown[]>>(nextUrl);
                 const data = result.data;
                 const linkHeader: string | null = result.linkHeader;
                 const items = data[entityType] || [];
@@ -558,9 +556,7 @@ export async function fullSync(
                     }
                 }
 
-                const linkMatch = linkHeader?.match(
-                    /<([^>]+)>;\s*rel="next"/
-                );
+                const linkMatch = linkHeader?.match(/<([^>]+)>;\s*rel="next"/);
                 nextUrl = linkMatch?.[1] ?? null;
             }
 

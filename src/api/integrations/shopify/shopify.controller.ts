@@ -184,7 +184,10 @@ export const callback = asyncHandler(
                 REGISTRABLE_WEBHOOK_TOPICS as unknown as string[],
                 env.appUrl || 'http://localhost:3000'
             ).catch((err) => {
-                logger.warn({ err }, 'Failed to auto-register Shopify webhooks');
+                logger.warn(
+                    { err },
+                    'Failed to auto-register Shopify webhooks'
+                );
             });
 
             // 10. Redirect back to the frontend
