@@ -5888,113 +5888,284 @@
                 ]
             }
         },
-        "SubscriptionPlan": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
+        "/integrations/shopify/pixel-ingest": {
+            "post": {
+                "operationId": "pixelIngest",
+                "summary": "Ingest storefront web pixel event",
+                "tags": ["Integrations"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["event", "shopDomain"],
+                                "properties": {
+                                    "event": {
+                                        "type": "string",
+                                        "enum": ["product_viewed", "product_added_to_cart", "checkout_started", "page_viewed"],
+                                        "description": "Pixel event type"
+                                    },
+                                    "customerId": {
+                                        "type": "string",
+                                        "description": "Customer ID (if known)"
+                                    },
+                                    "customerEmail": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "description": "Customer email for resolution"
+                                    },
+                                    "shopDomain": {
+                                        "type": "string",
+                                        "description": "Shopify shop domain"
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "description": "Event timestamp"
+                                    },
+                                    "metadata": {
+                                        "type": "object",
+                                        "description": "Additional event metadata (productId, productTitle, pageUrl, etc.)"
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
-                "name": {
-                    "type": "string",
-                    "description": "Internal plan name (e.g., free, basic, pro)"
-                },
-                "displayName": {
-                    "type": "string",
-                    "description": "Display name for the plan"
-                },
-                "price": {
-                    "type": "number",
-                    "description": "Price amount"
-                },
-                "billingCycle": {
-                    "type": "string",
-                    "enum": ["monthly", "yearly"]
-                },
-                "features": {
-                    "type": "object",
-                    "additionalProperties": true,
-                    "description": "Plan feature limits and settings"
-                },
-                "isActive": {
-                    "type": "boolean",
-                    "description": "Whether the plan is available for subscription"
+                "responses": {
+                    "200": {
+                        "description": "Event ingested",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
-        "Subscription": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
+        "/products/analytics/best-selling": {
+            "get": {
+                "operationId": "getBestSellingProducts",
+                "summary": "Get best-selling products",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        },
+                        "description": "Number of results (max 100)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Best-selling products fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "product": {
+                                                        "$ref": "#/components/schemas/Product"
+                                                    },
+                                                    "totalQuantitySold": {
+                                                        "type": "integer"
+                                                    },
+                                                    "totalRevenue": {
+                                                        "type": "number"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
                 },
-                "organizationId": {
-                    "type": "string"
-                },
-                "planId": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": ["active", "canceled", "past_due", "trialing"]
-                },
-                "billingCycle": {
-                    "type": "string",
-                    "enum": ["monthly", "yearly"]
-                },
-                "currentPeriodStart": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "currentPeriodEnd": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "cancelAtPeriodEnd": {
-                    "type": "boolean",
-                    "description": "Whether subscription cancels at period end"
-                },
-                "paymentReference": {
-                    "type": "string",
-                    "nullable": true,
-                    "description": "External payment reference (e.g., Fawry ref)"
-                },
-                "createdAt": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "updatedAt": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "plan": {
-                    "$ref": "#/components/schemas/SubscriptionPlan"
-                }
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
-        "FawryPayment": {
-            "type": "object",
-            "properties": {
-                "merchantCode": {
-                    "type": "string",
-                    "description": "Fawry merchant code"
+        "/products/analytics/category-revenue": {
+            "get": {
+                "operationId": "getCategoryRevenue",
+                "summary": "Get revenue by product category",
+                "tags": ["Products"],
+                "responses": {
+                    "200": {
+                        "description": "Category revenue fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "totalQuantitySold": {
+                                                        "type": "integer"
+                                                    },
+                                                    "totalRevenue": {
+                                                        "type": "number"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
                 },
-                "merchantRefNum": {
-                    "type": "string",
-                    "description": "Merchant reference number (organization ID)"
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/products/analytics/customer/{customerId}/category-spend": {
+            "get": {
+                "operationId": "getCustomerCategorySpend",
+                "summary": "Get customer spend by category",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Customer ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer category spend fetched",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "totalQuantityPurchased": {
+                                                        "type": "integer"
+                                                    },
+                                                    "totalSpent": {
+                                                        "type": "number"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
                 },
-                "amount": {
-                    "type": "number",
-                    "description": "Payment amount"
-                },
-                "signature": {
-                    "type": "string",
-                    "description": "Request signature for verification"
-                },
-                "fawryUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "Fawry payment page URL"
-                }
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },
