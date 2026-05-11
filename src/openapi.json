@@ -5903,7 +5903,12 @@
                                 "properties": {
                                     "event": {
                                         "type": "string",
-                                        "enum": ["product_viewed", "product_added_to_cart", "checkout_started", "page_viewed"],
+                                        "enum": [
+                                            "product_viewed",
+                                            "product_added_to_cart",
+                                            "checkout_started",
+                                            "page_viewed"
+                                        ],
                                         "description": "Pixel event type"
                                     },
                                     "customerId": {
