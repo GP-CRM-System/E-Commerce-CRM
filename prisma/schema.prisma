@@ -26,6 +26,7 @@ model User {
   exportJobs      ExportJob[]
   assignedTickets SupportTicket[] @relation("AssignedTickets")
   ticketNotes     TicketNote[]
+  segments        Segment[]
 
   @@unique([email])
   @@map("user")
@@ -447,10 +448,13 @@ model Segment {
   name           String
   filter         Json
   description    String?
+  size           Int          @default(0)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator        User?        @relation(fields: [creatorId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organizationId String
+  creatorId      String?
   campaigns      Campaign[]
 
   @@unique([organizationId, name])

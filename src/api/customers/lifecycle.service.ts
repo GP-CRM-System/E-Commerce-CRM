@@ -51,10 +51,17 @@ export async function checkAndUpdateLifecycleStage(
     const newStage = calculateNextStage(customer, options);
 
     if (newStage !== previousStage) {
-        await prisma.customer.update({
+        const { count } = await prisma.customer.updateMany({
             where: { id: customerId },
             data: { lifecycleStage: newStage }
         });
+
+        if (count === 0) {
+            logger.warn(
+                `Customer ${customerId} not found for lifecycle update (likely deleted)`
+            );
+            return null;
+        }
 
         logger.info(
             `Lifecycle transition for ${customerId}: ${previousStage} → ${newStage}`

@@ -137,7 +137,10 @@ async function createUsers() {
     return adminUserId;
 }
 
-async function createSegmentsAndCampaigns(organizationId: string) {
+async function createSegmentsAndCampaigns(
+    organizationId: string,
+    creatorId: string
+) {
     logger.info('[SEED] Creating segments with viable filters...');
 
     const segmentConfigs = [
@@ -168,7 +171,13 @@ async function createSegmentsAndCampaigns(organizationId: string) {
         {
             name: 'Recent Purchasers',
             description: 'Customers who ordered in the last 30 days',
-            filter: { field: 'lastOrderAt', operator: 'daysAgo', value: 30 }
+            filter: {
+                field: 'lastOrderAt',
+                operator: 'gte',
+                value: new Date(
+                    Date.now() - 30 * 24 * 60 * 60 * 1000
+                ).toISOString()
+            }
         },
         {
             name: 'Loyal Customers',
@@ -184,10 +193,10 @@ async function createSegmentsAndCampaigns(organizationId: string) {
             name: 'Repeat Buyers',
             description: 'Customers with 2-4 orders',
             filter: {
-                field: 'totalOrders',
-                operator: 'between',
-                min: 2,
-                max: 4
+                and: [
+                    { field: 'totalOrders', operator: 'gte', value: 2 },
+                    { field: 'totalOrders', operator: 'lte', value: 4 }
+                ]
             }
         }
     ];
@@ -199,7 +208,8 @@ async function createSegmentsAndCampaigns(organizationId: string) {
                 name: config.name,
                 description: config.description,
                 organizationId,
-                filter: config.filter
+                filter: config.filter,
+                creatorId
             }
         });
         segments.push(segment);
@@ -987,7 +997,7 @@ async function main() {
     await createCustomers(organizations, adminUserId);
     await createProducts(organizations);
     await createOrders(organizations);
-    await createSegmentsAndCampaigns(mainOrgId);
+    await createSegmentsAndCampaigns(mainOrgId, adminUserId);
     await createSupportTickets(organizations, adminUserId);
     await createCampaignRecipients(mainOrgId);
     await createConversations(organizations);

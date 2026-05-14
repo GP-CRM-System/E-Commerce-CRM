@@ -4,4 +4,4 @@ name = "CRM Web Pixel"
 handle = "crm-web-pixel"
 
 [extensing.config]
-ingestion_url = "https://your-crm-api.com/api/integrations/shopify/pixel-ingest"
+ingestion_url = "https://briefly-server-drab.vercel.app/api/integrations/shopify/pixel-ingest"

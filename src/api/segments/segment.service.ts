@@ -9,7 +9,8 @@ import { AppError } from '../../utils/response.util.js';
 
 export async function createSegment(
     data: CreateSegmentInput,
-    organizationId: string
+    organizationId: string,
+    creatorId: string | null
 ) {
     const validation = validateSegmentFilter(data.filter);
     if (!validation.valid) {
@@ -20,13 +21,20 @@ export async function createSegment(
         );
     }
 
-    return prisma.segment.create({
+    const segment = await prisma.segment.create({
         data: {
             name: data.name,
             description: data.description,
             filter: data.filter as Prisma.InputJsonValue,
-            organizationId
+            organizationId,
+            creatorId
         }
+    });
+
+    const size = await getSegmentCustomerCount(segment.id, organizationId);
+    return prisma.segment.update({
+        where: { id: segment.id },
+        data: { size }
     });
 }
 
@@ -48,7 +56,13 @@ export async function getSegments(
             where,
             orderBy: { createdAt: 'desc' },
             take,
-            skip
+            skip,
+            select: {
+                id: true,
+                name: true,
+                size: true,
+                createdAt: true
+            }
         }),
         prisma.segment.count({ where })
     ]);
@@ -56,20 +70,38 @@ export async function getSegments(
     return { segments, total };
 }
 
-export async function getSegmentById(id: string, organizationId: string) {
-    const segment = await prisma.segment.findUnique({
-        where: { id }
-    });
-
-    if (!segment) {
+async function getSegmentForOrg(id: string, organizationId: string) {
+    const segment = await prisma.segment.findUnique({ where: { id } });
+    if (!segment || segment.organizationId !== organizationId) {
         throw new AppError('Segment not found', 404, 'NOT_FOUND');
     }
-
-    if (segment.organizationId !== organizationId) {
-        throw new AppError('Segment not found', 404, 'NOT_FOUND');
-    }
-
     return segment;
+}
+
+export async function getSegmentById(id: string, organizationId: string) {
+    await getSegmentForOrg(id, organizationId);
+    return refreshSegmentSize(id, organizationId);
+}
+
+async function refreshSegmentSize(id: string, organizationId: string) {
+    const size = await computeSegmentCustomerCount(id, organizationId);
+    return prisma.segment.update({ where: { id }, data: { size } });
+}
+
+async function computeSegmentCustomerCount(
+    segmentId: string,
+    organizationId: string
+): Promise<number> {
+    const segment = await prisma.segment.findUnique({
+        where: { id: segmentId },
+        select: { filter: true }
+    });
+    if (!segment) return 0;
+
+    const where = buildPrismaWhere(segment.filter);
+    return prisma.customer.count({
+        where: { ...where, organizationId } as Prisma.CustomerWhereInput
+    });
 }
 
 export async function updateSegment(
@@ -77,7 +109,7 @@ export async function updateSegment(
     data: UpdateSegmentInput,
     organizationId: string
 ) {
-    const existing = await getSegmentById(id, organizationId);
+    const existing = await getSegmentForOrg(id, organizationId);
 
     if (data.filter) {
         const validation = validateSegmentFilter(data.filter);
@@ -90,7 +122,7 @@ export async function updateSegment(
         }
     }
 
-    return prisma.segment.update({
+    const updated = await prisma.segment.update({
         where: { id: existing.id },
         data: {
             ...(data.name !== undefined && { name: data.name }),
@@ -102,10 +134,23 @@ export async function updateSegment(
             })
         }
     });
+
+    if (data.filter !== undefined) {
+        const size = await computeSegmentCustomerCount(
+            existing.id,
+            organizationId
+        );
+        return prisma.segment.update({
+            where: { id: existing.id },
+            data: { size }
+        });
+    }
+
+    return updated;
 }
 
 export async function deleteSegment(id: string, organizationId: string) {
-    const existing = await getSegmentById(id, organizationId);
+    const existing = await getSegmentForOrg(id, organizationId);
 
     await prisma.segment.delete({
         where: { id: existing.id }
@@ -116,7 +161,7 @@ export async function getSegmentCustomerCount(
     segmentId: string,
     organizationId: string
 ): Promise<number> {
-    const segment = await getSegmentById(segmentId, organizationId);
+    const segment = await getSegmentForOrg(segmentId, organizationId);
 
     const where = buildPrismaWhere(segment.filter);
     const segmentWhere = {

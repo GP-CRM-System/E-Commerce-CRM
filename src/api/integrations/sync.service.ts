@@ -473,7 +473,15 @@ export async function fullSync(
     });
 
     if (!integration) {
-        throw new Error('Integration not found');
+        logger.warn(
+            `Integration ${integrationId} not found for fullSync (likely deleted)`
+        );
+        return {
+            itemsProcessed: 0,
+            itemsCreated: 0,
+            itemsUpdated: 0,
+            itemsFailed: 0
+        };
     }
 
     const stats: SyncStats = {

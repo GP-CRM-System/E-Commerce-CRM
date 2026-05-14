@@ -1,4 +1,4 @@
-const INGESTION_URL = 'https://your-crm-api.com/api/integrations/shopify/pixel-ingest';
+const INGESTION_URL = 'https://briefly-server-drab.vercel.app/api/integrations/shopify/pixel-ingest';
 
 function sendEvent(eventName, metadata = {}) {
     const payload = {
@@ -12,7 +12,6 @@ function sendEvent(eventName, metadata = {}) {
     if (customerEmail) {
         payload.customerEmail = customerEmail;
     }
-
     try {
         navigator.sendBeacon(INGESTION_URL, JSON.stringify(payload));
     } catch {

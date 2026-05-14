@@ -21,11 +21,13 @@ import type { Prisma } from '../../generated/prisma/client.js';
 export const createSegment = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
+        const creatorId = req.user.id;
         const data: CreateSegmentInput = req.body;
 
         const segment = await segmentService.createSegment(
             data,
-            organizationId
+            organizationId,
+            creatorId
         );
 
         ResponseHandler.success(

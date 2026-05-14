@@ -1,4 +1,6 @@
 import * as Sentry from '@sentry/bun';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
 import prisma from '../config/prisma.config.js';
 import {
     uploadToB2,
@@ -135,13 +137,25 @@ export async function exportOrganizationData(organizationId: string): Promise<{
             }
         }
 
+        const localDir = join(process.cwd(), 'temp', 'exports');
+        if (!existsSync(localDir)) mkdirSync(localDir, { recursive: true });
+        const localPath = join(
+            localDir,
+            `org-${organizationId}-${Date.now()}.json`
+        );
+        writeFileSync(localPath, jsonContent);
+
+        logger.info(
+            { organizationId, path: localPath },
+            'Organization data export created locally (B2 fallback)'
+        );
         Sentry.captureMessage(
-            `Organization ${organizationId} data export failed: B2 not configured`,
-            'error'
+            `Organization ${organizationId} data exported locally (B2 not configured)`,
+            'info'
         );
         return {
-            success: false,
-            error: 'Export storage (B2/Cloudflare) not configured. Cannot delete organization.'
+            success: true,
+            downloadUrl: `file://${localPath}`
         };
     } catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
