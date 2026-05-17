@@ -73,24 +73,34 @@ export interface PaymobIntentionResponse {
 /**
  * Creates a payment intention on Paymob
  */
-export async function createIntention(payload: PaymobIntentionPayload): Promise<PaymobIntentionResponse> {
+export async function createIntention(
+    payload: PaymobIntentionPayload
+): Promise<PaymobIntentionResponse> {
     const url = `${env.paymobBaseUrl}/v1/intention/`;
-    
-    logger.info({ amount: payload.amount }, 'Creating Paymob payment intention');
+
+    logger.info(
+        { amount: payload.amount },
+        'Creating Paymob payment intention'
+    );
 
     const response = await fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${env.paymobSecretKey}`
+            Authorization: `Token ${env.paymobSecretKey}`
         },
         body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        logger.error({ status: response.status, errorText }, 'Paymob Intention API Error');
-        throw new Error(`Paymob Intention API Error: ${response.status} - ${errorText}`);
+        logger.error(
+            { status: response.status, errorText },
+            'Paymob Intention API Error'
+        );
+        throw new Error(
+            `Paymob Intention API Error: ${response.status} - ${errorText}`
+        );
     }
 
     return response.json() as Promise<PaymobIntentionResponse>;
@@ -110,7 +120,7 @@ export function verifyCallbackSignature(
     const subType = obj.source_data?.sub_type || '';
     const type = obj.source_data?.type || '';
 
-    const stringToHash = 
+    const stringToHash =
         `${obj.amount_cents}` +
         `${obj.created_at}` +
         `${obj.currency}` +
@@ -143,7 +153,10 @@ export function verifyCallbackSignature(
     );
 
     if (!match) {
-        logger.warn({ computedHmac, hmacReceived }, 'Paymob HMAC signature verification failed');
+        logger.warn(
+            { computedHmac, hmacReceived },
+            'Paymob HMAC signature verification failed'
+        );
     }
 
     return match;

@@ -59,7 +59,9 @@ export const env = {
     paymobApiKey: process.env.PAYMOB_API_KEY,
     paymobSecretKey: process.env.PAYMOB_SECRET_KEY,
     paymobPublicKey: process.env.PAYMOB_PUBLIC_KEY,
-    paymobCardIntegrationId: process.env.PAYMOB_CARD_INTEGRATION_ID ? Number(process.env.PAYMOB_CARD_INTEGRATION_ID) : undefined,
+    paymobCardIntegrationId: process.env.PAYMOB_CARD_INTEGRATION_ID
+        ? Number(process.env.PAYMOB_CARD_INTEGRATION_ID)
+        : undefined,
     paymobBaseUrl: process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com',
 
     // Encryption
@@ -91,7 +93,8 @@ export function checkEnv(): void {
         if (!env.paymobApiKey) missingVars.push('PAYMOB_API_KEY');
         if (!env.paymobSecretKey) missingVars.push('PAYMOB_SECRET_KEY');
         if (!env.paymobPublicKey) missingVars.push('PAYMOB_PUBLIC_KEY');
-        if (!env.paymobCardIntegrationId) missingVars.push('PAYMOB_CARD_INTEGRATION_ID');
+        if (!env.paymobCardIntegrationId)
+            missingVars.push('PAYMOB_CARD_INTEGRATION_ID');
     }
 
     if (missingVars.length > 0) {

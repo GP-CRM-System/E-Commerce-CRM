@@ -147,7 +147,8 @@ export const subscriptionCallback = asyncHandler(
 
         const { obj } = body;
         const isSuccess = obj.success === true;
-        const organizationId = obj.merchant_order_id || obj.extra?.special_reference;
+        const organizationId =
+            obj.merchant_order_id || obj.extra?.special_reference;
 
         if (!organizationId) {
             logger.warn('Paymob callback missing organizationId reference');
@@ -155,13 +156,19 @@ export const subscriptionCallback = asyncHandler(
         }
 
         if (isSuccess) {
-            logger.info({ organizationId, transactionId: obj.id }, 'Activating CRM subscription via Paymob success webhook');
+            logger.info(
+                { organizationId, transactionId: obj.id },
+                'Activating CRM subscription via Paymob success webhook'
+            );
             await subscriptionService.activateSubscription(
                 organizationId,
                 String(obj.id)
             );
         } else {
-            logger.warn({ organizationId, transactionId: obj.id }, 'Paymob payment transaction unsuccessful');
+            logger.warn(
+                { organizationId, transactionId: obj.id },
+                'Paymob payment transaction unsuccessful'
+            );
         }
 
         return res.status(200).send('OK');
@@ -170,31 +177,41 @@ export const subscriptionCallback = asyncHandler(
 
 export const subscriptionRedirect = asyncHandler(
     async (req: Request, res: Response) => {
-        const parsed = parseRedirectQueryParams(req.query as Record<string, string | undefined>);
+        const parsed = parseRedirectQueryParams(
+            req.query as Record<string, string | undefined>
+        );
 
         if (!parsed) {
             logger.warn('Paymob redirect callback missing required params');
-            return res.status(400).send(
-                '<html><body><h1>Payment Failed</h1><p>Missing payment callback parameters.</p></body></html>'
-            );
+            return res
+                .status(400)
+                .send(
+                    '<html><body><h1>Payment Failed</h1><p>Missing payment callback parameters.</p></body></html>'
+                );
         }
 
         const isValid = verifyCallbackSignature(parsed.payload, parsed.hmac);
 
         if (!isValid) {
-            return res.status(403).send(
-                '<html><body><h1>Payment Verification Failed</h1><p>Invalid signature.</p></body></html>'
-            );
+            return res
+                .status(403)
+                .send(
+                    '<html><body><h1>Payment Verification Failed</h1><p>Invalid signature.</p></body></html>'
+                );
         }
 
         const { obj } = parsed.payload;
         const organizationId = obj.merchant_order_id;
 
         if (!organizationId) {
-            logger.warn('Paymob redirect callback missing organization reference');
-            return res.status(400).send(
-                '<html><body><h1>Payment Failed</h1><p>Missing organization reference.</p></body></html>'
+            logger.warn(
+                'Paymob redirect callback missing organization reference'
             );
+            return res
+                .status(400)
+                .send(
+                    '<html><body><h1>Payment Failed</h1><p>Missing organization reference.</p></body></html>'
+                );
         }
 
         if (obj.success) {
@@ -202,7 +219,10 @@ export const subscriptionRedirect = asyncHandler(
                 organizationId,
                 obj.id
             );
-            logger.info({ organizationId, transactionId: obj.id }, 'Subscription activated via Paymob redirect callback');
+            logger.info(
+                { organizationId, transactionId: obj.id },
+                'Subscription activated via Paymob redirect callback'
+            );
         }
 
         res.setHeader('Content-Type', 'text/html');
