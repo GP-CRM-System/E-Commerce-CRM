@@ -113,22 +113,32 @@ export async function cancelSubscription(
 
 export async function activateSubscription(
     organizationId: string,
-    fawryRefNo: string
+    paymobSubscriptionId: string
 ) {
     const subscription = await prisma.subscription.findUnique({
-        where: { organizationId }
+        where: { organizationId },
+        include: { plan: true }
     });
 
     if (!subscription) {
         throw new NotFoundError('Subscription not found');
     }
 
+    const startDate = new Date();
+    const endDate = new Date();
+    if (subscription.plan.billingCycle === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+    }
+
     return prisma.subscription.update({
         where: { organizationId },
         data: {
             status: 'ACTIVE',
-            fawryRefNo,
-            endDate: null
+            paymobSubscriptionId,
+            startDate,
+            endDate
         },
         include: { plan: true }
     });

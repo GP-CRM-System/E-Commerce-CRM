@@ -97,10 +97,6 @@
             "description": "WhatsApp/Facebook messaging and conversations"
         },
         {
-            "name": "Payments",
-            "description": "Payment processing and callbacks"
-        },
-        {
             "name": "Tickets",
             "description": "Support ticket management"
         },
@@ -181,69 +177,6 @@
                         "bearerAuth": []
                     }
                 ]
-            }
-        },
-        "/payments/initialize/{orderId}": {
-            "post": {
-                "operationId": "initializePayment",
-                "summary": "Initialize payment for an order",
-                "tags": ["Payments"],
-                "parameters": [
-                    {
-                        "name": "orderId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Order ID"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Payment initialized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthorized"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Forbidden"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/NotFound"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/payments/fawry/callback": {
-            "post": {
-                "operationId": "handlePaymentCallback",
-                "summary": "Handle payment callback from Fawry",
-                "tags": ["Payments"],
-                "responses": {
-                    "200": {
-                        "description": "Callback handled",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    }
-                }
             }
         },
         "/subscriptions/plans": {
@@ -547,7 +480,7 @@
                         "$ref": "#/components/responses/Unauthorized"
                     },
                     "402": {
-                        "description": "Payment required with Fawry payment details",
+                        "description": "Payment required with Paymob payment details",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -562,8 +495,8 @@
                                                 "subscription": {
                                                     "$ref": "#/components/schemas/Subscription"
                                                 },
-                                                "fawry": {
-                                                    "$ref": "#/components/schemas/FawryPayment"
+                                                "paymob": {
+                                                    "$ref": "#/components/schemas/PaymobPayment"
                                                 }
                                             }
                                         },
@@ -590,10 +523,10 @@
                 ]
             }
         },
-        "/subscriptions/fawry/callback": {
+        "/subscriptions/paymob/callback": {
             "post": {
                 "operationId": "subscriptionPaymentCallback",
-                "summary": "Handle Fawry payment callback for subscriptions",
+                "summary": "Handle Paymob payment callback for subscriptions",
                 "tags": ["Subscriptions"],
                 "requestBody": {
                     "required": true,
@@ -601,29 +534,14 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "merchantRefNum",
-                                    "fawryRefNo",
-                                    "orderStatus",
-                                    "checksum"
-                                ],
                                 "properties": {
-                                    "merchantRefNum": {
+                                    "hmac": {
                                         "type": "string",
-                                        "description": "Merchant reference number (organization ID)"
+                                        "description": "HMAC signature for verification"
                                     },
-                                    "fawryRefNo": {
-                                        "type": "string",
-                                        "description": "Fawry reference number"
-                                    },
-                                    "orderStatus": {
-                                        "type": "string",
-                                        "enum": ["PAID", "CANCELLED", "FAILED"],
-                                        "description": "Payment status"
-                                    },
-                                    "checksum": {
-                                        "type": "string",
-                                        "description": "Checksum for verification"
+                                    "obj": {
+                                        "type": "object",
+                                        "description": "Transaction callback details object"
                                     }
                                 }
                             }
@@ -638,7 +556,7 @@
                         "description": "Missing required fields"
                     },
                     "403": {
-                        "description": "Invalid checksum"
+                        "description": "Invalid signature"
                     }
                 }
             }

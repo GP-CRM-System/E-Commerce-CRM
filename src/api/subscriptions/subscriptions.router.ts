@@ -43,6 +43,7 @@ router.post(
     paymentController.initializeSubscription
 );
 
-router.post('/fawry/callback', paymentController.subscriptionCallback);
+router.post('/paymob/callback', paymentController.subscriptionCallback);
+router.get('/paymob/redirect', paymentController.subscriptionRedirect);
 
 export default router;

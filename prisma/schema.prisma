@@ -145,7 +145,8 @@ model Subscription {
   startDate      DateTime           @default(now())
   endDate        DateTime?
   cancelAt       DateTime?
-  fawryRefNo     String? // Reference from payment provider
+  paymobSubscriptionId String? // Reference from Paymob subscription
+  paymobPlanId         String? // Stored Paymob Plan ID if created dynamically
   transactionId  String? // Our transaction record
   metadata       Json?
   createdAt      DateTime           @default(now())

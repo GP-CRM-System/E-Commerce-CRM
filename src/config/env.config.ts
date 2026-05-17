@@ -55,6 +55,13 @@ export const env = {
         process.env.SHOPIFY_SCOPES ||
         'read_customers,read_orders,read_products,read_inventory,write_pixels',
 
+    // Paymob Configuration
+    paymobApiKey: process.env.PAYMOB_API_KEY,
+    paymobSecretKey: process.env.PAYMOB_SECRET_KEY,
+    paymobPublicKey: process.env.PAYMOB_PUBLIC_KEY,
+    paymobCardIntegrationId: process.env.PAYMOB_CARD_INTEGRATION_ID ? Number(process.env.PAYMOB_CARD_INTEGRATION_ID) : undefined,
+    paymobBaseUrl: process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com',
+
     // Encryption
     encryptionKey: process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET
 };
@@ -81,6 +88,10 @@ export function checkEnv(): void {
         if (!env.shopifyClientId) missingVars.push('SHOPIFY_CLIENT_ID');
         if (!env.shopifyClientSecret) missingVars.push('SHOPIFY_CLIENT_SECRET');
         if (!env.encryptionKey) missingVars.push('ENCRYPTION_KEY');
+        if (!env.paymobApiKey) missingVars.push('PAYMOB_API_KEY');
+        if (!env.paymobSecretKey) missingVars.push('PAYMOB_SECRET_KEY');
+        if (!env.paymobPublicKey) missingVars.push('PAYMOB_PUBLIC_KEY');
+        if (!env.paymobCardIntegrationId) missingVars.push('PAYMOB_CARD_INTEGRATION_ID');
     }
 
     if (missingVars.length > 0) {

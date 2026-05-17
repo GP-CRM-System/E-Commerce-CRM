@@ -1,5 +1,14 @@
 import request from 'supertest';
-import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll, mock } from 'bun:test';
+
+mock.module('../../utils/paymob.util.js', () => ({
+    createIntention: mock(async () => ({
+        client_secret: 'mock_client_secret',
+        id: 'mock_intention_id'
+    })),
+    verifyCallbackSignature: mock(() => true)
+}));
+
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
 import {
@@ -130,7 +139,7 @@ describe('Subscriptions API', () => {
                 .send({ planId: basicPlan?.id });
 
             expect(response.status).toBe(402);
-            expect(response.body.data?.fawry).toBeDefined();
+            expect(response.body.data?.paymob).toBeDefined();
         });
 
         it('should activate free plan immediately', async () => {
