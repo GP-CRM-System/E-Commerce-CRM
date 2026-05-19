@@ -1,12 +1,12 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "E-Commerce CRM API",
+        "title": "Briefly - An E-Commerce CRM",
         "description": "High-performance, multi-tenant CRM backend for e-commerce businesses.\n\n Test User: admin@example.com \n\n Password : Admin123! \n\n## Features\n- Customer management with RFM scoring and lifecycle tracking\n- Order and product catalog management\n- CSV/XLSX import/export with field mapping\n- Shopify integration with webhook sync\n- Role-based access control (RBAC)\n- Background job processing with BullMQ\n\n## Authentication\nAll endpoints require Bearer token authentication. Get a token from `/api/auth/sign-in/email`.\n\n## Rate Limits\n- Auth endpoints: 10 requests/minute\n- API endpoints: 100 requests/minute\n- Bulk operations: 20 requests/minute",
-        "version": "2.0.0",
+        "version": "2.5.1",
         "contact": {
             "name": "API Support",
-            "url": "https://github.com/seifsheikhelarab/E-Commerce-CRM"
+            "url": "https://github.com/GP-CRM-System/E-Commerce-CRM"
         },
         "license": {
             "name": "MIT",
@@ -19,16 +19,8 @@
             "description": "Current environment"
         },
         {
-            "url": "https://dev.api.example.com/api",
+            "url": "https://briefly-server-drab.vercel.app/api",
             "description": "Development server"
-        },
-        {
-            "url": "https://staging.api.example.com/api",
-            "description": "Staging server"
-        },
-        {
-            "url": "https://api.example.com/api",
-            "description": "Production server"
         }
     ],
     "tags": [

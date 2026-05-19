@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import * as Sentry from '@sentry/bun';
 import { checkEnv, env } from './config/env.config.js';
+import path from 'path';
 import prisma from './config/prisma.config.js';
 import {
     notFoundHandler,
@@ -41,6 +42,7 @@ app.use(
     })
 );
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.static(path.join(process.cwd(), 'public')));
 app.use(cookieParser(env.betterAuthSecret));
 app.use(
     cors({
@@ -58,7 +60,7 @@ app.use('/api', apiRouter);
 app.get(
     '/reference',
     apiReference({
-        pageTitle: 'E-Commerce CRM API',
+        pageTitle: 'Briefly API Reference',
         sources: [
             {
                 title: 'Core API',
@@ -70,7 +72,15 @@ app.get(
                 content: await auth.api.generateOpenAPISchema(),
                 slug: 'auth'
             }
-        ]
+        ],
+        theme: 'kepler',
+        layout: 'modern',
+        defaultOpenFirstTag: false,
+        operationTitleSource: 'summary',
+        persistAuth: true,
+        telemetry: true,
+        documentDownloadType: 'both',
+        favicon: 'favicon.png'
     })
 );
 
