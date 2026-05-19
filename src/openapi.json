@@ -149,6 +149,82 @@
                 }
             }
         },
+        "/uploads": {
+            "post": {
+                "operationId": "uploadFile",
+                "summary": "Upload an image to Cloudinary",
+                "description": "Upload an avatar or logo image. Returns a URL that can be passed to Better Auth's sign-up/update endpoints as `image` or `logo`.",
+                "tags": ["Auth"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["file"],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Image file (jpeg, png, webp, gif, max 2MB)"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["avatar", "logo"],
+                                        "default": "avatar",
+                                        "description": "Upload context - determines Cloudinary folder"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "File uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string",
+                                                    "format": "uri",
+                                                    "description": "Cloudinary secure URL"
+                                                },
+                                                "publicId": {
+                                                    "type": "string",
+                                                    "description": "Cloudinary public ID (for deletion)"
+                                                }
+                                            }
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file provided or invalid file type"
+                    },
+                    "429": {
+                        "description": "Too many requests - rate limited"
+                    }
+                }
+            }
+        },
         "/analytics": {
             "get": {
                 "operationId": "getGeneralAnalytics",

@@ -76,6 +76,7 @@
         "@types/jsonwebtoken": "^9.0.10",
         "better-auth": "^1.6.11",
         "bullmq": "^5.76.8",
+        "cloudinary": "^2.10.0",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.6",
         "csv-parse": "^6.2.1",

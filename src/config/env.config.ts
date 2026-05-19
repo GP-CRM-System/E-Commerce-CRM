@@ -64,6 +64,11 @@ export const env = {
         : undefined,
     paymobBaseUrl: process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com',
 
+    // Cloudinary Configuration
+    cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+
     // Encryption
     encryptionKey: process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET
 };
@@ -105,10 +110,17 @@ export function checkEnv(): void {
 
     const hasRedis = env.redisUrl;
     const hasB2 = env.b2KeyId && env.b2ApplicationKey && env.b2BucketName;
+    const hasCloudinary =
+        env.cloudinaryCloudName &&
+        env.cloudinaryApiKey &&
+        env.cloudinaryApiSecret;
     if (!hasRedis) {
         // Warning log omitted to avoid circular dependency with logger
     }
     if (!hasB2) {
+        // Warning log omitted
+    }
+    if (!hasCloudinary) {
         // Warning log omitted
     }
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import healthRouter from './health.router.js';
 import authRouter from './auth/auth.router.js';
+import uploadRouter from './uploads/upload.router.js';
 import rolesRouter from './auth/roles.router.js';
 import customerRouter from './customers/customers.router.js';
 import productRouter from './products/products.router.js';
@@ -32,6 +33,7 @@ router.use('/health', healthRouter);
 // router.use(getRateLimiter());
 
 // router.use('/auth', getAuthLimiter());
+router.use('/uploads', uploadRouter);
 router.use('/auth', authRouter);
 router.use('/me', meRouter);
 router.use('/roles', rolesRouter);
