@@ -1,4 +1,4 @@
-import "dotenv/config";
+import 'dotenv/config';
 import { betterAuth } from 'better-auth';
 import { bearer } from 'better-auth/plugins/bearer';
 import { organization } from 'better-auth/plugins/organization';
