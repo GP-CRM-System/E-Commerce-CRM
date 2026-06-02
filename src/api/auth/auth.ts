@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { betterAuth } from 'better-auth';
 import { bearer } from 'better-auth/plugins/bearer';
 import { organization } from 'better-auth/plugins/organization';
@@ -198,7 +199,11 @@ export const auth = betterAuth({
         }),
         openAPI()
     ],
-    trustedOrigins: [env.appUrl!],
+    trustedOrigins: [
+        env.appUrl!,
+        'http://localhost:5173',
+        'https://briefly-azure.vercel.app'
+    ],
     socialProviders: {
         google: {
             clientId: env.googleClientId!,

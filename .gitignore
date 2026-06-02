@@ -39,11 +39,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 /src/generated/prisma
 .vscode
 .agents/skills
-AGENTS.md
 opencode.json
 /temp
 E-commerce CRM.pdf
-/mintlify-export
 export.zip
 /site
 /.claude
