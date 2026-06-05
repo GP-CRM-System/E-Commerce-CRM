@@ -9,11 +9,54 @@ export async function listPlans(includeInactive = false) {
 }
 
 export async function getCurrentSubscription(organizationId: string) {
-    const subscription = await prisma.subscription.findUnique({
+    let subscription = await prisma.subscription.findUnique({
         where: { organizationId },
         include: { plan: true }
     });
-    return subscription;
+
+    if (!subscription) {
+        // Find the 'free' plan
+        const freePlan = await prisma.plan.findFirst({
+            where: { name: 'free', isActive: true }
+        });
+        if (freePlan) {
+            subscription = await prisma.subscription.create({
+                data: {
+                    organizationId,
+                    planId: freePlan.id,
+                    status: 'ACTIVE',
+                    startDate: new Date(),
+                    endDate: null
+                },
+                include: { plan: true }
+            });
+        }
+    }
+
+    if (!subscription) return null;
+
+    // Dynamically count customers and email campaign recipients for the organization
+    const [customersCount, emailsCount] = await Promise.all([
+        prisma.customer.count({ where: { organizationId } }),
+        prisma.campaignRecipient.count({
+            where: { campaign: { organizationId } }
+        })
+    ]);
+
+    // Estimate storage usage: base + 0.05MB per product / customer
+    const productsCount = await prisma.product.count({ where: { organizationId } });
+    const estimatedBytes = (productsCount * 50 + customersCount * 10) * 1024; // in bytes
+    const storageGB = Number((estimatedBytes / (1024 * 1024 * 1024)).toFixed(3)) + 0.15; // base 0.15 GB
+
+    return {
+        ...subscription,
+        usage: {
+            customers: customersCount,
+            emails: emailsCount,
+            storageGB: Number(storageGB.toFixed(2)),
+            storageBytes: estimatedBytes
+        }
+    };
 }
 
 export async function subscribeOrganization(
