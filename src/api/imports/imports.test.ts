@@ -113,6 +113,71 @@ describe('Imports API', () => {
 
             expect(response.status).toBe(401);
         });
+
+        it('should parse stringified mapping from form-data and persist it', async () => {
+            const customMapping = {
+                name: 'full_name',
+                email: 'email_address'
+            };
+            const response = await request(app)
+                .post('/api/imports')
+                .set('Authorization', `Bearer ${authA.token}`)
+                .attach(
+                    'file',
+                    Buffer.from(
+                        'full_name,email_address\nAlice,alice@test.com'
+                    ),
+                    'mapping.csv'
+                )
+                .field('entityType', 'customer')
+                .field('mapping', JSON.stringify(customMapping));
+
+            expect([200, 201]).toContain(response.status);
+
+            const job = await prisma.importJob.findFirst({
+                where: { fileName: 'mapping.csv' },
+                orderBy: { createdAt: 'desc' }
+            });
+            expect(job).not.toBeNull();
+            expect(job?.mapping).toEqual(customMapping);
+        });
+
+        it('should reject invalid JSON in mapping', async () => {
+            const response = await request(app)
+                .post('/api/imports')
+                .set('Authorization', `Bearer ${authA.token}`)
+                .attach(
+                    'file',
+                    Buffer.from('name,email\nAlice,alice@test.com'),
+                    'bad-mapping.csv'
+                )
+                .field('entityType', 'customer')
+                .field('mapping', '{not valid json}');
+
+            expect(response.status).toBe(400);
+        });
+
+        it('should accept hasHeader=true from form-data', async () => {
+            const response = await request(app)
+                .post('/api/imports')
+                .set('Authorization', `Bearer ${authA.token}`)
+                .attach(
+                    'file',
+                    Buffer.from('name,email\nAlice,alice@test.com'),
+                    'hasheader.csv'
+                )
+                .field('entityType', 'customer')
+                .field('hasHeader', 'true');
+
+            expect([200, 201]).toContain(response.status);
+
+            const job = await prisma.importJob.findFirst({
+                where: { fileName: 'hasheader.csv' },
+                orderBy: { createdAt: 'desc' }
+            });
+            expect(job).not.toBeNull();
+            expect(job?.organizationId).toBe(authA.orgId);
+        });
     });
 
     describe('Cross-Tenant Isolation', () => {

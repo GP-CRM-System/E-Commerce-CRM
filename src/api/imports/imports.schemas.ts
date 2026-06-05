@@ -2,8 +2,22 @@ import { z } from 'zod';
 
 export const createImportJob = z.object({
     entityType: z.enum(['customer', 'product', 'order']),
-    hasHeader: z.boolean().optional(),
-    mapping: z.record(z.string(), z.string()).optional(),
+    hasHeader: z
+        .string()
+        .transform((val) => {
+            if (val === 'true') return true;
+            if (val === 'false') return false;
+            throw new Error('Invalid value for hasHeader');
+        })
+        .optional(),
+    mapping: z.preprocess((val) => {
+        if (typeof val !== 'string') return val;
+        try {
+            return JSON.parse(val);
+        } catch {
+            return val;
+        }
+    }, z.record(z.string(), z.string()).optional()),
     duplicateStrategy: z.enum(['create_only', 'upsert']).optional(),
     mode: z.enum(['create_only', 'upsert']).optional()
 });

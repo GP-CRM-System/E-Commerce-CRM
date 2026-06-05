@@ -62,6 +62,8 @@ export const create = asyncHandler(
             | 'create_only'
             | 'upsert'
             | undefined;
+        const mapping = req.body.mapping as Record<string, string> | undefined;
+        const hasHeader = req.body.hasHeader as boolean | undefined;
 
         const job = await importService.createImportJob(
             {
@@ -72,7 +74,7 @@ export const create = asyncHandler(
             entityType,
             organizationId,
             userId,
-            { duplicateStrategy }
+            { duplicateStrategy, mapping, hasHeader }
         );
 
         return ResponseHandler.created(res, 'Import job created', job);
