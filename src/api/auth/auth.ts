@@ -121,6 +121,18 @@ export const auth = betterAuth({
             invitationLimit: 100,
             membershipLimit: 100,
             organizationHooks: {
+                afterCreateOrganization: async (data) => {
+                    const { assignFreePlanToOrg } =
+                        await import('../../utils/plan-limits.util.js');
+                    const result = await assignFreePlanToOrg(
+                        data.organization.id
+                    );
+                    if (!result.created) {
+                        loggerUtil.warn(
+                            `Free plan not assigned to organization ${data.organization.id}`
+                        );
+                    }
+                },
                 beforeDeleteOrganization: async (data) => {
                     const { exportOrganizationData } =
                         await import('../../utils/org-export.util.js');

@@ -5,6 +5,7 @@ import * as productSchema from './product.schemas.js';
 import type { Product, ProductVariant } from '../../generated/prisma/client.js';
 import type { ProductFilters } from './product.schemas.js';
 import { AuditService } from '../audit/audit.service.js';
+import { checkStorageLimit } from '../../utils/plan-limits.util.js';
 
 export async function getAllProducts(
     organizationId: string,
@@ -94,6 +95,8 @@ export async function createProduct(
     userId: string
 ): Promise<Product> {
     try {
+        await checkStorageLimit(activeOrganizationId, 1);
+
         const product = await prisma.product.create({
             data: {
                 ...data,

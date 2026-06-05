@@ -36,7 +36,8 @@
         "typecheck": "tsc --noEmit",
         "build": "tsc",
         "test": "bun test",
-        "seed": "bun src/scripts/seed.script.ts"
+        "seed": "bun src/scripts/seed.script.ts",
+        "seed:plans": "bun src/scripts/seed-plans.script.ts"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",

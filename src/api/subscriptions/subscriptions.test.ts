@@ -31,9 +31,9 @@ const testPlans = [
         sortOrder: 1
     },
     {
-        name: 'basic',
-        displayName: 'Basic',
-        price: new Prisma.Decimal(29.99),
+        name: 'growth',
+        displayName: 'Growth',
+        price: new Prisma.Decimal(450),
         billingCycle: 'monthly',
         features: { customers: 1000, products: 500 },
         isActive: true,
@@ -129,14 +129,14 @@ describe('Subscriptions API', () => {
 
     describe('POST /api/subscriptions/initialize', () => {
         it('should return payment required for paid plans', async () => {
-            const basicPlan = await prisma.plan.findFirst({
-                where: { name: 'basic' }
+            const growthPlan = await prisma.plan.findFirst({
+                where: { name: 'growth' }
             });
 
             const response = await request(app)
                 .post('/api/subscriptions/initialize')
                 .set('Authorization', `Bearer ${auth.token}`)
-                .send({ planId: basicPlan?.id });
+                .send({ planId: growthPlan?.id });
 
             expect(response.status).toBe(402);
             expect(response.body.data?.paymob).toBeDefined();

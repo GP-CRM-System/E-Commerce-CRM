@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma.config.js';
 import { NotFoundError } from '../../utils/response.util.js';
+export { isSubscriptionActive } from '../../utils/plan-limits.util.js';
 
 export async function listPlans(includeInactive = false) {
     return prisma.plan.findMany({
@@ -157,15 +158,4 @@ export function hasFeature(
     const features =
         (subscription.plan.features as Record<string, number>) || {};
     return (features[feature] ?? 0) > 0;
-}
-
-export function isSubscriptionActive(
-    subscription: { status: string; endDate: Date | null } | null
-): boolean {
-    if (!subscription) return false;
-    if (subscription.status === 'ACTIVE') return true;
-    if (subscription.status === 'TRIALING' && subscription.endDate) {
-        return new Date() < subscription.endDate;
-    }
-    return false;
 }

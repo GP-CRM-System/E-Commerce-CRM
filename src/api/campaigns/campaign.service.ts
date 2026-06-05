@@ -11,6 +11,7 @@ import {
 import { buildPrismaWhere } from '../segments/segment.utils.js';
 import type { Customer } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
+import { checkEmailLimit } from '../../utils/plan-limits.util.js';
 
 export interface CampaignJobData {
     campaignId: string;
@@ -242,6 +243,8 @@ export async function sendCampaign(
     if (recipientIds.length === 0) {
         throw new Error('No recipients found for this campaign');
     }
+
+    await checkEmailLimit(organizationId, recipientIds.length);
 
     await prisma.campaignRecipient.deleteMany({
         where: { campaignId }

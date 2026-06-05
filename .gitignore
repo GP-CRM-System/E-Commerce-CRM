@@ -49,3 +49,4 @@ export.zip
 .env.prod
 /.postman
 /API-Postman-Collections-main
+/docs

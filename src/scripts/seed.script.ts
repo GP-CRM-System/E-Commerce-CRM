@@ -4,6 +4,7 @@ import { DEFAULT_ROLES } from '../config/roles.config.js';
 import { auth } from '../api/auth/auth.js';
 import logger from '../utils/logger.util.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { PLANS, assignFreePlanToOrganizations } from './plans.shared.js';
 
 async function safeDelete<T>(fn: () => Promise<T>): Promise<void> {
     try {
@@ -913,59 +914,7 @@ async function createConversations(organizations: { id: string }[]) {
 async function createPlans() {
     logger.info('[SEED] Creating subscription plans...');
 
-    const plans = [
-        {
-            name: 'free',
-            displayName: 'Free',
-            price: new Prisma.Decimal(0),
-            billingCycle: 'monthly',
-            features: {
-                customers: 100,
-                products: 50,
-                orders: 100,
-                apiCalls: 1000,
-                exports: false,
-                imports: false
-            },
-            isActive: true,
-            sortOrder: 1
-        },
-        {
-            name: 'basic',
-            displayName: 'Basic',
-            price: new Prisma.Decimal(29.99),
-            billingCycle: 'monthly',
-            features: {
-                customers: 1000,
-                products: 500,
-                orders: 5000,
-                apiCalls: 10000,
-                exports: true,
-                imports: true
-            },
-            isActive: true,
-            sortOrder: 2
-        },
-        {
-            name: 'professional',
-            displayName: 'Professional',
-            price: new Prisma.Decimal(79.99),
-            billingCycle: 'monthly',
-            features: {
-                customers: 10000,
-                products: 5000,
-                orders: 50000,
-                apiCalls: 100000,
-                exports: true,
-                imports: true,
-                support: true
-            },
-            isActive: true,
-            sortOrder: 3
-        }
-    ];
-
-    for (const plan of plans) {
+    for (const plan of PLANS) {
         const existing = await prisma.plan.findFirst({
             where: { name: plan.name }
         });
@@ -979,7 +928,19 @@ async function createPlans() {
         }
     }
 
-    logger.info(`[SEED] Created ${plans.length} subscription plans\n`);
+    logger.info(`[SEED] Created ${PLANS.length} subscription plans\n`);
+}
+
+async function assignFreePlan(organizations: { id: string }[]) {
+    logger.info('[SEED] Assigning Free plan to organizations...');
+
+    const { assigned, total } = await assignFreePlanToOrganizations(
+        organizations.map((o) => o.id)
+    );
+
+    logger.info(
+        `[SEED] Assigned Free plan to ${assigned}/${total} organizations\n`
+    );
 }
 
 async function main() {
@@ -1002,6 +963,7 @@ async function main() {
     await createCampaignRecipients(mainOrgId);
     await createConversations(organizations);
     await createPlans();
+    await assignFreePlan(organizations);
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     logger.info(`[SEED] COMPLETED in ${duration}s`);

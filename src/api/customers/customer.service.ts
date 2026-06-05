@@ -10,6 +10,10 @@ import {
     NotFoundError,
     AuthorizationError
 } from '../../utils/response.util.js';
+import {
+    checkCustomerLimit,
+    checkStorageLimit
+} from '../../utils/plan-limits.util.js';
 import type {
     Customer,
     Note,
@@ -140,6 +144,9 @@ export async function createCustomer(
     userId: string
 ) {
     try {
+        await checkCustomerLimit(activeOrganizationId);
+        await checkStorageLimit(activeOrganizationId, 0);
+
         const customer = await prisma.customer.create({
             data: {
                 ...data,
