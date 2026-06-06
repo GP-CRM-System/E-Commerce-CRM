@@ -11,6 +11,7 @@ import {
 import { buildPrismaWhere } from '../segments/segment.utils.js';
 import type { Customer } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
+import { sendEmail } from '../../utils/email.util.js';
 import { checkEmailLimit } from '../../utils/plan-limits.util.js';
 
 export interface CampaignJobData {
@@ -384,17 +385,12 @@ export async function processCampaignSend(jobData: CampaignJobData) {
         const renderedSubject = renderTemplate(subject, context);
         const renderedBody = renderTemplate(body, context);
 
-        void renderedBody;
-
-        logger.info(
-            {
-                campaignId,
-                recipientId,
-                email: customer.email,
-                subject: renderedSubject
-            },
-            'Campaign email would be sent (nodemailer stub)'
-        );
+        // Send the email via the configured SMTP provider
+        await sendEmail({
+            to: customer.email,
+            subject: renderedSubject,
+            html: renderedBody
+        });
 
         await prisma.campaignRecipient.update({
             where: { id: recipientId },

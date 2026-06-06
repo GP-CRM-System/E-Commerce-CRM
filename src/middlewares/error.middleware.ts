@@ -14,13 +14,15 @@ import type { ZodError } from 'zod';
  * @param err Thrown application, validation, or generic error.
  * @param req Incoming Express request.
  * @param res Outgoing Express response.
- * @param _next Unused Express next function.
+ * @param _next Unused Express next function (required for Express to recognize
+ *   this as error-handling middleware with 4 parameters).
  * @returns The serialized error response.
  */
 export const errorHandler = (
     err: Error | AppError,
     req: Request,
-    res: Response
+    res: Response,
+    _next: NextFunction
 ) => {
     const path = `${req.method} ${req.path}`;
     const timestamp = new Date().toISOString();

@@ -45,6 +45,10 @@ const createMockResponse = <T>(): {
     };
 };
 
+const createMockNext = () => {
+    return (() => {}) as import('express').NextFunction;
+};
+
 const createMockRequest = (method: string, path: string): Request => {
     return {
         method,
@@ -62,6 +66,7 @@ describe('Error Middleware', () => {
     it('should return AppError responses with the app error contract', () => {
         const { res, getResult } = createMockResponse<ErrorResponseBody>();
         const req = createMockRequest('GET', '/api/customers/123');
+        const next = createMockNext();
 
         const error = new AppError(
             'Customer not found',
@@ -70,7 +75,7 @@ describe('Error Middleware', () => {
             { customerId: '123' }
         );
 
-        errorHandler(error, req, res);
+        errorHandler(error, req, res, next);
 
         const result = getResult();
         expect(result.code).toBe(HttpStatus.NOT_FOUND);
@@ -85,6 +90,7 @@ describe('Error Middleware', () => {
     it('should return validation contract for ZodError', () => {
         const { res, getResult } = createMockResponse<ErrorResponseBody>();
         const req = createMockRequest('POST', '/api/customers');
+        const next = createMockNext();
 
         const schema = z.object({
             email: z.string().email(),
@@ -99,7 +105,7 @@ describe('Error Middleware', () => {
             zodError = err as Error;
         }
 
-        errorHandler(zodError!, req, res);
+        errorHandler(zodError!, req, res, next);
 
         const result = getResult();
         expect(result.code).toBe(HttpStatus.BAD_REQUEST);
@@ -117,8 +123,9 @@ describe('Error Middleware', () => {
 
         const { res, getResult } = createMockResponse<ErrorResponseBody>();
         const req = createMockRequest('PUT', '/api/orders/77');
+        const next = createMockNext();
 
-        errorHandler(new Error('Unexpected failure'), req, res);
+        errorHandler(new Error('Unexpected failure'), req, res, next);
 
         const result = getResult();
         expect(result.code).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -133,8 +140,9 @@ describe('Error Middleware', () => {
 
         const { res, getResult } = createMockResponse<ErrorResponseBody>();
         const req = createMockRequest('DELETE', '/api/orders/77');
+        const next = createMockNext();
 
-        errorHandler(new Error('Sensitive backend failure'), req, res);
+        errorHandler(new Error('Sensitive backend failure'), req, res, next);
 
         const result = getResult();
         expect(result.code).toBe(HttpStatus.INTERNAL_SERVER_ERROR);

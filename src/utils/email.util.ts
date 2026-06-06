@@ -32,6 +32,16 @@ export const sendEmail = async ({
             logger.info(`Email sent to ${to}: ${info.messageId}`);
             return info;
         }
+
+        // In non-production, log the email content for debugging
+        logger.info(
+            {
+                to,
+                subject,
+                htmlLength: html.length
+            },
+            `[DEV] Email send simulated (SMTP not used in ${env.nodeEnv || 'development'} mode)`
+        );
     } catch (error) {
         logger.error(
             `Error sending email to ${to}: ${error instanceof Error ? error.message : String(error)}`

@@ -16,6 +16,7 @@ interface MetaWebhookBody {
     object: string;
     entry?: Array<{
         id: string;
+        time?: number;
         changes?: Array<{
             value: {
                 messages?: Array<{
@@ -34,10 +35,13 @@ interface MetaWebhookBody {
         }>;
         messaging?: Array<{
             sender: { id: string };
+            recipient?: { id: string };
+            timestamp?: number;
             message?: {
                 mid: string;
                 text?: string;
                 is_echo?: boolean;
+                is_deleted?: boolean;
             };
         }>;
     }>;
@@ -117,7 +121,11 @@ router.post(
 );
 
 async function processMetaWebhook(body: MetaWebhookBody) {
-    if (body.object !== 'whatsapp_business_account' && body.object !== 'page') {
+    if (
+        body.object !== 'whatsapp_business_account' &&
+        body.object !== 'page' &&
+        body.object !== 'instagram'
+    ) {
         logger.debug(
             { object: body.object },
             'Received non-messaging webhook object'
@@ -126,6 +134,7 @@ async function processMetaWebhook(body: MetaWebhookBody) {
     }
 
     for (const entry of body.entry || []) {
+        // --- WhatsApp Business Account webhooks ---
         for (const change of entry.changes || []) {
             const value = change.value;
             if (value && value.messages && value.metadata) {
@@ -173,20 +182,26 @@ async function processMetaWebhook(body: MetaWebhookBody) {
             }
         }
 
+        // --- Facebook Messenger & Instagram webhooks ---
         if (entry.messaging) {
-            const pageId = entry.id;
+            const isInstagram = body.object === 'instagram';
+            const provider = isInstagram ? 'instagram' : 'facebook';
+
+            const entryId = entry.id;
+            // Both metadata keys below are hardcoded strings, never user-controlled,
+            // so the dynamic SQL interpolation is safe from injection.
             const integrations = await prisma.$queryRaw<{ orgId: string }[]>`
                 SELECT "orgId" FROM "Integration" 
                 WHERE provider = 'meta' 
-                AND metadata->>'facebookPageId' = ${pageId}
+                AND metadata->>'${isInstagram ? 'instagramBusinessAccountId' : 'facebookPageId'}' = ${entryId}
                 LIMIT 1
             `;
 
             const organizationId = integrations[0]?.orgId;
             if (!organizationId) {
                 logger.warn(
-                    { pageId },
-                    'Received Messenger webhook for unknown page ID'
+                    { entryId, provider },
+                    `Received ${provider} webhook for unknown ID`
                 );
                 continue;
             }
@@ -201,7 +216,7 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                         organizationId,
                         externalChatId: senderId,
                         externalMessageId: messageId,
-                        provider: 'facebook',
+                        provider,
                         content,
                         type: msgEvent.message.text ? 'text' : 'attachment',
                         metadata: msgEvent

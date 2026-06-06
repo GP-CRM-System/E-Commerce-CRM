@@ -176,6 +176,43 @@ export async function sendOutboundMessage(data: {
             if (result.message_id) {
                 externalMessageId = result.message_id;
             }
+        } else if (conversation.provider === 'instagram') {
+            // Instagram uses the same Messenger Platform API as Facebook
+            const pageId =
+                metaConfig.instagramBusinessAccountId ||
+                metaConfig.facebookPageId;
+            if (!pageId) {
+                throw new Error(
+                    'Instagram Business Account ID not configured for this integration'
+                );
+            }
+
+            const response = await fetch(
+                `https://graph.facebook.com/v18.0/${pageId}/messages`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipient: { id: conversation.externalId },
+                        message: { text: data.content }
+                    })
+                }
+            );
+
+            const result = (await response.json()) as {
+                error?: { message?: string };
+                message_id?: string;
+            };
+            if (!response.ok) {
+                logger.error({ result }, 'Failed to send Instagram message');
+                throw new Error(result.error?.message || 'Meta API error');
+            }
+            if (result.message_id) {
+                externalMessageId = result.message_id;
+            }
         }
     } catch (error) {
         const err = error as Error;
