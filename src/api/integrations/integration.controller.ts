@@ -61,11 +61,13 @@ export const getIntegrations = asyncHandler(
                 result.map((i) => ({
                     id: i.id,
                     provider: i.provider,
+                    name: i.name,
                     shopDomain: i.shopDomain,
                     syncStatus: i.syncStatus,
                     isActive: i.isActive,
                     lastSyncedAt: i.lastSyncedAt,
-                    createdAt: i.createdAt
+                    createdAt: i.createdAt,
+                    metadata: i.metadata
                 })),
                 req.url
             );
@@ -77,11 +79,13 @@ export const getIntegrations = asyncHandler(
                 {
                     id: result.id,
                     provider: result.provider,
+                    name: result.name,
                     shopDomain: result.shopDomain,
                     syncStatus: result.syncStatus,
                     isActive: result.isActive,
                     lastSyncedAt: result.lastSyncedAt,
-                    createdAt: result.createdAt
+                    createdAt: result.createdAt,
+                    metadata: result.metadata
                 },
                 req.url
             );
@@ -210,13 +214,43 @@ export const testConnection = asyncHandler(
             activeOrganizationId
         );
 
+        const successMsg = result.shop
+            ? `Connection successful! Connected to ${result.shop}`
+            : 'Connection successful!';
+
         ResponseHandler.success(
             res,
-            result.success
-                ? `Connection successful! Connected to ${result.shop}`
-                : 'Connection failed',
+            result.success ? successMsg : 'Connection failed',
             HttpStatus.OK,
             result,
+            req.url
+        );
+    }
+);
+
+export const connectMeta = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+
+        if (!activeOrganizationId) {
+            throw new AuthorizationError('No active organization selected');
+        }
+
+        const integration = await integrationService.createMetaIntegration(
+            activeOrganizationId,
+            req.body
+        );
+
+        ResponseHandler.success(
+            res,
+            `Meta ${req.body.channel} connected successfully`,
+            HttpStatus.CREATED,
+            {
+                id: integration.id,
+                provider: integration.provider,
+                name: integration.name,
+                syncStatus: integration.syncStatus
+            },
             req.url
         );
     }

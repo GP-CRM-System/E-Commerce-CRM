@@ -11,6 +11,13 @@ const router = Router();
 router.use('/shopify', shopifyRouter);
 
 router.post(
+    '/meta/connect',
+    requirePermission('integrations:write'),
+    validateRequest(integrationSchema.connectMeta),
+    integrationController.connectMeta
+);
+
+router.post(
     '/shopify/connect',
     requirePermission('integrations:write'),
     validateRequest(integrationSchema.connectShopify),

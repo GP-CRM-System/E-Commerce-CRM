@@ -822,34 +822,108 @@ async function createConversations(organizations: { id: string }[]) {
     logger.info('[SEED] Creating conversations and messages...');
 
     const providers = ['whatsapp', 'facebook', 'instagram'] as const;
-    const messageTypes = ['text', 'image', 'video'] as const;
-    const statuses = ['SENT', 'DELIVERED', 'READ'] as const;
+    const statuses = ['OPEN', 'PENDING', 'CLOSED', 'ARCHIVED'] as const;
 
-    const inboundMessages = [
-        'Hi, I want to know more about your products.',
-        'Is this item available in blue?',
-        'How much for bulk order of 50 units?',
-        'Can I get a discount?',
-        'Where can I find your physical store?',
-        'When will this be back in stock?',
-        'I need help with my order #12345',
-        'Can I change my delivery address?',
-        'Do you ship internationally?',
-        'What are your return policy?'
+    const conversationTemplates = [
+        {
+            inbound: [
+                'Hi there! I was wondering if you have this product in stock?',
+                'Thanks! And what about the price? Is there any discount?',
+                'Perfect, I will place an order now. Thank you!'
+            ],
+            outbound: [
+                'Hello! Yes, we have it in stock and ready to ship.',
+                'The current price is 450 EGP, but we have a 10% discount for first-time buyers. Use code WELCOME10!',
+                'Great choice! Let me know if you need any assistance with the order.'
+            ],
+            hasImage: false
+        },
+        {
+            inbound: [
+                'I received my order today but the item is damaged.',
+                'Yes, the box was crushed and the screen is cracked.',
+                'Thank you, please send the return label when ready.'
+            ],
+            outbound: [
+                "I'm sorry to hear that! Can you please share a photo of the damage?",
+                "I apologize for the inconvenience. We'll send a replacement right away.",
+                "I've initiated the return. You'll receive the label within 24 hours."
+            ],
+            hasImage: true
+        },
+        {
+            inbound: [
+                'Do you ship to Saudi Arabia?',
+                'How long does it usually take?',
+                'Great, what are the shipping costs?',
+                'Perfect, I will go ahead and place the order.'
+            ],
+            outbound: [
+                'Yes, we ship to Saudi Arabia via Aramex!',
+                'Delivery typically takes 5-7 business days.',
+                'Shipping to KSA costs 120 EGP for orders under 2000 EGP. Free shipping above that!',
+                "Excellent! Don't forget to use code SHIPFREE for free shipping on your first order."
+            ],
+            hasImage: false
+        },
+        {
+            inbound: [
+                'Hi, can I change my delivery address?',
+                'The new address is 15 El-Tahrir Street, Downtown Cairo.',
+                'Thank you so much!'
+            ],
+            outbound: [
+                'Of course! Could you please provide the new address?',
+                "I've updated the address for order #54321. The delivery date remains the same.",
+                "You're welcome! Is there anything else I can help with?"
+            ],
+            hasImage: false
+        },
+        {
+            inbound: [
+                'Hello! I want to return an item I bought last week.',
+                'Its a pair of shoes, size 42. I ordered the wrong size.',
+                'Can I exchange them for size 43 instead?',
+                'Perfect, that works for me.'
+            ],
+            outbound: [
+                'I can help with that! Could you please share your order number and the item details?',
+                'No problem! We offer free exchanges within 30 days.',
+                "Sure! I'll start an exchange for size 43. The new pair should arrive in 3-5 days.",
+                "All set! You'll receive an email with the exchange confirmation."
+            ],
+            hasImage: false
+        },
+        {
+            inbound: [
+                'Is there any Black Friday sale coming up?',
+                'Can I get early access?',
+                'Great, please add me to the list! My email is on file.'
+            ],
+            outbound: [
+                "Yes! We're having a 40% off sale starting next Friday. Early access for VIP customers begins Wednesday!",
+                "I've added you to our early access list! You'll receive a special link on Wednesday morning.",
+                'Perfect! Keep an eye on your inbox Wednesday. The sale runs for 3 days only!'
+            ],
+            hasImage: true
+        }
     ];
 
-    const outboundMessages = [
-        'Thank you for reaching out! How can I help you today?',
-        'Yes, we have that in blue. Would you like to order?',
-        'For bulk orders of 50+, we offer 15% off.',
-        'Our best price for this item is 450 EGP.',
-        'Our store is in Cairo, Maadi district.',
-        'This item will be back in stock next week.',
-        'I can help you with that order. Please provide your order number.',
-        'Let me check available delivery options for you.',
-        'Yes, we ship to most countries. Shipping costs apply.',
-        'You can return within 30 days for full refund.'
+    const singleMessageInbound = [
+        'Hello, I need help with my account.',
+        'Can you send me your product catalog?',
+        'How do I track my order?',
+        'What payment methods do you accept?',
+        'Are there any promo codes available right now?'
     ];
+
+    // const singleMessageOutbound = [
+    //     'You can track your order here: https://example.com/track. Let me know if you need anything else!',
+    //     'We accept Visa, Mastercard, Fawry, and Cash on Delivery.',
+    //     "Here's our latest catalog: https://example.com/catalog. Let me know what catches your eye!",
+    //     'Sure! Please verify your email so I can look up your account.',
+    //     'Yes! Use code SAVE15 for 15% off your next order. Valid until end of month.'
+    // ];
 
     for (const org of organizations) {
         const customers = await prisma.customer.findMany({
@@ -859,16 +933,16 @@ async function createConversations(organizations: { id: string }[]) {
 
         for (const customer of customers) {
             const shouldCreateConversation = faker.datatype.boolean({
-                probability: 0.4
+                probability: 0.5
             });
             if (!shouldCreateConversation) continue;
 
             const provider = faker.helpers.arrayElement(providers);
-            const status = faker.helpers.arrayElement([
-                'OPEN',
-                'PENDING',
-                'CLOSED'
-            ] as const);
+            const status = faker.helpers.arrayElement(statuses);
+            const template = faker.helpers.arrayElement(conversationTemplates);
+            const numMessages =
+                template.inbound.length + template.outbound.length;
+            const baseTime = faker.date.recent({ days: 30 });
 
             const conversation = await prisma.conversation.create({
                 data: {
@@ -877,11 +951,10 @@ async function createConversations(organizations: { id: string }[]) {
                     externalId: `ext_${faker.string.alphanumeric(12)}`,
                     provider,
                     status,
-                    lastMessageAt: faker.date.recent({ days: 30 })
+                    lastMessageAt: baseTime
                 }
             });
 
-            const numMessages = faker.number.int({ min: 2, max: 8 });
             const messages = [];
 
             for (let i = 0; i < numMessages; i++) {
@@ -889,22 +962,81 @@ async function createConversations(organizations: { id: string }[]) {
                 const direction: 'INBOUND' | 'OUTBOUND' = isInbound
                     ? 'INBOUND'
                     : 'OUTBOUND';
+                const templateIdx = Math.floor(i / 2);
                 const content = isInbound
-                    ? faker.helpers.arrayElement(inboundMessages)
-                    : faker.helpers.arrayElement(outboundMessages);
+                    ? template.inbound[templateIdx]!
+                    : template.outbound[templateIdx]!;
+
+                const isLast = i === numMessages - 1;
+                const msgTime = new Date(
+                    baseTime.getTime() +
+                        i * faker.number.int({ min: 60000, max: 300000 })
+                );
+
+                const shouldFail =
+                    isLast && faker.datatype.boolean({ probability: 0.2 });
+                const includeImage =
+                    template.hasImage &&
+                    i === numMessages - 1 &&
+                    direction === 'OUTBOUND';
 
                 messages.push({
                     conversationId: conversation.id,
                     externalId: `msg_${faker.string.alphanumeric(12)}`,
                     direction,
                     content,
-                    type: faker.helpers.arrayElement(messageTypes),
-                    status: faker.helpers.arrayElement(statuses),
-                    createdAt: faker.date.recent({ days: 30 })
+                    type: includeImage ? 'image' : 'text',
+                    status: (shouldFail ? 'FAILED' : 'SENT') as
+                        | 'SENT'
+                        | 'FAILED',
+                    errorMessage: shouldFail
+                        ? 'Provider API temporarily unavailable'
+                        : null,
+                    metadata: includeImage
+                        ? {
+                              imageUrl: faker.image.url(),
+                              caption: 'Product image reference'
+                          }
+                        : undefined,
+                    createdAt: msgTime
                 });
             }
 
             await prisma.message.createMany({ data: messages });
+        }
+
+        // Create some single-message conversations (unread inquiries)
+        const singleMessageCustomers = await prisma.customer.findMany({
+            where: { organizationId: org.id },
+            take: 8,
+            skip: 40
+        });
+
+        for (const customer of singleMessageCustomers) {
+            const sentTime = faker.date.recent({ days: 7 });
+
+            const conversation = await prisma.conversation.create({
+                data: {
+                    organizationId: org.id,
+                    customerId: customer.id,
+                    externalId: `ext_${faker.string.alphanumeric(12)}`,
+                    provider: faker.helpers.arrayElement(providers),
+                    status: 'PENDING',
+                    lastMessageAt: sentTime
+                }
+            });
+
+            await prisma.message.create({
+                data: {
+                    conversationId: conversation.id,
+                    externalId: `msg_${faker.string.alphanumeric(12)}`,
+                    direction: 'INBOUND',
+                    content: faker.helpers.arrayElement(singleMessageInbound),
+                    type: 'text',
+                    status: 'SENT',
+                    createdAt: sentTime
+                }
+            });
         }
     }
 

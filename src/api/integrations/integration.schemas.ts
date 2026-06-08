@@ -16,6 +16,7 @@ export const connectShopify = z.object({
 
 export const updateIntegration = z.object({
     name: z.string().min(1).max(100).optional(),
+    accessToken: z.string().min(1).optional(),
     syncMode: z.enum(['webhook', 'polling', 'manual']).optional(),
     isActive: z.boolean().optional(),
     metadata: z.record(z.string(), z.unknown()).optional()
@@ -50,6 +51,18 @@ export const registerWebhookTopics = z.object({
     topics: z.array(z.enum(ALL_WEBHOOK_TOPICS))
 });
 
+export const connectMeta = z.object({
+    channel: z.enum(['whatsapp', 'messenger', 'instagram']),
+    accessToken: z.string().min(1),
+    name: z.string().min(1).max(100).optional(),
+    metadata: z.object({
+        whatsappPhoneNumberId: z.string().optional(),
+        facebookPageId: z.string().optional(),
+        instagramBusinessAccountId: z.string().optional()
+    })
+});
+
 export type ConnectShopifyInput = z.infer<typeof connectShopify>;
 export type UpdateIntegrationInput = z.infer<typeof updateIntegration>;
 export type RegisterWebhookTopicsInput = z.infer<typeof registerWebhookTopics>;
+export type ConnectMetaInput = z.infer<typeof connectMeta>;

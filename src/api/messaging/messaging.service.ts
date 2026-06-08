@@ -82,14 +82,31 @@ export async function sendOutboundMessage(data: {
         throw new AppError('Conversation not found', 404, 'RESOURCE_NOT_FOUND');
     }
 
-    // Fetch tenant's Meta integration
-    const integration = await prisma.integration.findFirst({
-        where: { orgId: data.organizationId, provider: 'meta', isActive: true }
+    // Fetch tenant's Meta integration matching the conversation's channel
+    const channelMetadataKey =
+        conversation.provider === 'whatsapp'
+            ? 'whatsappPhoneNumberId'
+            : conversation.provider === 'facebook'
+              ? 'facebookPageId'
+              : 'instagramBusinessAccountId';
+
+    const metaIntegrations = await prisma.integration.findMany({
+        where: {
+            orgId: data.organizationId,
+            provider: 'meta',
+            isActive: true
+        }
     });
+
+    const integration = metaIntegrations.find(
+        (i) =>
+            i.metadata &&
+            (i.metadata as Record<string, string>)[channelMetadataKey]
+    );
 
     if (!integration) {
         throw new AppError(
-            'Meta integration not configured or inactive',
+            `Meta integration for ${conversation.provider} not configured or inactive`,
             400,
             'INTEGRATION_ERROR'
         );

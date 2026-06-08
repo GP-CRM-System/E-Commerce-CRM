@@ -5039,7 +5039,7 @@
                 ]
             }
         },
-        "/conversations": {
+        "/messaging/conversations": {
             "get": {
                 "operationId": "listConversations",
                 "summary": "List all messaging conversations",
@@ -5092,7 +5092,7 @@
                 ]
             }
         },
-        "/conversations/{id}/messages": {
+        "/messaging/conversations/{id}/messages": {
             "get": {
                 "operationId": "getConversationMessages",
                 "summary": "Get messages in a conversation",

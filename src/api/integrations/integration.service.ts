@@ -5,7 +5,8 @@ import prisma from '../../config/prisma.config.js';
 import type { Integration } from '../../generated/prisma/client.js';
 import type {
     ConnectShopifyInput,
-    UpdateIntegrationInput
+    UpdateIntegrationInput,
+    ConnectMetaInput
 } from './integration.schemas.js';
 
 const SHOPIFY_API_VERSION = '2024-01';
@@ -49,6 +50,51 @@ export async function createShopifyIntegration(
     return integration;
 }
 
+export async function createMetaIntegration(
+    orgId: string,
+    data: ConnectMetaInput
+): Promise<Integration> {
+    logger.info(`Creating Meta ${data.channel} integration for org ${orgId}`);
+
+    const channelKey =
+        data.channel === 'whatsapp'
+            ? 'whatsappPhoneNumberId'
+            : data.channel === 'messenger'
+              ? 'facebookPageId'
+              : 'instagramBusinessAccountId';
+
+    const existingMeta = await prisma.integration.findMany({
+        where: { orgId, provider: 'meta' },
+        select: { metadata: true }
+    });
+
+    const duplicate = existingMeta.find(
+        (i) => i.metadata && (i.metadata as Record<string, string>)[channelKey]
+    );
+
+    if (duplicate) {
+        throw new Error(
+            `Meta ${data.channel} integration already exists for this organization`
+        );
+    }
+
+    const integration = await prisma.integration.create({
+        data: {
+            orgId,
+            provider: 'meta',
+            name: data.name || `Meta ${data.channel}`,
+            accessToken: data.accessToken,
+            syncStatus: 'connected',
+            syncMode: 'webhook',
+            isActive: true,
+            metadata: data.metadata as object
+        }
+    });
+
+    logger.info(`Meta ${data.channel} integration created: ${integration.id}`);
+    return integration;
+}
+
 export async function getIntegrationByOrg(
     orgId: string,
     provider?: string
@@ -88,12 +134,15 @@ export async function updateIntegrationData(
         throw new NotFoundError('Integration not found');
     }
 
+    const { accessToken, metadata, ...rest } = data;
+
     return prisma.integration.update({
         where: { id: integrationId },
         data: {
-            ...data,
-            updatedAt: new Date(),
-            metadata: data.metadata as object | undefined
+            ...rest,
+            ...(accessToken ? { accessToken } : {}),
+            ...(metadata !== undefined ? { metadata: metadata as object } : {}),
+            updatedAt: new Date()
         }
     });
 }
@@ -131,42 +180,78 @@ export async function testConnection(
         throw new NotFoundError('Integration not found');
     }
 
-    if (integration.provider !== 'shopify') {
-        throw new Error('Only Shopify integrations supported');
-    }
-
     try {
-        const shop = integration.shopDomain!.replace('.myshopify.com', '');
-        const response = await fetch(
-            `https://${shop}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
-            {
-                headers: {
-                    'X-Shopify-Access-Token': integration.accessToken,
-                    'Content-Type': 'application/json'
+        if (integration.provider === 'shopify') {
+            const shop = integration.shopDomain!.replace('.myshopify.com', '');
+            const response = await fetch(
+                `https://${shop}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
+                {
+                    headers: {
+                        'X-Shopify-Access-Token': integration.accessToken,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            }
-        );
+            );
 
-        if (!response.ok) {
-            return {
-                success: false,
-                error: `Shopify API error: ${response.status} ${response.statusText}`
-            };
+            if (!response.ok) {
+                return {
+                    success: false,
+                    error: `Shopify API error: ${response.status} ${response.statusText}`
+                };
+            }
+
+            const data = (await response.json()) as { shop: { name: string } };
+
+            await prisma.integration.update({
+                where: { id: integrationId },
+                data: {
+                    syncStatus: 'connected',
+                    lastSyncedAt: new Date()
+                }
+            });
+
+            return { success: true, shop: data.shop.name };
         }
 
-        const data = (await response.json()) as { shop: { name: string } };
+        if (integration.provider === 'meta') {
+            const response = await fetch(
+                'https://graph.facebook.com/v18.0/me',
+                {
+                    headers: {
+                        Authorization: `Bearer ${integration.accessToken}`
+                    }
+                }
+            );
 
-        await prisma.integration.update({
-            where: { id: integrationId },
-            data: {
-                syncStatus: 'connected',
-                lastSyncedAt: new Date()
+            const data = (await response.json()) as {
+                id?: string;
+                name?: string;
+                error?: { message?: string };
+            };
+
+            if (!response.ok || data.error) {
+                return {
+                    success: false,
+                    error:
+                        data.error?.message ||
+                        `Meta API error: ${response.status}`
+                };
             }
-        });
 
-        return { success: true, shop: data.shop.name };
+            await prisma.integration.update({
+                where: { id: integrationId },
+                data: {
+                    syncStatus: 'connected',
+                    lastSyncedAt: new Date()
+                }
+            });
+
+            return { success: true, shop: data.name || 'Meta Account' };
+        }
+
+        throw new Error(`Unsupported provider: ${integration.provider}`);
     } catch (error) {
-        logger.error(`Shopify connection test failed: ${error}`);
+        logger.error(`Connection test failed: ${error}`);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Connection failed'
