@@ -3,33 +3,44 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
 import { AppError } from '../../utils/response.util.js';
 
+type MetaProvider = 'whatsapp' | 'facebook' | 'messenger' | 'instagram';
+type StoredMetaProvider = 'whatsapp' | 'facebook' | 'instagram';
+
+const normalizeProvider = (provider: MetaProvider): StoredMetaProvider =>
+    provider === 'messenger' ? 'facebook' : provider;
+
 export async function handleInboundMessage(data: {
     organizationId: string;
     externalChatId: string;
     externalMessageId: string;
-    provider: 'whatsapp' | 'facebook' | 'instagram';
+    provider: MetaProvider;
     content: string;
     type?: string;
     metadata?: Record<string, unknown>;
     customerPhone?: string;
     customerEmail?: string;
 }) {
+    const provider = normalizeProvider(data.provider);
+    const customerIdentityFilters = [
+        ...(data.customerPhone ? [{ phone: data.customerPhone }] : []),
+        ...(data.customerEmail ? [{ email: data.customerEmail }] : [])
+    ];
+
     // 1. Find or create customer
-    let customer = await prisma.customer.findFirst({
-        where: {
-            organizationId: data.organizationId,
-            OR: [
-                ...(data.customerPhone ? [{ phone: data.customerPhone }] : []),
-                ...(data.customerEmail ? [{ email: data.customerEmail }] : [])
-            ]
-        }
-    });
+    let customer = customerIdentityFilters.length
+        ? await prisma.customer.findFirst({
+              where: {
+                  organizationId: data.organizationId,
+                  OR: customerIdentityFilters
+              }
+          })
+        : null;
 
     if (!customer) {
         const label =
-            data.provider === 'whatsapp'
+            provider === 'whatsapp'
                 ? `WhatsApp ${data.customerPhone?.slice(-4) || 'User'}`
-                : data.provider === 'facebook'
+                : provider === 'facebook'
                   ? 'Messenger User'
                   : 'Instagram User';
         customer = await prisma.customer.create({
@@ -49,7 +60,8 @@ export async function handleInboundMessage(data: {
     let conversation = await prisma.conversation.findFirst({
         where: {
             organizationId: data.organizationId,
-            externalId: data.externalChatId
+            externalId: data.externalChatId,
+            provider
         }
     });
 
@@ -59,10 +71,21 @@ export async function handleInboundMessage(data: {
                 organizationId: data.organizationId,
                 customerId: customer?.id,
                 externalId: data.externalChatId,
-                provider: data.provider,
+                provider,
                 status: 'OPEN'
             }
         });
+    }
+
+    const existingMessage = await prisma.message.findFirst({
+        where: {
+            conversationId: conversation.id,
+            externalId: data.externalMessageId
+        }
+    });
+
+    if (existingMessage) {
+        return { conversation, message: existingMessage };
     }
 
     // 3. Create message
@@ -223,7 +246,7 @@ export async function sendOutboundMessage(data: {
             }
 
             const response = await fetch(
-                `https://graph.instagram.com/v22.0/${igId}/messages`,
+                `https://graph.facebook.com/v22.0/${igId}/messages`,
                 {
                     method: 'POST',
                     headers: {
@@ -291,7 +314,7 @@ export async function sendOutboundMessage(data: {
 
 export async function startConversation(data: {
     organizationId: string;
-    provider: 'whatsapp' | 'facebook' | 'instagram';
+    provider: MetaProvider;
     recipientId: string;
     content: string;
     type?: string;
@@ -299,13 +322,15 @@ export async function startConversation(data: {
     customerPhone?: string;
     customerName?: string;
 }) {
+    const provider = normalizeProvider(data.provider);
+
     // 1. Find or create customer
     let customer = await prisma.customer.findFirst({
         where: {
             organizationId: data.organizationId,
-            ...(data.provider === 'whatsapp' && data.customerPhone
+            ...(provider === 'whatsapp' && data.customerPhone
                 ? { phone: data.customerPhone }
-                : data.provider === 'whatsapp'
+                : provider === 'whatsapp'
                   ? { phone: data.recipientId }
                   : {})
         }
@@ -317,7 +342,7 @@ export async function startConversation(data: {
                 organizationId: data.organizationId,
                 name: data.customerName || data.recipientId,
                 phone:
-                    data.provider === 'whatsapp'
+                    provider === 'whatsapp'
                         ? data.customerPhone || data.recipientId
                         : null,
                 source: 'OTHER'
@@ -330,7 +355,7 @@ export async function startConversation(data: {
         where: {
             organizationId: data.organizationId,
             externalId: data.recipientId,
-            provider: data.provider
+            provider
         }
     });
 
@@ -340,7 +365,7 @@ export async function startConversation(data: {
                 organizationId: data.organizationId,
                 customerId: customer.id,
                 externalId: data.recipientId,
-                provider: data.provider,
+                provider,
                 status: 'OPEN'
             }
         });

@@ -24,6 +24,29 @@ interface MetaWebhookBody {
                     from: string;
                     type: string;
                     text?: { body: string };
+                    image?: {
+                        id?: string;
+                        caption?: string;
+                        mime_type?: string;
+                    };
+                    document?: {
+                        id?: string;
+                        caption?: string;
+                        filename?: string;
+                        mime_type?: string;
+                    };
+                    audio?: { id?: string; mime_type?: string };
+                    video?: {
+                        id?: string;
+                        caption?: string;
+                        mime_type?: string;
+                    };
+                    button?: { text?: string; payload?: string };
+                }>;
+                statuses?: Array<{
+                    id: string;
+                    status: 'sent' | 'delivered' | 'read' | 'failed';
+                    errors?: Array<{ title?: string; message?: string }>;
                 }>;
                 metadata?: {
                     phone_number_id: string;
@@ -42,10 +65,82 @@ interface MetaWebhookBody {
                 text?: string;
                 is_echo?: boolean;
                 is_deleted?: boolean;
+                attachments?: Array<{
+                    type?: string;
+                    payload?: Record<string, unknown>;
+                }>;
             };
         }>;
     }>;
 }
+
+type MetaIntegrationMetadata = {
+    whatsappPhoneNumberId?: string;
+    facebookPageId?: string;
+    instagramBusinessAccountId?: string;
+};
+
+type WhatsAppWebhookMessage = {
+    type: string;
+    text?: { body: string };
+    image?: { caption?: string };
+    document?: { caption?: string; filename?: string };
+    audio?: { mime_type?: string };
+    video?: { caption?: string };
+    button?: { text?: string };
+};
+
+type MetaMessagingMessage = {
+    text?: string;
+    attachments?: Array<{ type?: string; payload?: Record<string, unknown> }>;
+};
+
+const findMetaIntegrationOrg = async (
+    metadataKey: keyof MetaIntegrationMetadata,
+    metadataValue: string
+) => {
+    const integrations = await prisma.integration.findMany({
+        where: { provider: 'meta', isActive: true },
+        select: { orgId: true, metadata: true }
+    });
+
+    return integrations.find(
+        (integration) =>
+            (integration.metadata as MetaIntegrationMetadata | null)?.[
+                metadataKey
+            ] === metadataValue
+    )?.orgId;
+};
+
+const getWhatsAppContent = (msg: WhatsAppWebhookMessage) => {
+    if (msg.type === 'text') return msg.text?.body || '';
+    if (msg.type === 'image') return msg.image?.caption || '[Image Message]';
+    if (msg.type === 'document') {
+        return (
+            msg.document?.caption ||
+            msg.document?.filename ||
+            '[Document Message]'
+        );
+    }
+    if (msg.type === 'video') return msg.video?.caption || '[Video Message]';
+    if (msg.type === 'audio') return '[Audio Message]';
+    if (msg.type === 'button') return msg.button?.text || '[Button Message]';
+
+    return `[${msg.type} Message]`;
+};
+
+const getMessagingContent = (message: MetaMessagingMessage | undefined) => {
+    if (!message) return { content: '', type: 'unknown' };
+    if (message.text) return { content: message.text, type: 'text' };
+
+    const attachment = message.attachments?.[0];
+    const attachmentType = attachment?.type || 'attachment';
+
+    return {
+        content: `[${attachmentType.charAt(0).toUpperCase()}${attachmentType.slice(1)} Message]`,
+        type: attachmentType
+    };
+};
 
 const verifyMetaSignature = (
     req: Request,
@@ -137,18 +232,12 @@ async function processMetaWebhook(body: MetaWebhookBody) {
         // --- WhatsApp Business Account webhooks ---
         for (const change of entry.changes || []) {
             const value = change.value;
-            if (value && value.messages && value.metadata) {
+            if (value && value.metadata) {
                 const phoneNumberId = value.metadata.phone_number_id;
-                const integrations = await prisma.$queryRaw<
-                    { orgId: string }[]
-                >`
-                    SELECT "orgId" FROM "Integration" 
-                    WHERE provider = 'meta' 
-                    AND metadata->>'whatsappPhoneNumberId' = ${phoneNumberId}
-                    LIMIT 1
-                `;
-
-                const organizationId = integrations[0]?.orgId;
+                const organizationId = await findMetaIntegrationOrg(
+                    'whatsappPhoneNumberId',
+                    phoneNumberId
+                );
                 if (!organizationId) {
                     logger.warn(
                         { phoneNumberId },
@@ -157,16 +246,31 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                     continue;
                 }
 
+                for (const status of value.statuses || []) {
+                    await prisma.message.updateMany({
+                        where: { externalId: status.id },
+                        data: {
+                            status:
+                                status.status === 'read'
+                                    ? 'READ'
+                                    : status.status === 'delivered'
+                                      ? 'DELIVERED'
+                                      : status.status === 'failed'
+                                        ? 'FAILED'
+                                        : 'SENT',
+                            errorMessage:
+                                status.status === 'failed'
+                                    ? status.errors?.[0]?.message ||
+                                      status.errors?.[0]?.title ||
+                                      'WhatsApp delivery failed'
+                                    : null
+                        }
+                    });
+                }
+
                 for (const msg of value.messages || []) {
                     const customerPhone = msg.from;
-                    let messageContent: string;
-                    if (msg.type === 'text')
-                        messageContent = msg.text?.body || '';
-                    else if (msg.type === 'image')
-                        messageContent = '[Image Message]';
-                    else if (msg.type === 'document')
-                        messageContent = '[Document Message]';
-                    else messageContent = `[${msg.type} Message]`;
+                    const messageContent = getWhatsAppContent(msg);
 
                     await handleInboundMessage({
                         organizationId,
@@ -188,16 +292,10 @@ async function processMetaWebhook(body: MetaWebhookBody) {
             const provider = isInstagram ? 'instagram' : 'facebook';
 
             const entryId = entry.id;
-            // Both metadata keys below are hardcoded strings, never user-controlled,
-            // so the dynamic SQL interpolation is safe from injection.
-            const integrations = await prisma.$queryRaw<{ orgId: string }[]>`
-                SELECT "orgId" FROM "Integration" 
-                WHERE provider = 'meta' 
-                AND metadata->>'${isInstagram ? 'instagramBusinessAccountId' : 'facebookPageId'}' = ${entryId}
-                LIMIT 1
-            `;
-
-            const organizationId = integrations[0]?.orgId;
+            const organizationId = await findMetaIntegrationOrg(
+                isInstagram ? 'instagramBusinessAccountId' : 'facebookPageId',
+                entryId
+            );
             if (!organizationId) {
                 logger.warn(
                     { entryId, provider },
@@ -207,10 +305,16 @@ async function processMetaWebhook(body: MetaWebhookBody) {
             }
 
             for (const msgEvent of entry.messaging || []) {
-                if (msgEvent.message && !msgEvent.message.is_echo) {
+                if (
+                    msgEvent.message &&
+                    !msgEvent.message.is_echo &&
+                    !msgEvent.message.is_deleted
+                ) {
                     const senderId = msgEvent.sender.id;
                     const messageId = msgEvent.message.mid;
-                    const content = msgEvent.message.text || '[Attachment]';
+                    const { content, type } = getMessagingContent(
+                        msgEvent.message
+                    );
 
                     await handleInboundMessage({
                         organizationId,
@@ -218,7 +322,7 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                         externalMessageId: messageId,
                         provider,
                         content,
-                        type: msgEvent.message.text ? 'text' : 'attachment',
+                        type,
                         metadata: msgEvent
                     });
                 }

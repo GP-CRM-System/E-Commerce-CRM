@@ -10,7 +10,7 @@ export const sendMessageSchema = z.object({
 });
 
 export const startConversationSchema = z.object({
-    provider: z.enum(['whatsapp', 'facebook', 'instagram']),
+    provider: z.enum(['whatsapp', 'facebook', 'messenger', 'instagram']),
     recipientId: z.string().min(1, 'Recipient ID is required'),
     content: z
         .string()
