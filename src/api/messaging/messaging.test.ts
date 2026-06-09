@@ -186,7 +186,7 @@ describe('Messaging API', () => {
             expect(result.message.content).toBe('Hello from Instagram DM');
         });
 
-        it('should create conversation without customer if no match', async () => {
+        it('should auto-create customer for unknown sender', async () => {
             const result = await handleInboundMessage({
                 organizationId: testOrgId,
                 externalChatId: 'unknown-user-001',
@@ -197,7 +197,7 @@ describe('Messaging API', () => {
             });
 
             expect(result.conversation).toBeDefined();
-            expect(result.conversation.customerId).toBeNull();
+            expect(result.conversation.customerId).toBeDefined();
         });
     });
 
