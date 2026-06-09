@@ -35,7 +35,9 @@ export async function handleInboundMessage(data: {
         customer = await prisma.customer.create({
             data: {
                 organizationId: data.organizationId,
-                name: data.customerPhone ? `+${data.customerPhone.replace(/^\+/, '')}` : label,
+                name: data.customerPhone
+                    ? `+${data.customerPhone.replace(/^\+/, '')}`
+                    : label,
                 phone: data.customerPhone || null,
                 email: data.customerEmail || null,
                 source: 'OTHER'
@@ -316,7 +318,7 @@ export async function startConversation(data: {
                 name: data.customerName || data.recipientId,
                 phone:
                     data.provider === 'whatsapp'
-                        ? (data.customerPhone || data.recipientId)
+                        ? data.customerPhone || data.recipientId
                         : null,
                 source: 'OTHER'
             }

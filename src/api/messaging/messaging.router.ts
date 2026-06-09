@@ -3,7 +3,10 @@ import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as messagingController from './messaging.controller.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
 import { paginationSchema } from '../../utils/pagination.util.js';
-import { sendMessageSchema, startConversationSchema } from './messaging.schemas.js';
+import {
+    sendMessageSchema,
+    startConversationSchema
+} from './messaging.schemas.js';
 import metaWebhookRouter from './meta-webhook.router.js';
 
 const router = Router();

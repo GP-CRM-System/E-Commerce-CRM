@@ -125,8 +125,15 @@ export const sendMessage = asyncHandler(
 export const startConversation = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
-        const { provider, recipientId, content, type, customerPhone, customerName, metadata } =
-            req.body;
+        const {
+            provider,
+            recipientId,
+            content,
+            type,
+            customerPhone,
+            customerName,
+            metadata
+        } = req.body;
 
         const result = await messagingService.startConversation({
             organizationId,
