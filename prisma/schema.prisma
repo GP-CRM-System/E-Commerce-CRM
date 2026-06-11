@@ -849,7 +849,7 @@ model Conversation {
   updatedAt      DateTime           @updatedAt
   messages       Message[]
 
-  @@unique([organizationId, externalId])
+  @@unique([organizationId, externalId, provider])
   @@index([organizationId])
   @@index([customerId])
   @@index([externalId])

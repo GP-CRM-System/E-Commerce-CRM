@@ -101,6 +101,10 @@ export function checkEnv(): void {
         if (!env.paymobCardIntegrationId)
             missingVars.push('PAYMOB_CARD_INTEGRATION_ID');
     }
+    if (env.nodeEnv === 'production') {
+        if (!env.metaVerifyToken) missingVars.push('META_VERIFY_TOKEN');
+        if (!env.metaAppSecret) missingVars.push('META_APP_SECRET');
+    }
 
     if (missingVars.length > 0) {
         throw new Error(

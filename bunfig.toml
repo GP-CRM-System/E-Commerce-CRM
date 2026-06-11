@@ -1,1 +1,4 @@
 preload = ["./src/instrument.ts"]
+
+[run]
+bun = true
