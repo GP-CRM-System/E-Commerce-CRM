@@ -457,9 +457,15 @@ describe('Meta Webhook', () => {
         });
 
         it('should return 403 with no verification token', async () => {
+            const previousToken = env.metaVerifyToken;
+            env.metaVerifyToken = 'test-verify-token';
+
             const response = await request(app).get(
                 '/api/messaging/meta/webhook'
             );
+
+            env.metaVerifyToken = previousToken;
+
             expect(response.status).toBe(403);
         });
     });
