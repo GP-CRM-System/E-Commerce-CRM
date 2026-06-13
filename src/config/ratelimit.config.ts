@@ -101,7 +101,7 @@ export const initRateLimitStore = async (): Promise<RedisClientType | null> => {
             });
 
             client.on('error', (err) => {
-                logger.error({ err }, 'Redis client error for rate limiter');
+                logger.warn({ err }, 'Rate limiter Redis unavailable');
             });
 
             await client.connect();

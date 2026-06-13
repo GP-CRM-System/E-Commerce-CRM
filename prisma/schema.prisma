@@ -857,7 +857,7 @@ model Conversation {
   lastInboundAt   DateTime?
   lastOutboundAt  DateTime?
 
-  @@unique([organizationId, externalId])
+  @@unique([organizationId, externalId, provider])
   @@index([organizationId])
   @@index([customerId])
   @@index([externalId])

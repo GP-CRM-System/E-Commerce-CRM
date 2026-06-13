@@ -18,14 +18,20 @@ const verifyMetaSignature = (
     next: NextFunction
 ) => {
     if (!env.metaAppSecret) {
+        if (env.nodeEnv === 'production') {
+            logger.error('META_APP_SECRET is required for Meta webhooks');
+            return res.status(500).send('Server configuration error');
+        }
+
         logger.warn(
-            'META_APP_SECRET is not configured, skipping signature verification'
+            'META_APP_SECRET is not configured; accepting local webhook'
         );
-        return next();
+        next();
+        return;
     }
 
     const signature = req.headers['x-hub-signature-256'] as string;
-    if (!signature) {
+    if (!signature || !signature.startsWith('sha256=')) {
         logger.warn('Missing x-hub-signature-256 header');
         return res.status(400).send('Missing signature');
     }
@@ -41,12 +47,15 @@ const verifyMetaSignature = (
         .update(rawBody)
         .digest('hex')}`;
 
-    if (
-        !crypto.timingSafeEqual(
-            Buffer.from(signature),
-            Buffer.from(expectedSignature)
-        )
-    ) {
+    const signatureBuffer = Buffer.from(signature);
+    const expectedSignatureBuffer = Buffer.from(expectedSignature);
+
+    if (signatureBuffer.length !== expectedSignatureBuffer.length) {
+        logger.warn('Invalid Meta webhook signature length');
+        return res.status(403).send('Invalid signature');
+    }
+
+    if (!crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)) {
         logger.warn('Invalid Meta webhook signature');
         return res.status(403).send('Invalid signature');
     }
@@ -55,6 +64,11 @@ const verifyMetaSignature = (
 };
 
 router.get('/meta/webhook', (req: Request, res: Response) => {
+    if (!env.metaVerifyToken) {
+        logger.error('META_VERIFY_TOKEN is not configured');
+        return res.status(500).send('Server configuration error');
+    }
+
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];

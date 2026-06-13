@@ -51,16 +51,33 @@ export const registerWebhookTopics = z.object({
     topics: z.array(z.enum(ALL_WEBHOOK_TOPICS))
 });
 
-export const connectMeta = z.object({
-    channel: z.enum(['whatsapp', 'messenger', 'instagram']),
-    accessToken: z.string().min(1),
-    name: z.string().min(1).max(100).optional(),
-    metadata: z.object({
-        whatsappPhoneNumberId: z.string().optional(),
-        facebookPageId: z.string().optional(),
-        instagramBusinessAccountId: z.string().optional()
+export const connectMeta = z
+    .object({
+        channel: z.enum(['whatsapp', 'messenger', 'instagram']),
+        accessToken: z.string().min(1),
+        name: z.string().min(1).max(100).optional(),
+        metadata: z.object({
+            whatsappPhoneNumberId: z.string().min(1).optional(),
+            facebookPageId: z.string().min(1).optional(),
+            instagramBusinessAccountId: z.string().min(1).optional()
+        })
     })
-});
+    .superRefine((data, ctx) => {
+        const requiredKey =
+            data.channel === 'whatsapp'
+                ? 'whatsappPhoneNumberId'
+                : data.channel === 'messenger'
+                  ? 'facebookPageId'
+                  : 'instagramBusinessAccountId';
+
+        if (!data.metadata[requiredKey]) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['metadata', requiredKey],
+                message: `${requiredKey} is required for ${data.channel}`
+            });
+        }
+    });
 
 export type ConnectShopifyInput = z.infer<typeof connectShopify>;
 export type UpdateIntegrationInput = z.infer<typeof updateIntegration>;

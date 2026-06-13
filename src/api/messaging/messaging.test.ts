@@ -1,9 +1,11 @@
 import request from 'supertest';
 import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
+import crypto from 'crypto';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
 import { auth } from '../auth/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
+import { env } from '../../config/env.config.js';
 import {
     handleInboundMessage,
     sendOutboundMessage
@@ -446,11 +448,66 @@ describe('Messaging API', () => {
 
 describe('Meta Webhook', () => {
     describe('GET /api/messaging/meta/webhook (verification)', () => {
+        it('should reject verification when verify token is not configured', async () => {
+            const previousToken = env.metaVerifyToken;
+            env.metaVerifyToken = undefined;
+
+            const response = await request(app).get(
+                '/api/messaging/meta/webhook?hub.mode=subscribe&hub.challenge=test-challenge'
+            );
+
+            env.metaVerifyToken = previousToken;
+
+            expect(response.status).toBe(500);
+        });
+
         it('should return 403 with no verification token', async () => {
+            const previousToken = env.metaVerifyToken;
+            env.metaVerifyToken = 'test-verify-token';
+
             const response = await request(app).get(
                 '/api/messaging/meta/webhook'
             );
+
+            env.metaVerifyToken = previousToken;
+
             expect(response.status).toBe(403);
+        });
+    });
+
+    describe('POST /api/messaging/meta/webhook (signature)', () => {
+        it('should reject malformed signatures without throwing', async () => {
+            const previousSecret = env.metaAppSecret;
+            env.metaAppSecret = 'test-secret';
+
+            const response = await request(app)
+                .post('/api/messaging/meta/webhook')
+                .set('x-hub-signature-256', 'sha256=bad')
+                .send({ object: 'page', entry: [] });
+
+            env.metaAppSecret = previousSecret;
+
+            expect(response.status).toBe(403);
+        });
+
+        it('should accept a valid signature', async () => {
+            const previousSecret = env.metaAppSecret;
+            env.metaAppSecret = 'test-secret';
+            const body = JSON.stringify({ object: 'page', entry: [] });
+            const signature = `sha256=${crypto
+                .createHmac('sha256', env.metaAppSecret)
+                .update(Buffer.from(body))
+                .digest('hex')}`;
+
+            const response = await request(app)
+                .post('/api/messaging/meta/webhook')
+                .set('Content-Type', 'application/json')
+                .set('x-hub-signature-256', signature)
+                .send(body);
+
+            env.metaAppSecret = previousSecret;
+
+            expect(response.status).toBe(200);
         });
     });
 });
