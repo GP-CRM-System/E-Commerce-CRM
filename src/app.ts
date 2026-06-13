@@ -19,6 +19,7 @@ import { rfmWorker } from './queues/rfm.processor.js';
 import { shopifySyncWorker } from './queues/shopify-sync.worker.js';
 import { shopifyWebhookWorker } from './queues/shopify-webhook.worker.js';
 import { initExportWorker } from './api/exports/exports.worker.js';
+import { webhookWorker, outboundWorker, statusWorker } from './queues/messaging.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import {
     isRedisAvailable,
@@ -28,6 +29,8 @@ import {
 } from './config/redis.config.js';
 import { auth } from './api/auth/auth.js';
 import { initRateLimitStore } from './config/ratelimit.config.js';
+import { initSocket } from './config/socket.config.js';
+import { configureB2Cors } from './config/b2.config.js';
 
 checkEnv();
 
@@ -104,6 +107,9 @@ export async function startServer(): Promise<void> {
         await prisma.$queryRaw`SELECT 1`;
         logger.info('[Init] PostgreSQL connected successfully');
 
+        // Configure Backblaze B2 CORS rules automatically
+        await configureB2Cors();
+
         // Test Redis connection if available
         if (isRedisAvailable) {
             const health = await checkRedisHealth();
@@ -137,6 +143,8 @@ export async function startServer(): Promise<void> {
             );
         });
 
+        initSocket(server);
+
         /**
          * Graceful Shutdown
          */
@@ -149,6 +157,9 @@ export async function startServer(): Promise<void> {
                 await rfmWorker.close();
                 await shopifySyncWorker.close();
                 await shopifyWebhookWorker.close();
+                await webhookWorker.close();
+                await outboundWorker.close();
+                await statusWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
@@ -164,6 +175,9 @@ export async function startServer(): Promise<void> {
                 await rfmWorker.close();
                 await shopifySyncWorker.close();
                 await shopifyWebhookWorker.close();
+                await webhookWorker.close();
+                await outboundWorker.close();
+                await statusWorker.close();
                 await closeImportQueue();
                 await prisma.$disconnect();
                 logger.info('Server closed');
