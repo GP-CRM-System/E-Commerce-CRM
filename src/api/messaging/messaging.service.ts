@@ -2,12 +2,21 @@ import prisma from '../../config/prisma.config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
 import { AppError } from '../../utils/response.util.js';
+import { emitToOrg } from '../../config/socket.config.js';
 
 type MetaProvider = 'whatsapp' | 'facebook' | 'messenger' | 'instagram';
 type StoredMetaProvider = 'whatsapp' | 'facebook' | 'instagram';
 
 const normalizeProvider = (provider: MetaProvider): StoredMetaProvider =>
     provider === 'messenger' ? 'facebook' : provider;
+
+export function cleanWhatsAppNumber(phone: string): string {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('01') && cleaned.length === 11) {
+        cleaned = '20' + cleaned.slice(1);
+    }
+    return cleaned;
+}
 
 export async function handleInboundMessage(data: {
     organizationId: string;
@@ -19,10 +28,19 @@ export async function handleInboundMessage(data: {
     metadata?: Record<string, unknown>;
     customerPhone?: string;
     customerEmail?: string;
+    customerName?: string;
 }) {
     const provider = normalizeProvider(data.provider);
+
+    // Normalize WhatsApp external ID and phone number formats
+    const externalChatId = provider === 'whatsapp' ? cleanWhatsAppNumber(data.externalChatId) : data.externalChatId;
+    const customerPhone = provider === 'whatsapp' && data.customerPhone ? cleanWhatsAppNumber(data.customerPhone) : data.customerPhone;
+
     const customerIdentityFilters = [
-        ...(data.customerPhone ? [{ phone: data.customerPhone }] : []),
+        ...(customerPhone ? [
+            { phone: customerPhone },
+            { phone: `+${customerPhone}` }
+        ] : []),
         ...(data.customerEmail ? [{ email: data.customerEmail }] : [])
     ];
 
@@ -39,28 +57,51 @@ export async function handleInboundMessage(data: {
     if (!customer) {
         const label =
             provider === 'whatsapp'
-                ? `WhatsApp ${data.customerPhone?.slice(-4) || 'User'}`
+                ? `WhatsApp ${customerPhone?.slice(-4) || 'User'}`
                 : provider === 'facebook'
                   ? 'Messenger User'
                   : 'Instagram User';
         customer = await prisma.customer.create({
             data: {
                 organizationId: data.organizationId,
-                name: data.customerPhone
-                    ? `+${data.customerPhone.replace(/^\+/, '')}`
-                    : label,
-                phone: data.customerPhone || null,
+                name: data.customerName || (customerPhone ? `+${customerPhone}` : label),
+                phone: customerPhone || null,
                 email: data.customerEmail || null,
                 source: 'OTHER'
             }
         });
+    } else {
+        const updateData: { phone?: string; name?: string } = {};
+        if (provider === 'whatsapp' && customer.phone !== customerPhone) {
+            updateData.phone = customerPhone;
+        }
+
+        // If the customer has a temporary phone-number name or generic label, but Meta sends a real name, update it!
+        const isDefaultOrPhoneName = 
+            customer.name.startsWith('+') || 
+            customer.name.includes('User') || 
+            customer.name === customer.phone;
+
+        if (data.customerName && isDefaultOrPhoneName && customer.name !== data.customerName) {
+            updateData.name = data.customerName;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            customer = await prisma.customer.update({
+                where: { id: customer.id },
+                data: updateData
+            });
+        }
     }
 
     // 2. Find or create conversation
     let conversation = await prisma.conversation.findFirst({
         where: {
             organizationId: data.organizationId,
-            externalId: data.externalChatId,
+            OR: [
+                { externalId: externalChatId },
+                { externalId: `+${externalChatId}` }
+            ],
             provider
         }
     });
@@ -70,10 +111,16 @@ export async function handleInboundMessage(data: {
             data: {
                 organizationId: data.organizationId,
                 customerId: customer?.id,
-                externalId: data.externalChatId,
+                externalId: externalChatId,
                 provider,
                 status: 'OPEN'
             }
+        });
+    } else if (conversation.externalId !== externalChatId) {
+        // Auto-normalize existing conversation externalId format
+        conversation = await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { externalId: externalChatId }
         });
     }
 
@@ -102,12 +149,18 @@ export async function handleInboundMessage(data: {
     });
 
     // 4. Update conversation timestamp
-    await prisma.conversation.update({
+    const updatedConversation = await prisma.conversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: new Date() }
+        data: { lastMessageAt: new Date() },
+        include: { customer: { select: { name: true, email: true } } }
     });
 
-    return { conversation, message };
+    emitToOrg(data.organizationId, 'message:created', {
+        conversation: updatedConversation,
+        message
+    });
+
+    return { conversation: updatedConversation, message };
 }
 
 export async function sendOutboundMessage(data: {
@@ -296,9 +349,15 @@ export async function sendOutboundMessage(data: {
         }
     });
 
-    await prisma.conversation.update({
+    const updatedConversation = await prisma.conversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: new Date() }
+        data: { lastMessageAt: new Date() },
+        include: { customer: { select: { name: true, email: true } } }
+    });
+
+    emitToOrg(data.organizationId, 'message:created', {
+        conversation: updatedConversation,
+        message
     });
 
     if (messageStatus === 'FAILED') {
@@ -324,15 +383,27 @@ export async function startConversation(data: {
 }) {
     const provider = normalizeProvider(data.provider);
 
+    const recipientId = provider === 'whatsapp' ? cleanWhatsAppNumber(data.recipientId) : data.recipientId;
+    const customerPhone = provider === 'whatsapp' && data.customerPhone ? cleanWhatsAppNumber(data.customerPhone) : data.customerPhone;
+
     // 1. Find or create customer
     let customer = await prisma.customer.findFirst({
         where: {
             organizationId: data.organizationId,
-            ...(provider === 'whatsapp' && data.customerPhone
-                ? { phone: data.customerPhone }
-                : provider === 'whatsapp'
-                  ? { phone: data.recipientId }
-                  : {})
+            ...(provider === 'whatsapp'
+                ? {
+                      OR: [
+                          { phone: recipientId },
+                          { phone: `+${recipientId}` },
+                          ...(customerPhone ? [
+                              { phone: customerPhone },
+                              { phone: `+${customerPhone}` }
+                          ] : [])
+                      ]
+                  }
+                : {
+                      phone: recipientId
+                  })
         }
     });
 
@@ -340,13 +411,16 @@ export async function startConversation(data: {
         customer = await prisma.customer.create({
             data: {
                 organizationId: data.organizationId,
-                name: data.customerName || data.recipientId,
-                phone:
-                    provider === 'whatsapp'
-                        ? data.customerPhone || data.recipientId
-                        : null,
+                name: data.customerName || (provider === 'whatsapp' ? `+${recipientId}` : recipientId),
+                phone: provider === 'whatsapp' ? recipientId : recipientId,
                 source: 'OTHER'
             }
+        });
+    } else if (provider === 'whatsapp' && customer.phone !== recipientId) {
+        // Auto-normalize existing customer phone format to clean digits
+        await prisma.customer.update({
+            where: { id: customer.id },
+            data: { phone: recipientId }
         });
     }
 
@@ -354,7 +428,10 @@ export async function startConversation(data: {
     let conversation = await prisma.conversation.findFirst({
         where: {
             organizationId: data.organizationId,
-            externalId: data.recipientId,
+            OR: [
+                { externalId: recipientId },
+                { externalId: `+${recipientId}` }
+            ],
             provider
         }
     });
@@ -364,10 +441,16 @@ export async function startConversation(data: {
             data: {
                 organizationId: data.organizationId,
                 customerId: customer.id,
-                externalId: data.recipientId,
+                externalId: recipientId,
                 provider,
                 status: 'OPEN'
             }
+        });
+    } else if (conversation.externalId !== recipientId) {
+        // Auto-normalize existing conversation externalId format
+        conversation = await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { externalId: recipientId }
         });
     }
 

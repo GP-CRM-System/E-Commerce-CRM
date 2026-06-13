@@ -9,6 +9,9 @@ import logger from '../../utils/logger.util.js';
 import { env } from '../../config/env.config.js';
 import prisma from '../../config/prisma.config.js';
 import { handleInboundMessage } from './messaging.service.js';
+import { emitToOrg } from '../../config/socket.config.js';
+import { MetaWebhookSchema } from './meta-webhook.schema.js';
+import { addWebhookJob } from '../../queues/messaging.queue.js';
 
 const router = Router();
 
@@ -202,15 +205,25 @@ router.post(
     verifyMetaSignature,
     async (req: Request, res: Response) => {
         const body = req.body;
-        res.status(200).send('EVENT_RECEIVED');
 
         try {
-            await processMetaWebhook(body);
+            // Hardened validation schema check
+            const parsed = MetaWebhookSchema.safeParse(body);
+            if (!parsed.success) {
+                logger.warn({ error: parsed.error }, '[Webhook] Validation failed for incoming packet');
+                return res.status(400).send('Malformed payload structure');
+            }
+
+            // Acknowledge immediately to avoid timeout retries (under 3 seconds)
+            res.status(200).send('EVENT_RECEIVED');
+
+            // Dispatch parsing and processing to Redis BullMQ worker
+            await addWebhookJob(parsed.data);
         } catch (err) {
-            logger.error(
-                { err, body: JSON.stringify(body) },
-                'Error processing Meta webhook'
-            );
+            logger.error({ err }, '[Webhook] Failed to queue incoming payload');
+            if (!res.headersSent) {
+                res.status(500).send('Failed to queue job');
+            }
         }
     }
 );
@@ -247,25 +260,42 @@ async function processMetaWebhook(body: MetaWebhookBody) {
                 }
 
                 for (const status of value.statuses || []) {
-                    await prisma.message.updateMany({
+                    const message = await prisma.message.findFirst({
                         where: { externalId: status.id },
-                        data: {
-                            status:
-                                status.status === 'read'
-                                    ? 'READ'
-                                    : status.status === 'delivered'
-                                      ? 'DELIVERED'
-                                      : status.status === 'failed'
-                                        ? 'FAILED'
-                                        : 'SENT',
-                            errorMessage:
-                                status.status === 'failed'
-                                    ? status.errors?.[0]?.message ||
-                                      status.errors?.[0]?.title ||
-                                      'WhatsApp delivery failed'
-                                    : null
-                        }
+                        include: { conversation: true }
                     });
+
+                    if (message && message.conversation) {
+                        const newStatus =
+                            status.status === 'read'
+                                ? 'READ'
+                                : status.status === 'delivered'
+                                  ? 'DELIVERED'
+                                  : status.status === 'failed'
+                                    ? 'FAILED'
+                                    : 'SENT';
+                        const errorMessage =
+                            status.status === 'failed'
+                                ? status.errors?.[0]?.message ||
+                                  status.errors?.[0]?.title ||
+                                  'WhatsApp delivery failed'
+                                : null;
+
+                        await prisma.message.update({
+                            where: { id: message.id },
+                            data: {
+                                status: newStatus,
+                                errorMessage: errorMessage
+                            }
+                        });
+
+                        emitToOrg(message.conversation.organizationId, 'message:status_updated', {
+                            conversationId: message.conversationId,
+                            messageId: message.id,
+                            status: newStatus,
+                            errorMessage: errorMessage
+                        });
+                    }
                 }
 
                 for (const msg of value.messages || []) {

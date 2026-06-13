@@ -9,6 +9,32 @@ import {
 } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
+import { addOutboundJob } from '../../queues/messaging.queue.js';
+import { emitToConversation, emitToOrg } from '../../config/socket.config.js';
+import logger from '../../utils/logger.util.js';
+import {
+    getSignedUploadUrl,
+    getSignedDownloadUrl,
+    deleteFromB2,
+    isB2Configured
+} from '../../config/b2.config.js';
+import crypto from 'crypto';
+
+export async function signMessageMedia(message: any) {
+    if (!message) return message;
+    const metadata = (message.metadata as Record<string, any>) || {};
+    if (metadata.storageKey && isB2Configured) {
+        const result = await getSignedDownloadUrl(metadata.storageKey);
+        if (result.success && result.url) {
+            return {
+                ...message,
+                content: result.url
+            };
+        }
+    }
+    return message;
+}
+
 
 export const listConversations = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -72,16 +98,21 @@ export const getConversationMessages = asyncHandler(
         const [messages, total] = await Promise.all([
             prisma.message.findMany({
                 where: { conversationId },
-                orderBy: { createdAt: 'asc' },
+                orderBy: { createdAt: 'desc' },
                 take,
                 skip
             }),
             prisma.message.count({ where: { conversationId } })
         ]);
 
+        // Reverse the array to maintain chronological order (oldest to newest) for client display
+        messages.reverse();
+
+        const signedMessages = await Promise.all(messages.map(signMessageMedia));
+
         return ResponseHandler.paginated(
             res,
-            messages,
+            signedMessages,
             'Messages fetched successfully',
             page,
             limit,
@@ -105,17 +136,59 @@ export const sendMessage = asyncHandler(
             );
         }
 
-        const message = await messagingService.sendOutboundMessage({
-            organizationId,
-            conversationId,
-            content,
-            type,
-            metadata
+        const conversation = await prisma.conversation.findFirst({
+            where: { id: conversationId, organizationId },
+            select: { id: true }
         });
+
+        if (!conversation) {
+            return ResponseHandler.error(
+                res,
+                'Conversation not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        // 1. Create a message immediately with PENDING status in DB (only blocking write)
+        const message = await prisma.message.create({
+            data: {
+                conversationId,
+                direction: 'OUTBOUND',
+                content,
+                type: type || 'text',
+                status: 'PENDING',
+                metadata: metadata || {}
+            }
+        });
+
+        // 2. Perform background operations asynchronously (without blocking HTTP response)
+        Promise.all([
+            // Update conversation timestamp
+            prisma.conversation.update({
+                where: { id: conversationId },
+                data: { lastMessageAt: new Date() },
+                include: { customer: { select: { name: true, email: true } } }
+            }).then((updatedConversation) => {
+                emitToOrg(organizationId, 'inbox:updated', { conversation: updatedConversation });
+            }),
+
+            // Enqueue the outbound job for asynchronous dispatching to Meta API
+            addOutboundJob({
+                messageId: message.id,
+                organizationId,
+                conversationId
+            })
+        ]).catch((err) => {
+            logger.error({ err }, 'Error in background message operations');
+        });
+
+        // 3. Emit real-time event immediately to the conversation room
+        emitToConversation(conversationId, 'message:created', { message });
 
         return ResponseHandler.success(
             res,
-            'Message sent successfully',
+            'Message queued successfully',
             HttpStatus.OK,
             message
         );
@@ -154,3 +227,290 @@ export const startConversation = asyncHandler(
         );
     }
 );
+
+export const assignConversation = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const conversationId = req.params.id as string;
+        const { assignedAgentId } = req.body;
+
+        const conversation = await prisma.conversation.findFirst({
+            where: { id: conversationId, organizationId }
+        });
+
+        if (!conversation) {
+            return ResponseHandler.error(
+                res,
+                'Conversation not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        if (assignedAgentId) {
+            const member = await prisma.member.findFirst({
+                where: { userId: assignedAgentId, organizationId }
+            });
+            if (!member) {
+                return ResponseHandler.error(
+                    res,
+                    'Agent not found in this organization',
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+        }
+
+        const updated = await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { assignedAgentId: assignedAgentId || null },
+            include: { customer: { select: { name: true, email: true } } }
+        });
+
+        emitToOrg(organizationId, 'conversation:assigned', {
+            conversation: updated,
+            assignedAgentId: assignedAgentId || null
+        });
+
+        return ResponseHandler.success(
+            res,
+            'Conversation assigned successfully',
+            HttpStatus.OK,
+            updated
+        );
+    }
+);
+
+export const createUploadSession = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const conversationId = req.params.id as string;
+        const { fileName, mimeType, fileSize, type } = req.body;
+
+        // 1. Verify conversation belongs to organization
+        const conversation = await prisma.conversation.findFirst({
+            where: { id: conversationId, organizationId }
+        });
+
+        if (!conversation) {
+            return ResponseHandler.error(
+                res,
+                'Conversation not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        // 2. Validate file type & extension to reject dangerous uploads
+        const allowedExtensions: Record<string, string[]> = {
+            image: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            video: ['mp4', 'mov', 'webm'],
+            audio: ['mp3', 'wav', 'm4a', 'ogg'],
+            document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', 'csv']
+        };
+
+        const ext = fileName.split('.').pop()?.toLowerCase() || '';
+        if (!allowedExtensions[type]?.includes(ext)) {
+            return ResponseHandler.error(
+                res,
+                `Invalid file extension .${ext} for type ${type}`,
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // 3. Create optimistic PENDING message
+        const message = await prisma.message.create({
+            data: {
+                conversationId,
+                direction: 'OUTBOUND',
+                content: `Pending upload: ${fileName}`,
+                type: type,
+                status: 'PENDING',
+                metadata: {
+                    fileName,
+                    mimeType,
+                    size: fileSize,
+                    originalName: fileName
+                }
+            }
+        });
+
+        // 4. Generate S3/B2 storage key and presigned URL
+        const uniqueId = crypto.randomUUID();
+        const b2Key = `chat-${type}s/org_${organizationId}/conv_${conversationId}/msg_${message.id}/${uniqueId}.${ext}`;
+
+        // Update database with the storageKey
+        const updatedMessage = await prisma.message.update({
+            where: { id: message.id },
+            data: {
+                metadata: {
+                    fileName,
+                    mimeType,
+                    size: fileSize,
+                    originalName: fileName,
+                    storageKey: b2Key
+                }
+            }
+        });
+
+        // Generate the presigned upload URL
+        const presignedResult = await getSignedUploadUrl(b2Key, mimeType);
+        if (!presignedResult.success || !presignedResult.url) {
+            // Clean up the created message on failure
+            await prisma.message.delete({ where: { id: message.id } });
+            return ResponseHandler.error(
+                res,
+                presignedResult.error || 'Failed to generate upload session',
+                ErrorCode.SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // Emit message:created so other agents see the optimistic placeholder
+        emitToConversation(conversationId, 'message:created', { message: updatedMessage });
+
+        return ResponseHandler.success(
+            res,
+            'Upload session created successfully',
+            HttpStatus.OK,
+            {
+                uploadUrl: presignedResult.url,
+                message: updatedMessage
+            }
+        );
+    }
+);
+
+export const completeUpload = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const messageId = req.params.messageId as string;
+
+        // Find the message and verify organization access via conversation
+        const message = await prisma.message.findUnique({
+            where: { id: messageId },
+            include: { conversation: true }
+        });
+
+        if (!message || message.conversation.organizationId !== organizationId) {
+            return ResponseHandler.error(
+                res,
+                'Message not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        const metadata = (message.metadata as Record<string, any>) || {};
+        if (!metadata.storageKey) {
+            return ResponseHandler.error(
+                res,
+                'Invalid upload message',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // 1. Generate the signed download URL to store or return
+        const signedDownloadResult = await getSignedDownloadUrl(metadata.storageKey);
+        if (!signedDownloadResult.success || !signedDownloadResult.url) {
+            return ResponseHandler.error(
+                res,
+                'Failed to verify file upload',
+                ErrorCode.SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // 2. Update status to SENT and content to the signed URL
+        const updatedMessage = await prisma.message.update({
+            where: { id: messageId },
+            data: {
+                status: 'SENT',
+                content: signedDownloadResult.url
+            }
+        });
+
+        // 3. Update conversation lastMessageAt
+        await prisma.conversation.update({
+            where: { id: message.conversationId },
+            data: { lastMessageAt: new Date() }
+        });
+
+        // 4. Enqueue outbound message job for Meta dispatching
+        await addOutboundJob({
+            messageId: message.id,
+            organizationId,
+            conversationId: message.conversationId
+        });
+
+        // 5. Broadcast real-time message status updated event
+        const signedMsg = await signMessageMedia(updatedMessage);
+        emitToConversation(message.conversationId, 'message:status_updated', {
+            conversationId: message.conversationId,
+            messageId: message.id,
+            status: 'SENT',
+            message: signedMsg
+        });
+
+        emitToOrg(organizationId, 'inbox:updated', {
+            conversation: await prisma.conversation.findUnique({
+                where: { id: message.conversationId },
+                include: { customer: { select: { name: true, email: true } } }
+            })
+        });
+
+        return ResponseHandler.success(
+            res,
+            'Upload completed and message sent',
+            HttpStatus.OK,
+            signedMsg
+        );
+    }
+);
+
+export const deleteMessage = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const messageId = req.params.messageId as string;
+
+        const message = await prisma.message.findUnique({
+            where: { id: messageId },
+            include: { conversation: true }
+        });
+
+        if (!message || message.conversation.organizationId !== organizationId) {
+            return ResponseHandler.error(
+                res,
+                'Message not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        // Delete S3/B2 file if key exists
+        const metadata = (message.metadata as Record<string, any>) || {};
+        if (metadata.storageKey && isB2Configured) {
+            await deleteFromB2(metadata.storageKey);
+        }
+
+        // Delete from Database
+        await prisma.message.delete({
+            where: { id: messageId }
+        });
+
+        // Broadcast removal event to conversation room
+        emitToConversation(message.conversationId, 'message:deleted', {
+            conversationId: message.conversationId,
+            messageId
+        });
+
+        return ResponseHandler.success(
+            res,
+            'Message deleted successfully',
+            HttpStatus.OK
+        );
+    }
+);
+
