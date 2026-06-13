@@ -71,6 +71,10 @@ afterAll(async () => {
     await prisma.conversation.deleteMany({
         where: { organizationId: testOrgId }
     });
+    // Delete orders first to avoid RESTRICT constraint on customers
+    await prisma.order.deleteMany({
+        where: { organizationId: testOrgId }
+    });
     await prisma.customer.deleteMany({ where: { organizationId: testOrgId } });
     await prisma.member.deleteMany({ where: { organizationId: testOrgId } });
     await prisma.session.deleteMany({ where: { userId: testUserId } });
@@ -246,7 +250,7 @@ describe('Messaging API', () => {
             expect(response.status).toBe(400);
         });
 
-        it('should fail to send without Meta integration configured', async () => {
+        it('should queue message optimistically even without Meta integration', async () => {
             const response = await request(app)
                 .post(
                     `/api/messaging/conversations/${testConversationId}/messages`
@@ -256,9 +260,9 @@ describe('Messaging API', () => {
                     content: 'We will help you shortly!'
                 });
 
-            // Without Meta integration, it should fail with integration error
-            expect(response.status).toBe(400);
-            expect(response.body.message).toContain('integration');
+            // Message is created optimistically with PENDING status and queued for async delivery
+            expect(response.status).toBe(200);
+            expect(response.body.message).toContain('queued');
         });
 
         it('should reject empty message content', async () => {
@@ -295,8 +299,9 @@ describe('Messaging API', () => {
                     type: 'image'
                 });
 
-            expect(response.status).toBe(400); // Still fails due to no Meta integration
-            expect(response.body.message).toContain('integration');
+            // Message is created optimistically regardless of integration; delivery happens async
+            expect(response.status).toBe(200);
+            expect(response.body.message).toContain('queued');
         });
     });
 

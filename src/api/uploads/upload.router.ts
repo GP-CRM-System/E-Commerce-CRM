@@ -15,15 +15,34 @@ import {
 
 const ALLOWED_MIMES = [
     // Images
-    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
     // Videos
-    'video/mp4', 'video/mpeg', 'video/quicktime', 'video/3gpp', 'video/webm',
+    'video/mp4',
+    'video/mpeg',
+    'video/quicktime',
+    'video/3gpp',
+    'video/webm',
     // Audio / Voice notes
-    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/amr', 'audio/m4a', 'audio/webm', 'audio/mp4',
+    'audio/mpeg',
+    'audio/mp3',
+    'audio/wav',
+    'audio/ogg',
+    'audio/aac',
+    'audio/amr',
+    'audio/m4a',
+    'audio/webm',
+    'audio/mp4',
     // Documents
-    'application/pdf', 'text/plain', 'application/zip',
-    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    'application/pdf',
+    'text/plain',
+    'application/zip',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 ];
 
 const upload = multer({

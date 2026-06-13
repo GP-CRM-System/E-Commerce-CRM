@@ -19,7 +19,11 @@ import { rfmWorker } from './queues/rfm.processor.js';
 import { shopifySyncWorker } from './queues/shopify-sync.worker.js';
 import { shopifyWebhookWorker } from './queues/shopify-webhook.worker.js';
 import { initExportWorker } from './api/exports/exports.worker.js';
-import { webhookWorker, outboundWorker, statusWorker } from './queues/messaging.worker.js';
+import {
+    webhookWorker,
+    outboundWorker,
+    statusWorker
+} from './queues/messaging.worker.js';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import {
     isRedisAvailable,

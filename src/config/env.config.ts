@@ -51,8 +51,7 @@ export const env = {
     // Shopify Configuration
     shopifyClientId: process.env.SHOPIFY_CLIENT_ID as string,
     shopifyClientSecret: process.env.SHOPIFY_CLIENT_SECRET as string,
-    shopifyScopes:
-        (process.env.SHOPIFY_SCOPES ||
+    shopifyScopes: (process.env.SHOPIFY_SCOPES ||
         'read_customers,read_orders,read_products,read_inventory,write_pixels') as string,
 
     // Paymob Configuration
@@ -62,7 +61,8 @@ export const env = {
     paymobCardIntegrationId: process.env.PAYMOB_CARD_INTEGRATION_ID
         ? Number(process.env.PAYMOB_CARD_INTEGRATION_ID)
         : undefined,
-    paymobBaseUrl: (process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com') as string,
+    paymobBaseUrl: (process.env.PAYMOB_BASE_URL ||
+        'https://accept.paymob.com') as string,
 
     // Cloudinary Configuration
     cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -70,7 +70,8 @@ export const env = {
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
 
     // Encryption
-    encryptionKey: (process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET) as string
+    encryptionKey: (process.env.ENCRYPTION_KEY ||
+        process.env.BETTER_AUTH_SECRET) as string
 };
 
 export function checkEnv(): void {

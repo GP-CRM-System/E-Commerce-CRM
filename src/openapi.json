@@ -126,9 +126,7 @@
             "get": {
                 "operationId": "me",
                 "summary": "Get current user",
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "responses": {
                     "200": {
                         "description": "User fetched",
@@ -148,18 +146,14 @@
                 "operationId": "uploadFile",
                 "summary": "Upload an image to Cloudinary",
                 "description": "Upload an avatar or logo image. Returns a URL that can be passed to Better Auth's sign-up/update endpoints as `image` or `logo`.",
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "file"
-                                ],
+                                "required": ["file"],
                                 "properties": {
                                     "file": {
                                         "type": "string",
@@ -168,10 +162,7 @@
                                     },
                                     "type": {
                                         "type": "string",
-                                        "enum": [
-                                            "avatar",
-                                            "logo"
-                                        ],
+                                        "enum": ["avatar", "logo"],
                                         "default": "avatar",
                                         "description": "Upload context - determines Cloudinary folder"
                                     }
@@ -230,9 +221,7 @@
             "get": {
                 "operationId": "getGeneralAnalytics",
                 "summary": "Get general organization analytics",
-                "tags": [
-                    "Analytics"
-                ],
+                "tags": ["Analytics"],
                 "responses": {
                     "200": {
                         "description": "General analytics fetched",
@@ -262,9 +251,7 @@
             "get": {
                 "operationId": "listSubscriptionPlans",
                 "summary": "List all subscription plans",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "parameters": [
                     {
                         "name": "includeInactive",
@@ -312,9 +299,7 @@
             "get": {
                 "operationId": "getCurrentSubscription",
                 "summary": "Get current organization subscription",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "responses": {
                     "200": {
                         "description": "Current subscription details",
@@ -361,18 +346,14 @@
             "post": {
                 "operationId": "subscribeToPlan",
                 "summary": "Subscribe to a plan",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "planId"
-                                ],
+                                "required": ["planId"],
                                 "properties": {
                                     "planId": {
                                         "type": "string",
@@ -380,10 +361,7 @@
                                     },
                                     "billingCycle": {
                                         "type": "string",
-                                        "enum": [
-                                            "monthly",
-                                            "yearly"
-                                        ],
+                                        "enum": ["monthly", "yearly"],
                                         "default": "monthly"
                                     }
                                 }
@@ -446,9 +424,7 @@
             "patch": {
                 "operationId": "cancelSubscription",
                 "summary": "Cancel current subscription",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -510,18 +486,14 @@
             "post": {
                 "operationId": "initializeSubscription",
                 "summary": "Initialize subscription with payment if required",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "planId"
-                                ],
+                                "required": ["planId"],
                                 "properties": {
                                     "planId": {
                                         "type": "string",
@@ -529,10 +501,7 @@
                                     },
                                     "billingCycle": {
                                         "type": "string",
-                                        "enum": [
-                                            "monthly",
-                                            "yearly"
-                                        ],
+                                        "enum": ["monthly", "yearly"],
                                         "default": "monthly"
                                     }
                                 }
@@ -626,9 +595,7 @@
             "post": {
                 "operationId": "subscriptionPaymentCallback",
                 "summary": "Handle Paymob payment callback for subscriptions",
-                "tags": [
-                    "Subscriptions"
-                ],
+                "tags": ["Subscriptions"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -666,9 +633,7 @@
             "get": {
                 "operationId": "listCustomers",
                 "summary": "List all customers",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "page",
@@ -702,10 +667,7 @@
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
+                            "enum": ["asc", "desc"],
                             "default": "desc"
                         },
                         "description": "Sort direction (asc or desc)"
@@ -790,18 +752,14 @@
             "post": {
                 "operationId": "createCustomer",
                 "summary": "Create a new customer",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "name"
-                                ],
+                                "required": ["name"],
                                 "properties": {
                                     "name": {
                                         "type": "string"
@@ -868,9 +826,7 @@
             "get": {
                 "operationId": "getCustomer",
                 "summary": "Get customer by ID",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -905,9 +861,7 @@
             "patch": {
                 "operationId": "updateCustomer",
                 "summary": "Update customer",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -974,9 +928,7 @@
             "delete": {
                 "operationId": "deleteCustomer",
                 "summary": "Delete customer",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1019,9 +971,7 @@
             "get": {
                 "operationId": "getCustomerNotes",
                 "summary": "Get customer notes",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1074,9 +1024,7 @@
             "post": {
                 "operationId": "createNote",
                 "summary": "Create a note for customer",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1094,9 +1042,7 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "body"
-                                ],
+                                "required": ["body"],
                                 "properties": {
                                     "body": {
                                         "type": "string"
@@ -1131,9 +1077,7 @@
             "patch": {
                 "operationId": "updateNote",
                 "summary": "Update customer note",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1197,9 +1141,7 @@
             "delete": {
                 "operationId": "deleteNote",
                 "summary": "Delete customer note",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1251,9 +1193,7 @@
             "get": {
                 "operationId": "getCustomerEvents",
                 "summary": "Get customer events",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1294,9 +1234,7 @@
             "post": {
                 "operationId": "createEvent",
                 "summary": "Create an event for customer",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1313,10 +1251,7 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "eventType",
-                                    "description"
-                                ],
+                                "required": ["eventType", "description"],
                                 "properties": {
                                     "eventType": {
                                         "type": "string"
@@ -1360,9 +1295,7 @@
             "patch": {
                 "operationId": "updateEvent",
                 "summary": "Update customer event",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1432,9 +1365,7 @@
             "delete": {
                 "operationId": "deleteEvent",
                 "summary": "Delete customer event",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1486,9 +1417,7 @@
             "post": {
                 "operationId": "triggerRFMCompute",
                 "summary": "Trigger RFM computation",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -1536,9 +1465,7 @@
             "get": {
                 "operationId": "getRFMStats",
                 "summary": "Get RFM segment distribution",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "responses": {
                     "200": {
                         "description": "RFM distribution fetched",
@@ -1571,9 +1498,7 @@
             "get": {
                 "operationId": "getCustomerAnalytics",
                 "summary": "Get customer-specific analytics",
-                "tags": [
-                    "Customers"
-                ],
+                "tags": ["Customers"],
                 "parameters": [
                     {
                         "name": "id",
@@ -1616,9 +1541,7 @@
             "post": {
                 "operationId": "triggerRFMJob",
                 "summary": "Trigger RFM score recalculation",
-                "tags": [
-                    "Cron"
-                ],
+                "tags": ["Cron"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1654,9 +1577,7 @@
             "post": {
                 "operationId": "triggerLifecycleJob",
                 "summary": "Trigger lifecycle stage recalculation",
-                "tags": [
-                    "Cron"
-                ],
+                "tags": ["Cron"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1692,9 +1613,7 @@
             "post": {
                 "operationId": "triggerVipJob",
                 "summary": "Trigger VIP status recalculation",
-                "tags": [
-                    "Cron"
-                ],
+                "tags": ["Cron"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1730,9 +1649,7 @@
             "post": {
                 "operationId": "runCleanupIdempotencyJob",
                 "summary": "Cleanup expired webhook idempotency keys",
-                "tags": [
-                    "Cron"
-                ],
+                "tags": ["Cron"],
                 "responses": {
                     "200": {
                         "description": "Cleanup complete",
@@ -1765,18 +1682,14 @@
             "get": {
                 "operationId": "listIntegrations",
                 "summary": "List all integrations",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "provider",
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "shopify"
-                            ]
+                            "enum": ["shopify"]
                         },
                         "description": "Integration provider"
                     }
@@ -1813,19 +1726,14 @@
             "post": {
                 "operationId": "connectShopify",
                 "summary": "Connect a Shopify store",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "shopDomain",
-                                    "accessToken"
-                                ],
+                                "required": ["shopDomain", "accessToken"],
                                 "properties": {
                                     "shopDomain": {
                                         "type": "string"
@@ -1869,9 +1777,7 @@
             "get": {
                 "operationId": "getIntegration",
                 "summary": "Get integration by ID",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -1913,9 +1819,7 @@
             "patch": {
                 "operationId": "updateIntegration",
                 "summary": "Update integration",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -1938,11 +1842,7 @@
                                     },
                                     "syncMode": {
                                         "type": "string",
-                                        "enum": [
-                                            "webhook",
-                                            "polling",
-                                            "manual"
-                                        ]
+                                        "enum": ["webhook", "polling", "manual"]
                                     },
                                     "isActive": {
                                         "type": "boolean"
@@ -1982,9 +1882,7 @@
             "delete": {
                 "operationId": "deleteIntegration",
                 "summary": "Delete integration",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2028,9 +1926,7 @@
             "post": {
                 "operationId": "testConnection",
                 "summary": "Test integration connection",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2074,9 +1970,7 @@
             "post": {
                 "operationId": "registerWebhooks",
                 "summary": "Register Shopify webhooks",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2094,9 +1988,7 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "topics"
-                                ],
+                                "required": ["topics"],
                                 "properties": {
                                     "topics": {
                                         "type": "array",
@@ -2141,9 +2033,7 @@
             "post": {
                 "operationId": "triggerFullSync",
                 "summary": "Trigger full data sync",
-                "tags": [
-                    "Sync"
-                ],
+                "tags": ["Sync"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2209,9 +2099,7 @@
             "get": {
                 "operationId": "getSyncLogs",
                 "summary": "Get sync logs",
-                "tags": [
-                    "Sync"
-                ],
+                "tags": ["Sync"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2255,9 +2143,7 @@
             "post": {
                 "operationId": "handleShopifyWebhook",
                 "summary": "Handle Shopify webhook",
-                "tags": [
-                    "Webhooks"
-                ],
+                "tags": ["Webhooks"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2287,9 +2173,7 @@
             "get": {
                 "operationId": "getWebhookLogs",
                 "summary": "Get webhook logs",
-                "tags": [
-                    "Webhooks"
-                ],
+                "tags": ["Webhooks"],
                 "parameters": [
                     {
                         "name": "integrationId",
@@ -2333,9 +2217,7 @@
             "get": {
                 "operationId": "listSegments",
                 "summary": "List all segments",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "limit",
@@ -2411,9 +2293,7 @@
             "post": {
                 "operationId": "createSegment",
                 "summary": "Create a new segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -2449,9 +2329,7 @@
             "get": {
                 "operationId": "getSegment",
                 "summary": "Get segment by ID",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2492,9 +2370,7 @@
             "patch": {
                 "operationId": "updateSegment",
                 "summary": "Update segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2545,9 +2421,7 @@
             "delete": {
                 "operationId": "deleteSegment",
                 "summary": "Delete segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2583,9 +2457,7 @@
             "get": {
                 "operationId": "getSegmentCustomers",
                 "summary": "Get customers in segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2646,9 +2518,7 @@
             "get": {
                 "operationId": "getSegmentCount",
                 "summary": "Get number of customers in segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2691,9 +2561,7 @@
             "get": {
                 "operationId": "previewSegment",
                 "summary": "Get sample of customers in segment",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2736,9 +2604,7 @@
             "post": {
                 "operationId": "exportSegment",
                 "summary": "Export segment customers",
-                "tags": [
-                    "Segments"
-                ],
+                "tags": ["Segments"],
                 "parameters": [
                     {
                         "name": "id",
@@ -2757,10 +2623,7 @@
                                 "properties": {
                                     "format": {
                                         "type": "string",
-                                        "enum": [
-                                            "csv",
-                                            "xlsx"
-                                        ],
+                                        "enum": ["csv", "xlsx"],
                                         "default": "csv"
                                     }
                                 }
@@ -2793,9 +2656,7 @@
             "get": {
                 "operationId": "listProducts",
                 "summary": "List all products",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "page",
@@ -2829,10 +2690,7 @@
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
+                            "enum": ["asc", "desc"],
                             "default": "desc"
                         },
                         "description": "Sort direction (asc or desc)"
@@ -2908,19 +2766,14 @@
             "post": {
                 "operationId": "createProduct",
                 "summary": "Create a new product",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "name",
-                                    "price"
-                                ],
+                                "required": ["name", "price"],
                                 "properties": {
                                     "name": {
                                         "type": "string"
@@ -2942,11 +2795,7 @@
                                     },
                                     "status": {
                                         "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "draft",
-                                            "archived"
-                                        ]
+                                        "enum": ["active", "draft", "archived"]
                                     }
                                 }
                             }
@@ -2978,9 +2827,7 @@
             "get": {
                 "operationId": "getProduct",
                 "summary": "Get a product by ID",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3015,9 +2862,7 @@
             "patch": {
                 "operationId": "updateProduct",
                 "summary": "Update a product",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3055,11 +2900,7 @@
                                     },
                                     "status": {
                                         "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "draft",
-                                            "archived"
-                                        ]
+                                        "enum": ["active", "draft", "archived"]
                                     }
                                 }
                             }
@@ -3096,9 +2937,7 @@
             "delete": {
                 "operationId": "deleteProduct",
                 "summary": "Delete a product",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3142,9 +2981,7 @@
             "get": {
                 "operationId": "listOrders",
                 "summary": "List all orders",
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "parameters": [
                     {
                         "name": "page",
@@ -3178,10 +3015,7 @@
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
+                            "enum": ["asc", "desc"],
                             "default": "desc"
                         },
                         "description": "Sort direction (asc or desc)"
@@ -3264,18 +3098,14 @@
             "post": {
                 "operationId": "createOrder",
                 "summary": "Create a new order",
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "customerId"
-                                ],
+                                "required": ["customerId"],
                                 "properties": {
                                     "customerId": {
                                         "type": "string"
@@ -3337,9 +3167,7 @@
             "get": {
                 "operationId": "getOrder",
                 "summary": "Get an order by ID",
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3374,9 +3202,7 @@
             "patch": {
                 "operationId": "updateOrder",
                 "summary": "Update an order",
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3456,9 +3282,7 @@
             "delete": {
                 "operationId": "deleteOrder",
                 "summary": "Delete an order",
-                "tags": [
-                    "Orders"
-                ],
+                "tags": ["Orders"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3502,9 +3326,7 @@
             "get": {
                 "operationId": "listImportJobs",
                 "summary": "List import jobs",
-                "tags": [
-                    "Imports"
-                ],
+                "tags": ["Imports"],
                 "parameters": [
                     {
                         "name": "page",
@@ -3529,11 +3351,7 @@
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "customer",
-                                "product",
-                                "order"
-                            ]
+                            "enum": ["customer", "product", "order"]
                         }
                     },
                     {
@@ -3600,27 +3418,18 @@
             "post": {
                 "operationId": "createImportJob",
                 "summary": "Create and start an import job",
-                "tags": [
-                    "Imports"
-                ],
+                "tags": ["Imports"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "entityType",
-                                    "file"
-                                ],
+                                "required": ["entityType", "file"],
                                 "properties": {
                                     "entityType": {
                                         "type": "string",
-                                        "enum": [
-                                            "customer",
-                                            "product",
-                                            "order"
-                                        ]
+                                        "enum": ["customer", "product", "order"]
                                     },
                                     "file": {
                                         "type": "string",
@@ -3634,17 +3443,11 @@
                                     },
                                     "duplicateStrategy": {
                                         "type": "string",
-                                        "enum": [
-                                            "create_only",
-                                            "upsert"
-                                        ]
+                                        "enum": ["create_only", "upsert"]
                                     },
                                     "mode": {
                                         "type": "string",
-                                        "enum": [
-                                            "create_only",
-                                            "upsert"
-                                        ]
+                                        "enum": ["create_only", "upsert"]
                                     }
                                 }
                             }
@@ -3676,9 +3479,7 @@
             "get": {
                 "operationId": "getImportJob",
                 "summary": "Get an import job by ID",
-                "tags": [
-                    "Imports"
-                ],
+                "tags": ["Imports"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3716,9 +3517,7 @@
             "get": {
                 "operationId": "getImportErrors",
                 "summary": "Get import job errors",
-                "tags": [
-                    "Imports"
-                ],
+                "tags": ["Imports"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3779,9 +3578,7 @@
             "get": {
                 "operationId": "listExportJobs",
                 "summary": "List export jobs",
-                "tags": [
-                    "Exports"
-                ],
+                "tags": ["Exports"],
                 "parameters": [
                     {
                         "name": "page",
@@ -3806,11 +3603,7 @@
                         "in": "query",
                         "schema": {
                             "type": "string",
-                            "enum": [
-                                "customer",
-                                "product",
-                                "order"
-                            ]
+                            "enum": ["customer", "product", "order"]
                         }
                     },
                     {
@@ -3875,34 +3668,22 @@
             "post": {
                 "operationId": "createExportJob",
                 "summary": "Create and start an export job",
-                "tags": [
-                    "Exports"
-                ],
+                "tags": ["Exports"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "entityType",
-                                    "format"
-                                ],
+                                "required": ["entityType", "format"],
                                 "properties": {
                                     "entityType": {
                                         "type": "string",
-                                        "enum": [
-                                            "customer",
-                                            "product",
-                                            "order"
-                                        ]
+                                        "enum": ["customer", "product", "order"]
                                     },
                                     "format": {
                                         "type": "string",
-                                        "enum": [
-                                            "csv",
-                                            "xlsx"
-                                        ]
+                                        "enum": ["csv", "xlsx"]
                                     },
                                     "selectedColumns": {
                                         "type": "array",
@@ -3943,9 +3724,7 @@
             "get": {
                 "operationId": "getExportJob",
                 "summary": "Get an export job by ID",
-                "tags": [
-                    "Exports"
-                ],
+                "tags": ["Exports"],
                 "parameters": [
                     {
                         "name": "id",
@@ -3982,9 +3761,7 @@
             "get": {
                 "operationId": "downloadExport",
                 "summary": "Download export file",
-                "tags": [
-                    "Exports"
-                ],
+                "tags": ["Exports"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4021,9 +3798,7 @@
             "get": {
                 "operationId": "getPermissions",
                 "summary": "Get available permissions",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "responses": {
                     "200": {
                         "description": "List of available permissions",
@@ -4062,9 +3837,7 @@
             "get": {
                 "operationId": "listCustomRoles",
                 "summary": "List all custom roles",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "responses": {
                     "200": {
                         "description": "List of roles",
@@ -4115,9 +3888,7 @@
             "post": {
                 "operationId": "createCustomRole",
                 "summary": "Create a custom role",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -4157,9 +3928,7 @@
             "get": {
                 "operationId": "getCustomRole",
                 "summary": "Get a specific custom role",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4194,9 +3963,7 @@
             "patch": {
                 "operationId": "updateCustomRole",
                 "summary": "Update a custom role",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4244,9 +4011,7 @@
             "delete": {
                 "operationId": "deleteCustomRole",
                 "summary": "Delete a custom role",
-                "tags": [
-                    "Roles"
-                ],
+                "tags": ["Roles"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4286,9 +4051,7 @@
             "get": {
                 "operationId": "listNotifications",
                 "summary": "List all notifications",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "parameters": [
                     {
                         "name": "page",
@@ -4358,9 +4121,7 @@
             "get": {
                 "operationId": "getUnreadCount",
                 "summary": "Get unread notification count",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "responses": {
                     "200": {
                         "description": "Unread count",
@@ -4393,9 +4154,7 @@
             "get": {
                 "operationId": "getNotification",
                 "summary": "Get notification by ID",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4436,9 +4195,7 @@
             "delete": {
                 "operationId": "deleteNotification",
                 "summary": "Delete notification",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4481,9 +4238,7 @@
             "patch": {
                 "operationId": "markNotificationAsRead",
                 "summary": "Mark notification as read",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4526,9 +4281,7 @@
             "post": {
                 "operationId": "markAllNotificationsAsRead",
                 "summary": "Mark all notifications as read",
-                "tags": [
-                    "Notifications"
-                ],
+                "tags": ["Notifications"],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -4578,9 +4331,7 @@
             "get": {
                 "operationId": "listTemplates",
                 "summary": "List all email templates",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "parameters": [
                     {
                         "name": "page",
@@ -4656,20 +4407,14 @@
             "post": {
                 "operationId": "createTemplate",
                 "summary": "Create a new email template",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "name",
-                                    "subject",
-                                    "body"
-                                ],
+                                "required": ["name", "subject", "body"],
                                 "properties": {
                                     "name": {
                                         "type": "string"
@@ -4713,9 +4458,7 @@
             "get": {
                 "operationId": "getTemplate",
                 "summary": "Get template by ID",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4756,9 +4499,7 @@
             "patch": {
                 "operationId": "updateTemplate",
                 "summary": "Update email template",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4822,9 +4563,7 @@
             "delete": {
                 "operationId": "deleteTemplate",
                 "summary": "Delete email template",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4867,9 +4606,7 @@
             "get": {
                 "operationId": "previewTemplate",
                 "summary": "Preview email template",
-                "tags": [
-                    "Templates"
-                ],
+                "tags": ["Templates"],
                 "parameters": [
                     {
                         "name": "id",
@@ -4912,9 +4649,7 @@
             "get": {
                 "operationId": "listCampaigns",
                 "summary": "List all campaigns",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "page",
@@ -4998,20 +4733,14 @@
             "post": {
                 "operationId": "createCampaign",
                 "summary": "Create a new campaign",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "name",
-                                    "subject",
-                                    "templateId"
-                                ],
+                                "required": ["name", "subject", "templateId"],
                                 "properties": {
                                     "name": {
                                         "type": "string"
@@ -5059,9 +4788,7 @@
             "get": {
                 "operationId": "getCampaign",
                 "summary": "Get campaign by ID",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5102,9 +4829,7 @@
             "patch": {
                 "operationId": "updateCampaign",
                 "summary": "Update campaign",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5172,9 +4897,7 @@
             "delete": {
                 "operationId": "deleteCampaign",
                 "summary": "Delete campaign",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5217,9 +4940,7 @@
             "post": {
                 "operationId": "sendCampaign",
                 "summary": "Send campaign",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5279,9 +5000,7 @@
             "get": {
                 "operationId": "getCampaignStats",
                 "summary": "Get campaign statistics",
-                "tags": [
-                    "Campaigns"
-                ],
+                "tags": ["Campaigns"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5324,9 +5043,7 @@
             "get": {
                 "operationId": "listConversations",
                 "summary": "List all messaging conversations",
-                "tags": [
-                    "Messaging"
-                ],
+                "tags": ["Messaging"],
                 "parameters": [
                     {
                         "name": "page",
@@ -5379,9 +5096,7 @@
             "get": {
                 "operationId": "getConversationMessages",
                 "summary": "Get messages in a conversation",
-                "tags": [
-                    "Messaging"
-                ],
+                "tags": ["Messaging"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5440,9 +5155,7 @@
             "post": {
                 "operationId": "sendMessage",
                 "summary": "Send a message in a conversation",
-                "tags": [
-                    "Messaging"
-                ],
+                "tags": ["Messaging"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5459,9 +5172,7 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "content"
-                                ],
+                                "required": ["content"],
                                 "properties": {
                                     "content": {
                                         "type": "string"
@@ -5499,9 +5210,7 @@
             "get": {
                 "operationId": "verifyMetaWebhook",
                 "summary": "Verify Meta webhook subscription",
-                "tags": [
-                    "Messaging"
-                ],
+                "tags": ["Messaging"],
                 "parameters": [
                     {
                         "name": "hub.mode",
@@ -5541,9 +5250,7 @@
             "post": {
                 "operationId": "receiveMetaWebhook",
                 "summary": "Receive Meta webhook events",
-                "tags": [
-                    "Messaging"
-                ],
+                "tags": ["Messaging"],
                 "responses": {
                     "200": {
                         "description": "Event received",
@@ -5562,9 +5269,7 @@
             "get": {
                 "operationId": "listTickets",
                 "summary": "List all support tickets",
-                "tags": [
-                    "Tickets"
-                ],
+                "tags": ["Tickets"],
                 "parameters": [
                     {
                         "name": "page",
@@ -5615,19 +5320,14 @@
             "post": {
                 "operationId": "createTicket",
                 "summary": "Create a new support ticket",
-                "tags": [
-                    "Tickets"
-                ],
+                "tags": ["Tickets"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "subject",
-                                    "description"
-                                ],
+                                "required": ["subject", "description"],
                                 "properties": {
                                     "subject": {
                                         "type": "string"
@@ -5677,9 +5377,7 @@
             "get": {
                 "operationId": "getTicket",
                 "summary": "Get ticket by ID",
-                "tags": [
-                    "Tickets"
-                ],
+                "tags": ["Tickets"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5720,9 +5418,7 @@
             "patch": {
                 "operationId": "updateTicket",
                 "summary": "Update support ticket",
-                "tags": [
-                    "Tickets"
-                ],
+                "tags": ["Tickets"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5800,9 +5496,7 @@
             "post": {
                 "operationId": "addTicketNote",
                 "summary": "Add a note to a ticket",
-                "tags": [
-                    "Tickets"
-                ],
+                "tags": ["Tickets"],
                 "parameters": [
                     {
                         "name": "id",
@@ -5819,9 +5513,7 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "content"
-                                ],
+                                "required": ["content"],
                                 "properties": {
                                     "content": {
                                         "type": "string"
@@ -5859,9 +5551,7 @@
             "get": {
                 "operationId": "listAuditLogs",
                 "summary": "List audit logs",
-                "tags": [
-                    "Audit Logs"
-                ],
+                "tags": ["Audit Logs"],
                 "parameters": [
                     {
                         "name": "page",
@@ -5914,9 +5604,7 @@
             "get": {
                 "operationId": "getDashboardStats",
                 "summary": "Get dashboard statistics",
-                "tags": [
-                    "Reports"
-                ],
+                "tags": ["Reports"],
                 "responses": {
                     "200": {
                         "description": "Dashboard statistics",
@@ -5980,9 +5668,7 @@
             "get": {
                 "operationId": "trackEmailOpen",
                 "summary": "Track email open event",
-                "tags": [
-                    "Tracking"
-                ],
+                "tags": ["Tracking"],
                 "parameters": [
                     {
                         "name": "recipientId",
@@ -6012,9 +5698,7 @@
             "get": {
                 "operationId": "trackEmailClick",
                 "summary": "Track email click event",
-                "tags": [
-                    "Tracking"
-                ],
+                "tags": ["Tracking"],
                 "parameters": [
                     {
                         "name": "recipientId",
@@ -6046,9 +5730,7 @@
             "get": {
                 "operationId": "unsubscribeFromCampaign",
                 "summary": "Unsubscribe from marketing emails",
-                "tags": [
-                    "Unsubscribe"
-                ],
+                "tags": ["Unsubscribe"],
                 "parameters": [
                     {
                         "name": "token",
@@ -6078,9 +5760,7 @@
             "get": {
                 "operationId": "healthCheck",
                 "summary": "Check system health",
-                "tags": [
-                    "Health"
-                ],
+                "tags": ["Health"],
                 "responses": {
                     "200": {
                         "description": "All services healthy",
@@ -6102,9 +5782,7 @@
             "get": {
                 "operationId": "getAuditLogs",
                 "summary": "Get audit logs",
-                "tags": [
-                    "Audit Logs"
-                ],
+                "tags": ["Audit Logs"],
                 "parameters": [
                     {
                         "name": "page",
@@ -6157,9 +5835,7 @@
             "post": {
                 "operationId": "rollbackImport",
                 "summary": "Rollback import job",
-                "tags": [
-                    "Imports"
-                ],
+                "tags": ["Imports"],
                 "parameters": [
                     {
                         "name": "id",
@@ -6202,19 +5878,14 @@
             "post": {
                 "operationId": "pixelIngest",
                 "summary": "Ingest storefront web pixel event",
-                "tags": [
-                    "Integrations"
-                ],
+                "tags": ["Integrations"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "event",
-                                    "shopDomain"
-                                ],
+                                "required": ["event", "shopDomain"],
                                 "properties": {
                                     "event": {
                                         "type": "string",
@@ -6281,9 +5952,7 @@
             "get": {
                 "operationId": "getBestSellingProducts",
                 "summary": "Get best-selling products",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "limit",
@@ -6356,9 +6025,7 @@
             "get": {
                 "operationId": "getCategoryRevenue",
                 "summary": "Get revenue by product category",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "responses": {
                     "200": {
                         "description": "Category revenue fetched",
@@ -6420,9 +6087,7 @@
             "get": {
                 "operationId": "getCustomerCategorySpend",
                 "summary": "Get customer spend by category",
-                "tags": [
-                    "Products"
-                ],
+                "tags": ["Products"],
                 "parameters": [
                     {
                         "name": "customerId",
@@ -6507,10 +6172,7 @@
         "schemas": {
             "Error": {
                 "type": "object",
-                "required": [
-                    "message",
-                    "code"
-                ],
+                "required": ["message", "code"],
                 "properties": {
                     "message": {
                         "type": "string",
@@ -6539,10 +6201,7 @@
             },
             "SuccessResponse": {
                 "type": "object",
-                "required": [
-                    "message",
-                    "data"
-                ],
+                "required": ["message", "data"],
                 "properties": {
                     "message": {
                         "type": "string"
@@ -6577,10 +6236,7 @@
                     },
                     "billingCycle": {
                         "type": "string",
-                        "enum": [
-                            "monthly",
-                            "yearly"
-                        ]
+                        "enum": ["monthly", "yearly"]
                     },
                     "features": {
                         "type": "object",
@@ -6605,19 +6261,11 @@
                     },
                     "status": {
                         "type": "string",
-                        "enum": [
-                            "active",
-                            "canceled",
-                            "past_due",
-                            "trialing"
-                        ]
+                        "enum": ["active", "canceled", "past_due", "trialing"]
                     },
                     "billingCycle": {
                         "type": "string",
-                        "enum": [
-                            "monthly",
-                            "yearly"
-                        ]
+                        "enum": ["monthly", "yearly"]
                     },
                     "currentPeriodStart": {
                         "type": "string",
@@ -6823,11 +6471,7 @@
             },
             "Pagination": {
                 "type": "object",
-                "required": [
-                    "page",
-                    "limit",
-                    "total"
-                ],
+                "required": ["page", "limit", "total"],
                 "properties": {
                     "page": {
                         "type": "integer",
@@ -6995,12 +6639,7 @@
                     },
                     "paymentStatus": {
                         "type": "string",
-                        "enum": [
-                            "PENDING",
-                            "PAID",
-                            "FAILED",
-                            "REFUNDED"
-                        ]
+                        "enum": ["PENDING", "PAID", "FAILED", "REFUNDED"]
                     },
                     "shippingStatus": {
                         "type": "string",
@@ -7060,11 +6699,7 @@
                     },
                     "status": {
                         "type": "string",
-                        "enum": [
-                            "active",
-                            "draft",
-                            "archived"
-                        ]
+                        "enum": ["active", "draft", "archived"]
                     },
                     "imageUrl": {
                         "type": "string"
@@ -7142,19 +6777,11 @@
                     },
                     "format": {
                         "type": "string",
-                        "enum": [
-                            "csv",
-                            "xlsx"
-                        ]
+                        "enum": ["csv", "xlsx"]
                     },
                     "status": {
                         "type": "string",
-                        "enum": [
-                            "PENDING",
-                            "PROCESSING",
-                            "COMPLETED",
-                            "FAILED"
-                        ]
+                        "enum": ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]
                     },
                     "totalRows": {
                         "type": "integer"
@@ -7217,11 +6844,7 @@
                     },
                     "syncMode": {
                         "type": "string",
-                        "enum": [
-                            "webhook",
-                            "polling",
-                            "manual"
-                        ]
+                        "enum": ["webhook", "polling", "manual"]
                     },
                     "isActive": {
                         "type": "boolean"
@@ -7272,10 +6895,7 @@
             },
             "CreateSegmentRequest": {
                 "type": "object",
-                "required": [
-                    "name",
-                    "filter"
-                ],
+                "required": ["name", "filter"],
                 "properties": {
                     "name": {
                         "type": "string"
@@ -7317,9 +6937,7 @@
                                 }
                             }
                         },
-                        "required": [
-                            "and"
-                        ]
+                        "required": ["and"]
                     },
                     {
                         "type": "object",
@@ -7331,18 +6949,13 @@
                                 }
                             }
                         },
-                        "required": [
-                            "or"
-                        ]
+                        "required": ["or"]
                     }
                 ]
             },
             "SegmentCondition": {
                 "type": "object",
-                "required": [
-                    "field",
-                    "operator"
-                ],
+                "required": ["field", "operator"],
                 "properties": {
                     "field": {
                         "type": "string"
@@ -7380,9 +6993,7 @@
             },
             "TriggerRFMJobRequest": {
                 "type": "object",
-                "required": [
-                    "organizationId"
-                ],
+                "required": ["organizationId"],
                 "properties": {
                     "organizationId": {
                         "type": "string"
@@ -7398,9 +7009,7 @@
             },
             "TriggerLifecycleJobRequest": {
                 "type": "object",
-                "required": [
-                    "organizationId"
-                ],
+                "required": ["organizationId"],
                 "properties": {
                     "organizationId": {
                         "type": "string"
@@ -7409,9 +7018,7 @@
             },
             "TriggerVipJobRequest": {
                 "type": "object",
-                "required": [
-                    "organizationId"
-                ],
+                "required": ["organizationId"],
                 "properties": {
                     "organizationId": {
                         "type": "string"
@@ -7424,10 +7031,7 @@
             },
             "CreateRoleRequest": {
                 "type": "object",
-                "required": [
-                    "name",
-                    "permissions"
-                ],
+                "required": ["name", "permissions"],
                 "properties": {
                     "name": {
                         "type": "string"

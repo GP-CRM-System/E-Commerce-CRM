@@ -18,11 +18,18 @@ export async function uploadToCloudinary(
             {
                 folder: `crm/${folder}`,
                 resource_type: resourceType,
-                ...(resourceType === 'image' ? {
-                    transformation: [
-                        { width: 400, height: 400, crop: 'limit', quality: 'auto' }
-                    ]
-                } : {})
+                ...(resourceType === 'image'
+                    ? {
+                          transformation: [
+                              {
+                                  width: 400,
+                                  height: 400,
+                                  crop: 'limit',
+                                  quality: 'auto'
+                              }
+                          ]
+                      }
+                    : {})
             },
             (error, result: UploadApiResponse | undefined) => {
                 if (error) {

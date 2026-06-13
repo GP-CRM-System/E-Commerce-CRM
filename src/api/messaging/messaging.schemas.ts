@@ -5,7 +5,9 @@ export const sendMessageSchema = z.object({
         .string()
         .min(1, 'Message content cannot be empty')
         .max(4096, 'Message is too long'),
-    type: z.enum(['text', 'image', 'document', 'template', 'audio', 'video']).default('text'),
+    type: z
+        .enum(['text', 'image', 'document', 'template', 'audio', 'video'])
+        .default('text'),
     metadata: z.record(z.string(), z.any()).optional()
 });
 
@@ -16,7 +18,9 @@ export const startConversationSchema = z.object({
         .string()
         .min(1, 'Message content cannot be empty')
         .max(4096, 'Message is too long'),
-    type: z.enum(['text', 'image', 'document', 'template', 'audio', 'video']).default('text'),
+    type: z
+        .enum(['text', 'image', 'document', 'template', 'audio', 'video'])
+        .default('text'),
     customerPhone: z.string().optional(),
     customerName: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional()

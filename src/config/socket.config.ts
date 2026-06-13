@@ -7,13 +7,22 @@ import prisma from './prisma.config.js';
 import { env } from './env.config.js';
 import logger from '../utils/logger.util.js';
 
+interface SessionData {
+    user: { id: string; [key: string]: unknown };
+    activeOrganizationId?: string | null;
+    role?: string;
+    [key: string]: unknown;
+}
+
 let io: Server | null = null;
 const onlineUsers = new Map<string, string>(); // Map<userId, orgId> to track active users
 
 export async function initSocket(server: HttpServer) {
     io = new Server(server, {
         cors: {
-            origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
+            origin: process.env.CORS_ORIGIN?.split(',') || [
+                'http://localhost:5173'
+            ],
             methods: ['GET', 'POST'],
             credentials: true
         }
@@ -25,15 +34,22 @@ export async function initSocket(server: HttpServer) {
             const isTLS = env.redisUrl.startsWith('rediss://');
             const pubClient = createClient({
                 url: env.redisUrl,
-                socket: isTLS ? { tls: true, rejectUnauthorized: false } : undefined
+                socket: isTLS
+                    ? { tls: true, rejectUnauthorized: false }
+                    : undefined
             });
             const subClient = pubClient.duplicate();
 
             await Promise.all([pubClient.connect(), subClient.connect()]);
             io.adapter(createAdapter(pubClient, subClient));
-            logger.info('[Socket] Redis adapter connected and applied successfully');
+            logger.info(
+                '[Socket] Redis adapter connected and applied successfully'
+            );
         } catch (err) {
-            logger.error({ err }, '[Socket] Failed to apply Redis adapter, falling back to local memory adapter');
+            logger.error(
+                { err },
+                '[Socket] Failed to apply Redis adapter, falling back to local memory adapter'
+            );
         }
     }
 
@@ -54,18 +70,23 @@ export async function initSocket(server: HttpServer) {
             });
 
             if (!session) {
-                logger.warn('[Socket] Connection rejected: No valid session found');
+                logger.warn(
+                    '[Socket] Connection rejected: No valid session found'
+                );
                 return next(new Error('Authentication failed'));
             }
 
-            const activeOrganizationId = (session as any).activeOrganizationId;
+            const activeOrganizationId = (session as SessionData)
+                .activeOrganizationId;
             if (!activeOrganizationId) {
-                logger.warn('[Socket] Connection rejected: No active organization in session');
+                logger.warn(
+                    '[Socket] Connection rejected: No active organization in session'
+                );
                 return next(new Error('No active organization selected'));
             }
 
             socket.data.user = session.user;
-            socket.data.role = (session as any).role || 'member';
+            socket.data.role = (session as SessionData).role || 'member';
             socket.data.organizationId = activeOrganizationId;
             next();
         } catch (err) {
@@ -78,10 +99,10 @@ export async function initSocket(server: HttpServer) {
     io.on('connection', (socket) => {
         const orgId = socket.data.organizationId;
         const userId = socket.data.user.id;
-        
+
         socket.join(`org_${orgId}`);
         onlineUsers.set(userId, orgId);
-        
+
         // Broadcast presence online to organization
         io?.to(`org_${orgId}`).emit('presence:update', {
             userId,
@@ -109,25 +130,36 @@ export async function initSocket(server: HttpServer) {
                 });
 
                 if (!conversation) {
-                    return callback?.({ success: false, error: 'Conversation not found' });
+                    return callback?.({
+                        success: false,
+                        error: 'Conversation not found'
+                    });
                 }
 
                 // Root/Admin can view any. Regular agents can view if unassigned or assigned to them.
-                const isAuthorized = 
-                    socket.data.role === 'root' || 
-                    socket.data.role === 'admin' || 
-                    conversation.assignedAgentId === null || 
+                const isAuthorized =
+                    socket.data.role === 'root' ||
+                    socket.data.role === 'admin' ||
+                    conversation.assignedAgentId === null ||
                     conversation.assignedAgentId === userId;
 
                 if (!isAuthorized) {
-                    return callback?.({ success: false, error: 'Access denied: not assigned to this conversation' });
+                    return callback?.({
+                        success: false,
+                        error: 'Access denied: not assigned to this conversation'
+                    });
                 }
 
                 socket.join(`conversation_${conversationId}`);
-                logger.debug(`[Socket] User ${userId} joined room conversation_${conversationId}`);
+                logger.debug(
+                    `[Socket] User ${userId} joined room conversation_${conversationId}`
+                );
                 callback?.({ success: true });
             } catch (err) {
-                logger.error({ err, conversationId }, 'Error joining conversation room');
+                logger.error(
+                    { err, conversationId },
+                    'Error joining conversation room'
+                );
                 callback?.({ success: false, error: 'Internal server error' });
             }
         });
@@ -135,7 +167,9 @@ export async function initSocket(server: HttpServer) {
         // LEAVE specific conversation
         socket.on('leave_conversation', ({ conversationId }) => {
             socket.leave(`conversation_${conversationId}`);
-            logger.debug(`[Socket] User ${userId} left room conversation_${conversationId}`);
+            logger.debug(
+                `[Socket] User ${userId} left room conversation_${conversationId}`
+            );
         });
 
         // Typing Status triggers
@@ -147,30 +181,37 @@ export async function initSocket(server: HttpServer) {
             });
 
             if (conversation) {
-                socket.to(`conversation_${conversationId}`).emit('typing:status', {
-                    conversationId,
-                    userId,
-                    isTyping
-                });
+                socket
+                    .to(`conversation_${conversationId}`)
+                    .emit('typing:status', {
+                        conversationId,
+                        userId,
+                        isTyping
+                    });
             }
         });
 
         // Upload Progress events
-        socket.on('upload:progress', async ({ conversationId, messageId, progress }) => {
-            // Validate conversation belongs to user's org
-            const conversation = await prisma.conversation.findFirst({
-                where: { id: conversationId, organizationId: orgId },
-                select: { id: true }
-            });
-
-            if (conversation) {
-                socket.to(`conversation_${conversationId}`).emit('upload:progress', {
-                    conversationId,
-                    messageId,
-                    progress
+        socket.on(
+            'upload:progress',
+            async ({ conversationId, messageId, progress }) => {
+                // Validate conversation belongs to user's org
+                const conversation = await prisma.conversation.findFirst({
+                    where: { id: conversationId, organizationId: orgId },
+                    select: { id: true }
                 });
+
+                if (conversation) {
+                    socket
+                        .to(`conversation_${conversationId}`)
+                        .emit('upload:progress', {
+                            conversationId,
+                            messageId,
+                            progress
+                        });
+                }
             }
-        });
+        );
 
         // Disconnect presence tracking
         socket.on('disconnect', () => {
@@ -180,7 +221,9 @@ export async function initSocket(server: HttpServer) {
                 status: 'offline',
                 lastSeen: new Date().toISOString()
             });
-            logger.info(`[Socket] User ${userId} disconnected from org_${orgId}`);
+            logger.info(
+                `[Socket] User ${userId} disconnected from org_${orgId}`
+            );
         });
     });
 
@@ -191,20 +234,32 @@ export function getIO() {
     return io;
 }
 
-export function emitToOrg(orgId: string, event: string, data: any) {
+export function emitToOrg(orgId: string, event: string, data: unknown) {
     if (io) {
-        logger.info(`[Socket] Emitting event "${event}" to organization room "org_${orgId}"`);
+        logger.info(
+            `[Socket] Emitting event "${event}" to organization room "org_${orgId}"`
+        );
         io.to(`org_${orgId}`).emit(event, data);
     } else {
-        logger.warn(`[Socket] Cannot emit event "${event}" to "org_${orgId}": socket server not initialized`);
+        logger.warn(
+            `[Socket] Cannot emit event "${event}" to "org_${orgId}": socket server not initialized`
+        );
     }
 }
 
-export function emitToConversation(conversationId: string, event: string, data: any) {
+export function emitToConversation(
+    conversationId: string,
+    event: string,
+    data: unknown
+) {
     if (io) {
-        logger.info(`[Socket] Emitting event "${event}" to conversation room "conversation_${conversationId}"`);
+        logger.info(
+            `[Socket] Emitting event "${event}" to conversation room "conversation_${conversationId}"`
+        );
         io.to(`conversation_${conversationId}`).emit(event, data);
     } else {
-        logger.warn(`[Socket] Cannot emit event "${event}" to conversation room "conversation_${conversationId}": socket server not initialized`);
+        logger.warn(
+            `[Socket] Cannot emit event "${event}" to conversation room "conversation_${conversationId}": socket server not initialized`
+        );
     }
 }

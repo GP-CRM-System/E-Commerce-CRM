@@ -20,11 +20,17 @@ import {
 } from '../../config/b2.config.js';
 import crypto from 'crypto';
 
-export async function signMessageMedia(message: any) {
+export async function signMessageMedia(message: unknown) {
     if (!message) return message;
-    const metadata = (message.metadata as Record<string, any>) || {};
+    const msg = message as {
+        metadata?: Record<string, unknown> | null;
+        content?: string;
+    };
+    const metadata = msg.metadata || {};
     if (metadata.storageKey && isB2Configured) {
-        const result = await getSignedDownloadUrl(metadata.storageKey);
+        const result = await getSignedDownloadUrl(
+            metadata.storageKey as string
+        );
         if (result.success && result.url) {
             return {
                 ...message,
@@ -34,7 +40,6 @@ export async function signMessageMedia(message: any) {
     }
     return message;
 }
-
 
 export const listConversations = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -108,7 +113,9 @@ export const getConversationMessages = asyncHandler(
         // Reverse the array to maintain chronological order (oldest to newest) for client display
         messages.reverse();
 
-        const signedMessages = await Promise.all(messages.map(signMessageMedia));
+        const signedMessages = await Promise.all(
+            messages.map(signMessageMedia)
+        );
 
         return ResponseHandler.paginated(
             res,
@@ -165,13 +172,19 @@ export const sendMessage = asyncHandler(
         // 2. Perform background operations asynchronously (without blocking HTTP response)
         Promise.all([
             // Update conversation timestamp
-            prisma.conversation.update({
-                where: { id: conversationId },
-                data: { lastMessageAt: new Date() },
-                include: { customer: { select: { name: true, email: true } } }
-            }).then((updatedConversation) => {
-                emitToOrg(organizationId, 'inbox:updated', { conversation: updatedConversation });
-            }),
+            prisma.conversation
+                .update({
+                    where: { id: conversationId },
+                    data: { lastMessageAt: new Date() },
+                    include: {
+                        customer: { select: { name: true, email: true } }
+                    }
+                })
+                .then((updatedConversation) => {
+                    emitToOrg(organizationId, 'inbox:updated', {
+                        conversation: updatedConversation
+                    });
+                }),
 
             // Enqueue the outbound job for asynchronous dispatching to Meta API
             addOutboundJob({
@@ -306,7 +319,19 @@ export const createUploadSession = asyncHandler(
             image: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
             video: ['mp4', 'mov', 'webm'],
             audio: ['mp3', 'wav', 'm4a', 'ogg'],
-            document: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', 'csv']
+            document: [
+                'pdf',
+                'doc',
+                'docx',
+                'xls',
+                'xlsx',
+                'ppt',
+                'pptx',
+                'txt',
+                'zip',
+                'rar',
+                'csv'
+            ]
         };
 
         const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -368,7 +393,9 @@ export const createUploadSession = asyncHandler(
         }
 
         // Emit message:created so other agents see the optimistic placeholder
-        emitToConversation(conversationId, 'message:created', { message: updatedMessage });
+        emitToConversation(conversationId, 'message:created', {
+            message: updatedMessage
+        });
 
         return ResponseHandler.success(
             res,
@@ -393,7 +420,10 @@ export const completeUpload = asyncHandler(
             include: { conversation: true }
         });
 
-        if (!message || message.conversation.organizationId !== organizationId) {
+        if (
+            !message ||
+            message.conversation.organizationId !== organizationId
+        ) {
             return ResponseHandler.error(
                 res,
                 'Message not found',
@@ -402,7 +432,7 @@ export const completeUpload = asyncHandler(
             );
         }
 
-        const metadata = (message.metadata as Record<string, any>) || {};
+        const metadata = (message.metadata as Record<string, unknown>) || {};
         if (!metadata.storageKey) {
             return ResponseHandler.error(
                 res,
@@ -413,7 +443,9 @@ export const completeUpload = asyncHandler(
         }
 
         // 1. Generate the signed download URL to store or return
-        const signedDownloadResult = await getSignedDownloadUrl(metadata.storageKey);
+        const signedDownloadResult = await getSignedDownloadUrl(
+            metadata.storageKey as string
+        );
         if (!signedDownloadResult.success || !signedDownloadResult.url) {
             return ResponseHandler.error(
                 res,
@@ -480,7 +512,10 @@ export const deleteMessage = asyncHandler(
             include: { conversation: true }
         });
 
-        if (!message || message.conversation.organizationId !== organizationId) {
+        if (
+            !message ||
+            message.conversation.organizationId !== organizationId
+        ) {
             return ResponseHandler.error(
                 res,
                 'Message not found',
@@ -490,9 +525,9 @@ export const deleteMessage = asyncHandler(
         }
 
         // Delete S3/B2 file if key exists
-        const metadata = (message.metadata as Record<string, any>) || {};
+        const metadata = (message.metadata as Record<string, unknown>) || {};
         if (metadata.storageKey && isB2Configured) {
-            await deleteFromB2(metadata.storageKey);
+            await deleteFromB2(metadata.storageKey as string);
         }
 
         // Delete from Database
@@ -513,4 +548,3 @@ export const deleteMessage = asyncHandler(
         );
     }
 );
-

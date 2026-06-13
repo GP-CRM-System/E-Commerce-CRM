@@ -16,7 +16,7 @@ export const statusQueue = new Queue('messaging-status-queue', {
 });
 
 // Enqueue Helpers
-export async function addWebhookJob(payload: any) {
+export async function addWebhookJob(payload: Record<string, unknown>) {
     try {
         const job = await webhookQueue.add('process-webhook', payload, {
             attempts: 3,
@@ -51,7 +51,7 @@ export async function addOutboundJob(data: {
 }
 
 export async function addStatusJob(data: {
-    statusEntry: any;
+    statusEntry: Record<string, unknown>;
     organizationId: string;
 }) {
     try {

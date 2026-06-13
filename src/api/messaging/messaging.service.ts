@@ -33,14 +33,19 @@ export async function handleInboundMessage(data: {
     const provider = normalizeProvider(data.provider);
 
     // Normalize WhatsApp external ID and phone number formats
-    const externalChatId = provider === 'whatsapp' ? cleanWhatsAppNumber(data.externalChatId) : data.externalChatId;
-    const customerPhone = provider === 'whatsapp' && data.customerPhone ? cleanWhatsAppNumber(data.customerPhone) : data.customerPhone;
+    const externalChatId =
+        provider === 'whatsapp'
+            ? cleanWhatsAppNumber(data.externalChatId)
+            : data.externalChatId;
+    const customerPhone =
+        provider === 'whatsapp' && data.customerPhone
+            ? cleanWhatsAppNumber(data.customerPhone)
+            : data.customerPhone;
 
     const customerIdentityFilters = [
-        ...(customerPhone ? [
-            { phone: customerPhone },
-            { phone: `+${customerPhone}` }
-        ] : []),
+        ...(customerPhone
+            ? [{ phone: customerPhone }, { phone: `+${customerPhone}` }]
+            : []),
         ...(data.customerEmail ? [{ email: data.customerEmail }] : [])
     ];
 
@@ -64,7 +69,9 @@ export async function handleInboundMessage(data: {
         customer = await prisma.customer.create({
             data: {
                 organizationId: data.organizationId,
-                name: data.customerName || (customerPhone ? `+${customerPhone}` : label),
+                name:
+                    data.customerName ||
+                    (customerPhone ? `+${customerPhone}` : label),
                 phone: customerPhone || null,
                 email: data.customerEmail || null,
                 source: 'OTHER'
@@ -77,12 +84,16 @@ export async function handleInboundMessage(data: {
         }
 
         // If the customer has a temporary phone-number name or generic label, but Meta sends a real name, update it!
-        const isDefaultOrPhoneName = 
-            customer.name.startsWith('+') || 
-            customer.name.includes('User') || 
+        const isDefaultOrPhoneName =
+            customer.name.startsWith('+') ||
+            customer.name.includes('User') ||
             customer.name === customer.phone;
 
-        if (data.customerName && isDefaultOrPhoneName && customer.name !== data.customerName) {
+        if (
+            data.customerName &&
+            isDefaultOrPhoneName &&
+            customer.name !== data.customerName
+        ) {
             updateData.name = data.customerName;
         }
 
@@ -383,8 +394,14 @@ export async function startConversation(data: {
 }) {
     const provider = normalizeProvider(data.provider);
 
-    const recipientId = provider === 'whatsapp' ? cleanWhatsAppNumber(data.recipientId) : data.recipientId;
-    const customerPhone = provider === 'whatsapp' && data.customerPhone ? cleanWhatsAppNumber(data.customerPhone) : data.customerPhone;
+    const recipientId =
+        provider === 'whatsapp'
+            ? cleanWhatsAppNumber(data.recipientId)
+            : data.recipientId;
+    const customerPhone =
+        provider === 'whatsapp' && data.customerPhone
+            ? cleanWhatsAppNumber(data.customerPhone)
+            : data.customerPhone;
 
     // 1. Find or create customer
     let customer = await prisma.customer.findFirst({
@@ -395,10 +412,12 @@ export async function startConversation(data: {
                       OR: [
                           { phone: recipientId },
                           { phone: `+${recipientId}` },
-                          ...(customerPhone ? [
-                              { phone: customerPhone },
-                              { phone: `+${customerPhone}` }
-                          ] : [])
+                          ...(customerPhone
+                              ? [
+                                    { phone: customerPhone },
+                                    { phone: `+${customerPhone}` }
+                                ]
+                              : [])
                       ]
                   }
                 : {
@@ -411,7 +430,9 @@ export async function startConversation(data: {
         customer = await prisma.customer.create({
             data: {
                 organizationId: data.organizationId,
-                name: data.customerName || (provider === 'whatsapp' ? `+${recipientId}` : recipientId),
+                name:
+                    data.customerName ||
+                    (provider === 'whatsapp' ? `+${recipientId}` : recipientId),
                 phone: provider === 'whatsapp' ? recipientId : recipientId,
                 source: 'OTHER'
             }

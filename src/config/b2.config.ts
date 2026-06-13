@@ -133,7 +133,10 @@ export async function getSignedUploadUrl(
         return { success: true, url };
     } catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
-        logger.error({ err: error, key }, 'Failed to generate signed upload URL');
+        logger.error(
+            { err: error, key },
+            'Failed to generate signed upload URL'
+        );
         return { success: false, error };
     }
 }
@@ -178,7 +181,10 @@ export async function configureB2Cors(): Promise<void> {
             ? process.env.CORS_ORIGIN.split(',')
             : ['http://localhost:5173', 'http://localhost:5174'];
 
-        logger.info({ allowedOrigins }, '[B2] Configuring CORS rules for bucket...');
+        logger.info(
+            { allowedOrigins },
+            '[B2] Configuring CORS rules for bucket...'
+        );
 
         await client.send(
             new PutBucketCorsCommand({
@@ -187,9 +193,19 @@ export async function configureB2Cors(): Promise<void> {
                     CORSRules: [
                         {
                             AllowedHeaders: ['*'],
-                            AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+                            AllowedMethods: [
+                                'GET',
+                                'PUT',
+                                'POST',
+                                'DELETE',
+                                'HEAD'
+                            ],
                             AllowedOrigins: allowedOrigins,
-                            ExposeHeaders: ['ETag', 'Content-Length', 'Content-Type'],
+                            ExposeHeaders: [
+                                'ETag',
+                                'Content-Length',
+                                'Content-Type'
+                            ],
                             MaxAgeSeconds: 3600
                         }
                     ]

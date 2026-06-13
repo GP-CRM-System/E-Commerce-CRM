@@ -14,7 +14,11 @@ export const webhookWorker = new Worker(
         const body = job.data;
         logger.info(`[Worker] Processing webhook job: ${job.id}`);
 
-        if (body.object !== 'whatsapp_business_account' && body.object !== 'page' && body.object !== 'instagram') {
+        if (
+            body.object !== 'whatsapp_business_account' &&
+            body.object !== 'page' &&
+            body.object !== 'instagram'
+        ) {
             return;
         }
 
@@ -25,22 +29,37 @@ export const webhookWorker = new Worker(
                 if (value && value.metadata) {
                     const phoneNumberId = value.metadata.phone_number_id;
                     const integration = await prisma.integration.findFirst({
-                        where: { provider: 'meta', isActive: true, metadata: { path: ['whatsappPhoneNumberId'], equals: phoneNumberId } }
+                        where: {
+                            provider: 'meta',
+                            isActive: true,
+                            metadata: {
+                                path: ['whatsappPhoneNumberId'],
+                                equals: phoneNumberId
+                            }
+                        }
                     });
 
                     if (!integration) continue;
 
                     // Queue status updates separately
                     for (const status of value.statuses || []) {
-                        const { addStatusJob } = await import('./messaging.queue.js');
-                        await addStatusJob({ statusEntry: status, organizationId: integration.orgId });
+                        const { addStatusJob } =
+                            await import('./messaging.queue.js');
+                        await addStatusJob({
+                            statusEntry: status,
+                            organizationId: integration.orgId
+                        });
                     }
 
                     // Process messages
                     for (const msg of value.messages || []) {
                         const messageContent = getWhatsAppContent(msg);
-                        const contact = value.contacts?.find((c: any) => c.wa_id === msg.from);
-                        const customerName = contact?.profile?.name || value.contacts?.[0]?.profile?.name;
+                        const contact = value.contacts?.find(
+                            (c: { wa_id: string }) => c.wa_id === msg.from
+                        );
+                        const customerName =
+                            contact?.profile?.name ||
+                            value.contacts?.[0]?.profile?.name;
 
                         const result = await handleInboundMessage({
                             organizationId: integration.orgId,
@@ -55,9 +74,13 @@ export const webhookWorker = new Worker(
                         });
 
                         // Emit visual changes
-                        emitToConversation(result.conversation.id, 'message:created', {
-                            message: result.message
-                        });
+                        emitToConversation(
+                            result.conversation.id,
+                            'message:created',
+                            {
+                                message: result.message
+                            }
+                        );
                         emitToOrg(integration.orgId, 'inbox:updated', {
                             conversation: result.conversation
                         });
@@ -76,7 +99,11 @@ export const webhookWorker = new Worker(
                         provider: 'meta',
                         isActive: true,
                         metadata: {
-                            path: [isInstagram ? 'instagramBusinessAccountId' : 'facebookPageId'],
+                            path: [
+                                isInstagram
+                                    ? 'instagramBusinessAccountId'
+                                    : 'facebookPageId'
+                            ],
                             equals: entryId
                         }
                     }
@@ -87,13 +114,23 @@ export const webhookWorker = new Worker(
                 for (const msgEvent of entry.messaging || []) {
                     // Handle Message status updates (delivery/read ticks)
                     if (msgEvent.delivery || msgEvent.read) {
-                        const { addStatusJob } = await import('./messaging.queue.js');
-                        await addStatusJob({ statusEntry: msgEvent, organizationId: integration.orgId });
+                        const { addStatusJob } =
+                            await import('./messaging.queue.js');
+                        await addStatusJob({
+                            statusEntry: msgEvent,
+                            organizationId: integration.orgId
+                        });
                     }
 
                     // Handle Inbound Message
-                    if (msgEvent.message && !msgEvent.message.is_echo && !msgEvent.message.is_deleted) {
-                        const { content, type } = getMessagingContent(msgEvent.message);
+                    if (
+                        msgEvent.message &&
+                        !msgEvent.message.is_echo &&
+                        !msgEvent.message.is_deleted
+                    ) {
+                        const { content, type } = getMessagingContent(
+                            msgEvent.message
+                        );
                         const result = await handleInboundMessage({
                             organizationId: integration.orgId,
                             externalChatId: msgEvent.sender.id,
@@ -104,9 +141,13 @@ export const webhookWorker = new Worker(
                             metadata: msgEvent
                         });
 
-                        emitToConversation(result.conversation.id, 'message:created', {
-                            message: result.message
-                        });
+                        emitToConversation(
+                            result.conversation.id,
+                            'message:created',
+                            {
+                                message: result.message
+                            }
+                        );
                         emitToOrg(integration.orgId, 'inbox:updated', {
                             conversation: result.conversation
                         });
@@ -119,21 +160,45 @@ export const webhookWorker = new Worker(
 );
 
 // Helper formats
-function getWhatsAppContent(msg: any) {
+function getWhatsAppContent(msg: {
+    type?: string;
+    text?: { body?: string };
+    image?: { caption?: string };
+    document?: { caption?: string; filename?: string };
+    video?: { caption?: string };
+    audio?: Record<string, unknown>;
+    button?: { text?: string };
+    [key: string]: unknown;
+}) {
     if (msg.type === 'text') return msg.text?.body || '';
     if (msg.type === 'image') return msg.image?.caption || '[Image]';
-    if (msg.type === 'document') return msg.document?.caption || msg.document?.filename || '[Document]';
+    if (msg.type === 'document')
+        return msg.document?.caption || msg.document?.filename || '[Document]';
     if (msg.type === 'video') return msg.video?.caption || '[Video]';
     if (msg.type === 'audio') return '[Audio/Voice Note]';
     if (msg.type === 'button') return msg.button?.text || '[Button]';
     return `[${msg.type} Message]`;
 }
 
-function getMessagingContent(message: any) {
+function getMessagingContent(
+    message:
+        | {
+              text?: string;
+              attachments?: Array<{
+                  type?: string;
+                  payload?: Record<string, unknown>;
+              }>;
+          }
+        | undefined
+) {
+    if (!message) return { content: '', type: 'unknown' };
     if (message.text) return { content: message.text, type: 'text' };
     const att = message.attachments?.[0];
     const type = att?.type || 'attachment';
-    return { content: `[${type.charAt(0).toUpperCase()}${type.slice(1)} Attachment]`, type };
+    return {
+        content: `[${type.charAt(0).toUpperCase()}${type.slice(1)} Attachment]`,
+        type
+    };
 }
 
 // ----------------------------------------------------
@@ -150,7 +215,8 @@ export const outboundWorker = new Worker(
             include: { conversation: true }
         });
 
-        if (!message || message.status !== 'SENT') { // PENDING messages are processed (SENT is initial default in DB model prior to update)
+        if (!message || message.status !== 'SENT') {
+            // PENDING messages are processed (SENT is initial default in DB model prior to update)
             // Wait, we default to SENT in DB currently, we will change it to PENDING in implementation.
         }
 
@@ -170,29 +236,35 @@ export const outboundWorker = new Worker(
         });
 
         const integration = metaIntegrations.find(
-            (i) => i.metadata && (i.metadata as Record<string, string>)[channelMetadataKey]
+            (i) =>
+                i.metadata &&
+                (i.metadata as Record<string, string>)[channelMetadataKey]
         );
 
         if (!integration) {
-            throw new Error(`Meta integration for ${conversation.provider} not configured or inactive`);
+            throw new Error(
+                `Meta integration for ${conversation.provider} not configured or inactive`
+            );
         }
 
         const accessToken = integration.accessToken;
-        const metaConfig = (integration.metadata as Record<string, string>) || {};
-        let externalMessageId = '';
+        const metaConfig =
+            (integration.metadata as Record<string, string>) || {};
+        let externalMessageId: string | undefined;
 
         try {
             if (conversation.provider === 'whatsapp') {
                 const phoneNumberId = metaConfig.whatsappPhoneNumberId;
-                
+
                 // Construct media/template/text payload for WhatsApp
-                let whatsappPayload: any = {
+                const whatsappPayload: Record<string, unknown> = {
                     messaging_product: 'whatsapp',
                     recipient_type: 'individual',
                     to: conversation.externalId
                 };
 
-                const msgMetadata = (message.metadata as any) || {};
+                const msgMetadata =
+                    (message.metadata as Record<string, unknown>) || {};
 
                 if (message.type === 'template') {
                     whatsappPayload.type = 'template';
@@ -238,19 +310,23 @@ export const outboundWorker = new Worker(
                     }
                 );
 
-                const result = await response.json() as any;
+                const result = (await response.json()) as {
+                    error?: { message?: string };
+                    messages?: Array<{ id: string }>;
+                };
                 if (!response.ok) {
                     throw new Error(result.error?.message || 'Meta API error');
                 }
-                externalMessageId = result.messages?.[0]?.id || '';
+                externalMessageId = result.messages?.[0]?.id || undefined;
             } else {
                 // Facebook Messenger or Instagram
-                const endpointId = conversation.provider === 'instagram' 
-                    ? metaConfig.instagramBusinessAccountId 
-                    : metaConfig.facebookPageId;
+                const endpointId =
+                    conversation.provider === 'instagram'
+                        ? metaConfig.instagramBusinessAccountId
+                        : metaConfig.facebookPageId;
 
                 // Construct media/text payload for Messenger/Instagram
-                let messengerMessage: any = {};
+                const messengerMessage: Record<string, unknown> = {};
 
                 if (message.type === 'image') {
                     messengerMessage.attachment = {
@@ -292,17 +368,24 @@ export const outboundWorker = new Worker(
                     }
                 );
 
-                const result = await response.json() as any;
+                const result = (await response.json()) as {
+                    error?: { message?: string };
+                    message_id?: string;
+                };
                 if (!response.ok) {
                     throw new Error(result.error?.message || 'Meta API error');
                 }
-                externalMessageId = result.message_id || '';
+                externalMessageId = result.message_id || undefined;
             }
 
             // Sync successful send in DB
-            const updatedMsg = await prisma.message.update({
+            await prisma.message.update({
                 where: { id: messageId },
-                data: { status: 'SENT', externalId: externalMessageId, providerMessageId: externalMessageId }
+                data: {
+                    status: 'SENT',
+                    externalId: externalMessageId,
+                    providerMessageId: externalMessageId
+                }
             });
 
             // Emit update to conversation thread & inbox
@@ -311,17 +394,24 @@ export const outboundWorker = new Worker(
                 messageId,
                 status: 'SENT'
             });
-
-        } catch (err: any) {
-            logger.warn({ err, messageId }, '[Worker] Outbound job attempt failed');
+        } catch (err: unknown) {
+            const error =
+                err instanceof Error ? err : new Error('Unknown error');
+            logger.warn(
+                { err: error, messageId },
+                '[Worker] Outbound job attempt failed'
+            );
             // Check if transient to retry, or mark failed
-            const isPermanent = err.message?.includes('invalid') || err.message?.includes('permission') || job.attemptsMade >= 3;
+            const isPermanent =
+                error.message?.includes('invalid') ||
+                error.message?.includes('permission') ||
+                job.attemptsMade >= 3;
             if (isPermanent) {
                 await prisma.message.update({
                     where: { id: messageId },
                     data: {
                         status: 'FAILED',
-                        errorMessage: err.message || 'API delivery failed',
+                        errorMessage: error.message || 'API delivery failed',
                         errorCode: 'API_ERROR'
                     }
                 });
@@ -330,7 +420,7 @@ export const outboundWorker = new Worker(
                     conversationId,
                     messageId,
                     status: 'FAILED',
-                    errorMessage: err.message
+                    errorMessage: error.message
                 });
             } else {
                 throw err; // Trigger retry in BullMQ
@@ -357,26 +447,36 @@ export const statusWorker = new Worker(
             });
 
             if (message && message.conversation) {
-                const statusMap: Record<string, 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'> = {
+                const statusMap: Record<
+                    string,
+                    'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
+                > = {
                     sent: 'SENT',
                     delivered: 'DELIVERED',
                     read: 'READ',
                     failed: 'FAILED'
                 };
                 const newStatus = statusMap[statusEntry.status] || 'SENT';
-                const errorMessage = statusEntry.status === 'failed' ? statusEntry.errors?.[0]?.message || 'WhatsApp failed' : null;
+                const errorMessage =
+                    statusEntry.status === 'failed'
+                        ? statusEntry.errors?.[0]?.message || 'WhatsApp failed'
+                        : null;
 
                 await prisma.message.update({
                     where: { id: message.id },
                     data: { status: newStatus, errorMessage }
                 });
 
-                emitToConversation(message.conversationId, 'message:status_updated', {
-                    conversationId: message.conversationId,
-                    messageId: message.id,
-                    status: newStatus,
-                    errorMessage
-                });
+                emitToConversation(
+                    message.conversationId,
+                    'message:status_updated',
+                    {
+                        conversationId: message.conversationId,
+                        messageId: message.id,
+                        status: newStatus,
+                        errorMessage
+                    }
+                );
             }
         }
 
@@ -391,25 +491,41 @@ export const statusWorker = new Worker(
                 if (statusEntry.read) {
                     // Mark all outbound messages read
                     await prisma.message.updateMany({
-                        where: { conversationId: conversation.id, direction: 'OUTBOUND', status: { in: ['SENT', 'DELIVERED'] } },
+                        where: {
+                            conversationId: conversation.id,
+                            direction: 'OUTBOUND',
+                            status: { in: ['SENT', 'DELIVERED'] }
+                        },
                         data: { status: 'READ' }
                     });
 
-                    emitToConversation(conversation.id, 'conversation:read_receipt', {
-                        conversationId: conversation.id,
-                        status: 'READ'
-                    });
+                    emitToConversation(
+                        conversation.id,
+                        'conversation:read_receipt',
+                        {
+                            conversationId: conversation.id,
+                            status: 'READ'
+                        }
+                    );
                 } else if (statusEntry.delivery) {
                     // Mark all outbound messages delivered
                     await prisma.message.updateMany({
-                        where: { conversationId: conversation.id, direction: 'OUTBOUND', status: 'SENT' },
+                        where: {
+                            conversationId: conversation.id,
+                            direction: 'OUTBOUND',
+                            status: 'SENT'
+                        },
                         data: { status: 'DELIVERED' }
                     });
 
-                    emitToConversation(conversation.id, 'conversation:read_receipt', {
-                        conversationId: conversation.id,
-                        status: 'DELIVERED'
-                    });
+                    emitToConversation(
+                        conversation.id,
+                        'conversation:read_receipt',
+                        {
+                            conversationId: conversation.id,
+                            status: 'DELIVERED'
+                        }
+                    );
                 }
             }
         }
