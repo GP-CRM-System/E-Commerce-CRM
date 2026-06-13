@@ -2,33 +2,33 @@ import 'dotenv/config';
 
 export const env = {
     // Server Configuration
-    port: process.env.PORT,
-    nodeEnv: process.env.NODE_ENV,
-    corsOrigin: process.env.CORS_ORIGIN,
-    timeZone: process.env.TZ,
+    port: process.env.PORT as string,
+    nodeEnv: process.env.NODE_ENV as string,
+    corsOrigin: process.env.CORS_ORIGIN as string,
+    timeZone: process.env.TZ as string,
 
     // Better Auth
-    betterAuthSecret: process.env.BETTER_AUTH_SECRET,
+    betterAuthSecret: process.env.BETTER_AUTH_SECRET as string,
 
     // Database Configuration
-    databaseUrl: process.env.DATABASE_URL,
+    databaseUrl: process.env.DATABASE_URL as string,
 
     // SMTP Configuration
-    smtpHost: process.env.SMTP_HOST,
-    smtpPort: process.env.SMTP_PORT,
-    smtpSecure: process.env.SMTP_SECURE,
-    smtpUser: process.env.SMTP_USER,
-    smtpPass: process.env.SMTP_PASS,
-    smtpFrom: process.env.SMTP_FROM,
+    smtpHost: process.env.SMTP_HOST as string,
+    smtpPort: process.env.SMTP_PORT as string,
+    smtpSecure: process.env.SMTP_SECURE as string,
+    smtpUser: process.env.SMTP_USER as string,
+    smtpPass: process.env.SMTP_PASS as string,
+    smtpFrom: process.env.SMTP_FROM as string,
 
     // Redis Configuration (for BullMQ)
     redisUrl: process.env.REDIS_URL,
 
     // Google OAuth Configuration
-    appUrl: process.env.APP_URL,
-    googleClientId: process.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
+    appUrl: process.env.APP_URL as string,
+    googleClientId: process.env.GOOGLE_CLIENT_ID as string,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL as string,
 
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
@@ -49,20 +49,20 @@ export const env = {
     cloudflarePublicDomain: process.env.CF_PUBLIC_DOMAIN,
 
     // Shopify Configuration
-    shopifyClientId: process.env.SHOPIFY_CLIENT_ID,
-    shopifyClientSecret: process.env.SHOPIFY_CLIENT_SECRET,
-    shopifyScopes:
-        process.env.SHOPIFY_SCOPES ||
-        'read_customers,read_orders,read_products,read_inventory,write_pixels',
+    shopifyClientId: process.env.SHOPIFY_CLIENT_ID as string,
+    shopifyClientSecret: process.env.SHOPIFY_CLIENT_SECRET as string,
+    shopifyScopes: (process.env.SHOPIFY_SCOPES ||
+        'read_customers,read_orders,read_products,read_inventory,write_pixels') as string,
 
     // Paymob Configuration
-    paymobApiKey: process.env.PAYMOB_API_KEY,
-    paymobSecretKey: process.env.PAYMOB_SECRET_KEY,
-    paymobPublicKey: process.env.PAYMOB_PUBLIC_KEY,
+    paymobApiKey: process.env.PAYMOB_API_KEY as string,
+    paymobSecretKey: process.env.PAYMOB_SECRET_KEY as string,
+    paymobPublicKey: process.env.PAYMOB_PUBLIC_KEY as string,
     paymobCardIntegrationId: process.env.PAYMOB_CARD_INTEGRATION_ID
         ? Number(process.env.PAYMOB_CARD_INTEGRATION_ID)
         : undefined,
-    paymobBaseUrl: process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com',
+    paymobBaseUrl: (process.env.PAYMOB_BASE_URL ||
+        'https://accept.paymob.com') as string,
 
     // Cloudinary Configuration
     cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
@@ -70,7 +70,8 @@ export const env = {
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
 
     // Encryption
-    encryptionKey: process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET
+    encryptionKey: (process.env.ENCRYPTION_KEY ||
+        process.env.BETTER_AUTH_SECRET) as string
 };
 
 export function checkEnv(): void {

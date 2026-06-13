@@ -27,6 +27,7 @@ model User {
   assignedTickets SupportTicket[] @relation("AssignedTickets")
   ticketNotes     TicketNote[]
   segments        Segment[]
+  assignedConversations Conversation[] @relation("AssignedConversations")
 
   @@unique([email])
   @@map("user")
@@ -829,6 +830,7 @@ enum MessageDirection {
 }
 
 enum MessageStatus {
+  PENDING
   SENT
   DELIVERED
   READ
@@ -836,40 +838,52 @@ enum MessageStatus {
 }
 
 model Conversation {
-  id             String             @id @default(nanoid())
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customerId     String?
-  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  externalId     String? // Meta conversation ID
-  provider       String // 'whatsapp', 'facebook', 'instagram'
-  status         ConversationStatus @default(OPEN)
-  lastMessageAt  DateTime           @default(now())
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  messages       Message[]
+  id              String             @id @default(nanoid())
+  organizationId  String
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId      String?
+  customer        Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  externalId      String? // Meta conversation ID
+  provider        String // 'whatsapp', 'facebook', 'instagram'
+  status          ConversationStatus @default(OPEN)
+  lastMessageAt   DateTime           @default(now())
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  messages        Message[]
+  unreadCount     Int                @default(0)
+  assignedAgentId String?
+  assignedAgent   User?              @relation("AssignedConversations", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  lastReadAt      DateTime?
+  lastInboundAt   DateTime?
+  lastOutboundAt  DateTime?
 
   @@unique([organizationId, externalId, provider])
   @@index([organizationId])
   @@index([customerId])
   @@index([externalId])
+  @@index([assignedAgentId])
+  @@index([lastMessageAt])
 }
 
 model Message {
-  id             String           @id @default(nanoid())
-  conversationId String
-  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  externalId     String? // Meta message ID
-  direction      MessageDirection
-  content        String
-  type           String           @default("text") // 'text', 'image', 'video', 'template'
-  status         MessageStatus    @default(SENT)
-  errorMessage   String? // Error message if delivery failed
-  metadata       Json? // Media URLs, template names, etc.
-  createdAt      DateTime         @default(now())
+  id                String           @id @default(nanoid())
+  conversationId    String
+  conversation      Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  externalId        String? // Meta message ID
+  providerMessageId String? // Meta message ID
+  direction         MessageDirection
+  content           String
+  type              String           @default("text") // 'text', 'image', 'video', 'template'
+  status            MessageStatus    @default(SENT)
+  errorMessage      String? // Error message if delivery failed
+  errorCode         String? // Error code if delivery failed
+  metadata          Json? // Media URLs, template names, etc.
+  createdAt         DateTime         @default(now())
 
   @@index([conversationId])
   @@index([externalId])
+  @@index([providerMessageId])
+  @@index([createdAt])
 }
 
 model Notification {

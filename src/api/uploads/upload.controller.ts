@@ -10,7 +10,7 @@ import { asyncHandler } from '../../middlewares/error.middleware.js';
 import logger from '../../utils/logger.util.js';
 
 const uploadTypeSchema = z
-    .enum(['avatar', 'logo'])
+    .enum(['avatar', 'logo', 'attachment'])
     .optional()
     .default('avatar');
 
@@ -18,7 +18,7 @@ export const upload = asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) {
         ResponseHandler.error(
             res,
-            'No file provided or unsupported file type. Allowed: jpeg, png, webp, gif',
+            'No file provided or unsupported file type.',
             ErrorCode.VALIDATION_ERROR,
             HttpStatus.BAD_REQUEST,
             'POST /api/uploads'
@@ -30,7 +30,7 @@ export const upload = asyncHandler(async (req: Request, res: Response) => {
     if (!typeResult.success) {
         ResponseHandler.error(
             res,
-            'Invalid upload type. Must be "avatar" or "logo"',
+            'Invalid upload type. Must be "avatar", "logo", or "attachment"',
             ErrorCode.VALIDATION_ERROR,
             HttpStatus.BAD_REQUEST,
             'POST /api/uploads'

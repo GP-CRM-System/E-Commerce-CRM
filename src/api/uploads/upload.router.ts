@@ -13,11 +13,41 @@ import {
     ResponseHandler
 } from '../../utils/response.util.js';
 
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MIMES = [
+    // Images
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    // Videos
+    'video/mp4',
+    'video/mpeg',
+    'video/quicktime',
+    'video/3gpp',
+    'video/webm',
+    // Audio / Voice notes
+    'audio/mpeg',
+    'audio/mp3',
+    'audio/wav',
+    'audio/ogg',
+    'audio/aac',
+    'audio/amr',
+    'audio/m4a',
+    'audio/webm',
+    'audio/mp4',
+    // Documents
+    'application/pdf',
+    'text/plain',
+    'application/zip',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+];
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB Meta attachment limit
     fileFilter: (_req, file, cb) => {
         if (ALLOWED_MIMES.includes(file.mimetype)) {
             cb(null, true);
@@ -54,7 +84,7 @@ function handleMulterError(
         if (err.code === 'LIMIT_FILE_SIZE') {
             ResponseHandler.error(
                 res,
-                'File too large. Maximum size is 2MB',
+                'File too large. Maximum size is 25MB',
                 ErrorCode.VALIDATION_ERROR,
                 HttpStatus.BAD_REQUEST,
                 'POST /api/uploads'

@@ -27,14 +27,14 @@ describe('POST /api/uploads', () => {
         expect(res.body.message).toContain('Invalid upload type');
     });
 
-    it('should reject files larger than 2MB', async () => {
-        const largeBuffer = Buffer.alloc(3 * 1024 * 1024);
+    it('should reject files larger than 25MB', async () => {
+        const largeBuffer = Buffer.alloc(30 * 1024 * 1024);
         const res = await request(app)
             .post('/api/uploads')
             .attach('file', largeBuffer, 'large.jpg');
 
         expect(res.status).toBe(400);
-        expect(res.body.message).toContain('too large');
+        expect(res.body.message).toContain('Maximum size is 25MB');
     });
 
     it('should reject unsupported file types', async () => {

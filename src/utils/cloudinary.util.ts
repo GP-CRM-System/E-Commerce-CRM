@@ -10,16 +10,26 @@ cloudinary.config({
 
 export async function uploadToCloudinary(
     buffer: Buffer,
-    folder: 'avatars' | 'logos'
+    folder: string,
+    resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image'
 ): Promise<{ url: string; publicId: string }> {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 folder: `crm/${folder}`,
-                resource_type: 'image',
-                transformation: [
-                    { width: 400, height: 400, crop: 'limit', quality: 'auto' }
-                ]
+                resource_type: resourceType,
+                ...(resourceType === 'image'
+                    ? {
+                          transformation: [
+                              {
+                                  width: 400,
+                                  height: 400,
+                                  crop: 'limit',
+                                  quality: 'auto'
+                              }
+                          ]
+                      }
+                    : {})
             },
             (error, result: UploadApiResponse | undefined) => {
                 if (error) {
