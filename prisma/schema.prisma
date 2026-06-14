@@ -523,6 +523,17 @@ model CampaignRecipient {
   @@index([status])
 }
 
+model AiRecommendation {
+  id              String   @id @default(nanoid())
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  recommendations Json // Array of { itemId: string; similarity: number }[]
+  computedAt      DateTime @default(now())
+
+  @@index([productId])
+  @@map("ai_recommendation")
+}
+
 model Product {
   id             String           @id @default(nanoid())
   name           String
@@ -534,6 +545,7 @@ model Product {
   organizationId String
   orderItems     OrderItem[]
   variants       ProductVariant[]
+  aiRecommendations AiRecommendation[]
 
   externalId String?
   sku        String?

@@ -33,6 +33,8 @@ export const list = asyncHandler(
         );
 
         const filters: OrderFilters = {
+            page: req.query.page as string,
+            limit: req.query.limit as string,
             search: req.query.search as string | undefined,
             status: req.query.status as OrderFilters['status'],
             paymentStatus: req.query

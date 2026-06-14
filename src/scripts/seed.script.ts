@@ -241,21 +241,40 @@ async function createSegmentsAndCampaigns(
         });
     }
 
+    const templates = await prisma.emailTemplate.findMany({
+        where: { organizationId }
+    });
+
     const campaignNames = [
-        'Summer Sale 2026',
-        'Customer Appreciation',
-        'Win-back Promo'
+        {
+            name: 'Summer Sale 2026',
+            desc: 'Annual summer clearance sale targeting high-value customers'
+        },
+        {
+            name: 'Customer Appreciation',
+            desc: 'Thank you campaign for loyal customers'
+        },
+        {
+            name: 'Win-back Promo',
+            desc: 'Re-engagement campaign for inactive customers'
+        }
     ];
-    for (const name of campaignNames) {
+    for (const { name, desc } of campaignNames) {
         await prisma.campaign.create({
             data: {
                 name,
+                description: desc,
                 organizationId,
                 segmentId: faker.helpers.arrayElement(segments).id,
+                templateId:
+                    templates.length > 0
+                        ? faker.helpers.arrayElement(templates).id
+                        : undefined,
                 type: 'EMAIL',
                 status: 'SENT',
                 subject: `Special offer: ${name}`,
                 content: { body: `Check out our special ${name}!` },
+                scheduledAt: faker.date.recent({ days: 10 }),
                 sentAt: new Date(),
                 recipientCount: faker.number.int({ min: 50, max: 100 }),
                 metrics: {
@@ -288,6 +307,29 @@ async function createCustomers(
         'CAMPAIGN',
         'OTHER'
     ] as const;
+    const lifecycleStages = [
+        'PROSPECT',
+        'LEAD',
+        'ONE_TIME',
+        'RETURNING',
+        'LOYAL',
+        'VIP',
+        'AT_RISK',
+        'CHURNED',
+        'WINBACK'
+    ] as const;
+    const segments = [
+        'Champions',
+        'Loyal Customers',
+        'Potential Loyalists',
+        'New Customers',
+        'At Risk',
+        'Need Attention',
+        'About to Sleep',
+        "Can't Lose Them",
+        'Hibernating',
+        'Lost'
+    ];
 
     for (const org of organizations) {
         const customers = [];
@@ -301,29 +343,53 @@ async function createCustomers(
                 (5 - r) * 60 + faker.number.int({ min: 1, max: 30 })
             );
             const lastOrderAt = faker.date.recent({ days: daysAgo });
+            const firstOrderAt = faker.date.past({ years: 2 });
 
             const totalSpent =
                 Math.round(
                     m * faker.number.float({ min: 100, max: 1000 }) * 100
                 ) / 100;
             const totalOrders = f * faker.number.int({ min: 1, max: 10 });
+            const avgOrderValue =
+                totalOrders > 0
+                    ? new Prisma.Decimal(totalSpent / totalOrders)
+                    : new Prisma.Decimal(0);
 
             customers.push({
                 name: faker.person.fullName(),
                 email: faker.internet.email().toLowerCase(),
                 phone: faker.phone.number(),
                 city: faker.location.city(),
+                address: faker.location.streetAddress(),
                 source: faker.helpers.arrayElement(sources),
                 totalSpent: new Prisma.Decimal(totalSpent),
                 totalOrders,
+                totalRefunded: new Prisma.Decimal(
+                    faker.number.float({ min: 0, max: totalSpent * 0.1 })
+                ),
+                avgOrderValue,
+                firstOrderAt,
                 lastOrderAt,
+                avgDaysBetweenOrders: faker.number.float({ min: 7, max: 60 }),
                 rfmRecency: r,
                 rfmFrequency: f,
                 rfmMonetary: m,
                 rfmScore: `${r}${f}${m}`,
+                rfmSegment: faker.helpers.arrayElement(segments),
                 churnRiskScore: faker.number.float({ min: 0, max: 1 }),
-                organizationId: org.id,
+                lifecycleStage: faker.helpers.arrayElement(lifecycleStages),
+                cohortMonth: `2024-${String(faker.number.int({ min: 1, max: 12 })).padStart(2, '0')}`,
                 acceptsMarketing: faker.datatype.boolean(),
+                isLoyaltyMember: faker.datatype.boolean({ probability: 0.3 }),
+                accountAgeMonths: faker.number.int({ min: 1, max: 36 }),
+                engagementScore: faker.number.float({ min: 0, max: 100 }),
+                satisfactionScore: faker.number.float({ min: 1, max: 10 }),
+                browsingFrequency: faker.number.float({ min: 0, max: 50 }),
+                cartAbandonmentRate: faker.number.float({ min: 0, max: 0.8 }),
+                lastSentimentScore: faker.number.float({ min: -1, max: 1 }),
+                priceSensitivityIndex: faker.number.float({ min: 0, max: 1 }),
+                supportTicketsCount: faker.number.int({ min: 0, max: 5 }),
+                organizationId: org.id,
                 createdAt: faker.date.past({ years: 2 })
             });
         }
@@ -448,7 +514,35 @@ async function createCustomers(
                             'feedback'
                         ]),
                         content: faker.lorem.sentence(),
-                        sentiment: faker.number.float({ min: -1, max: 1 })
+                        sentiment: faker.number.float({ min: -1, max: 1 }),
+                        extractedInsights: faker.datatype.boolean({
+                            probability: 0.6
+                        })
+                            ? {
+                                  keywords: faker.helpers.arrayElements(
+                                      [
+                                          'price',
+                                          'quality',
+                                          'shipping',
+                                          'refund',
+                                          'support',
+                                          'return'
+                                      ],
+                                      faker.number.int({ min: 1, max: 3 })
+                                  ),
+                                  urgency: faker.helpers.arrayElement([
+                                      'low',
+                                      'medium',
+                                      'high'
+                                  ]),
+                                  category: faker.helpers.arrayElement([
+                                      'billing',
+                                      'product',
+                                      'shipping',
+                                      'account'
+                                  ])
+                              }
+                            : undefined
                     }
                 });
             }
@@ -562,6 +656,7 @@ async function createProducts(organizations: { id: string }[]) {
         'Automotive',
         'Health'
     ];
+    const weightUnits = ['kg', 'lb', 'oz', 'g'];
 
     for (const org of organizations) {
         const products = [];
@@ -571,8 +666,13 @@ async function createProducts(organizations: { id: string }[]) {
                 100;
             products.push({
                 name: faker.commerce.productName(),
+                description: faker.commerce.productDescription(),
                 price: new Prisma.Decimal(price),
                 sku: faker.string.alphanumeric(8).toUpperCase(),
+                barcode: faker.string.numeric(13),
+                imageUrl: faker.image.url(),
+                weight: faker.number.float({ min: 0.1, max: 25 }),
+                weightUnit: faker.helpers.arrayElement(weightUnits),
                 inventory: faker.number.int({ min: 0, max: 500 }),
                 category: faker.helpers.arrayElement(categories),
                 organizationId: org.id,
@@ -604,6 +704,16 @@ async function createProducts(organizations: { id: string }[]) {
                         sku: faker.string.alphanumeric(6).toUpperCase(),
                         price: product.price,
                         inventory: faker.number.int({ min: 0, max: 200 }),
+                        barcode: faker.string.numeric(13),
+                        weight: faker.number.float({ min: 0.1, max: 10 }),
+                        weightUnit: faker.helpers.arrayElement([
+                            'kg',
+                            'lb',
+                            'oz',
+                            'g'
+                        ]),
+                        imageUrl: faker.image.url(),
+                        externalId: `ext-variant-${faker.string.alphanumeric(8)}`,
                         options: {
                             size: faker.helpers.arrayElement([
                                 'S',
@@ -653,15 +763,67 @@ async function createOrders(organizations: { id: string }[]) {
                 to: new Date()
             });
 
+            const taxAmount = new Prisma.Decimal(
+                Math.round(subtotal * 0.14 * 100) / 100
+            );
+            const shippingAmount = new Prisma.Decimal(
+                Math.round(faker.number.float({ min: 0, max: 60 }) * 100) / 100
+            );
+
             const order = await prisma.order.create({
                 data: {
                     organizationId: org.id,
                     customerId: customer.id,
+                    externalId: `ext-order-${faker.string.alphanumeric(8)}`,
                     totalAmount: new Prisma.Decimal(subtotal),
                     subtotal: new Prisma.Decimal(subtotal),
+                    taxAmount,
+                    shippingAmount,
+                    discountAmount: new Prisma.Decimal(
+                        faker.datatype.boolean({ probability: 0.3 })
+                            ? Math.round(
+                                  subtotal *
+                                      faker.number.float({
+                                          min: 0.05,
+                                          max: 0.2
+                                      }) *
+                                      100
+                              ) / 100
+                            : 0
+                    ),
                     currency: 'EGP',
                     paymentStatus: 'PAID',
                     shippingStatus: 'DELIVERED',
+                    fulfillmentStatus: faker.helpers.arrayElement([
+                        'unfulfilled',
+                        'partial',
+                        'fulfilled'
+                    ]),
+                    note: faker.datatype.boolean({ probability: 0.4 })
+                        ? faker.lorem.sentence()
+                        : null,
+                    source: faker.helpers.arrayElement([
+                        'web',
+                        'pos',
+                        'shopify_draft_order',
+                        null
+                    ]),
+                    tags: faker.helpers.arrayElement([
+                        'wholesale',
+                        'gift',
+                        'express-delivery',
+                        'first-order',
+                        null,
+                        null
+                    ]),
+                    referringSite: faker.datatype.boolean({ probability: 0.2 })
+                        ? faker.helpers.arrayElement([
+                              'https://facebook.com/ads',
+                              'https://instagram.com/promos',
+                              'https://google.com/search',
+                              'https://tiktok.com/@influencer'
+                          ])
+                        : null,
                     createdAt: orderDate,
                     orderItems: {
                         create: orderProducts.map((p) => ({
@@ -705,11 +867,32 @@ async function createSupportTickets(
             take: 35
         });
 
+        // Fetch orders for this org to link tickets to orders
+        const orgOrders = await prisma.order.findMany({
+            where: { organizationId: org.id },
+            select: { id: true, customerId: true }
+        });
+
         for (const customer of customers) {
+            const lastResponseAt = faker.datatype.boolean({ probability: 0.7 })
+                ? faker.date.recent({ days: 15 })
+                : undefined;
+
+            // Find an order that belongs to this customer (50% chance)
+            const customerOrders = orgOrders.filter(
+                (o) => o.customerId === customer.id
+            );
+            const orderId =
+                faker.datatype.boolean({ probability: 0.5 }) &&
+                customerOrders.length > 0
+                    ? faker.helpers.arrayElement(customerOrders).id
+                    : undefined;
+
             const ticket = await prisma.supportTicket.create({
                 data: {
                     organizationId: org.id,
                     customerId: customer.id,
+                    orderId,
                     subject: faker.hacker.phrase(),
                     description: faker.lorem.paragraph(),
                     status: faker.helpers.arrayElement([
@@ -724,6 +907,7 @@ async function createSupportTickets(
                         'URGENT'
                     ]),
                     assignedToId: adminUserId,
+                    lastResponseAt,
                     createdAt: faker.date.recent({ days: 30 })
                 }
             });
@@ -751,6 +935,7 @@ async function createSupportTickets(
                     organizationId: org.id,
                     userId: adminUserId,
                     read: faker.datatype.boolean(),
+                    actionUrl: '/support/tickets',
                     createdAt: faker.date.recent({ days: 3 })
                 },
                 {
@@ -760,7 +945,29 @@ async function createSupportTickets(
                     organizationId: org.id,
                     userId: adminUserId,
                     read: false,
+                    actionUrl: '/campaigns',
                     createdAt: faker.date.recent({ days: 1 })
+                },
+                {
+                    type: 'order_placed',
+                    title: 'New Order Received',
+                    message: 'A new order has been placed in your store',
+                    organizationId: org.id,
+                    userId: adminUserId,
+                    read: false,
+                    actionUrl: '/orders',
+                    createdAt: faker.date.recent({ days: 0.5 })
+                },
+                {
+                    type: 'churn_alert',
+                    title: 'At-Risk Customer Detected',
+                    message:
+                        'A high-value customer has a high churn probability',
+                    organizationId: org.id,
+                    userId: adminUserId,
+                    read: false,
+                    actionUrl: '/ai',
+                    createdAt: faker.date.recent({ days: 0.25 })
                 }
             ]
         });
@@ -802,6 +1009,16 @@ async function createCampaignRecipients(organizationId: string) {
                 ? faker.date.recent({ days: 1 })
                 : null;
 
+            const failReason =
+                status === 'FAILED'
+                    ? faker.helpers.arrayElement([
+                          'Invalid email address',
+                          'Mailbox full',
+                          'Connection timeout',
+                          'SPF check failed'
+                      ])
+                    : undefined;
+
             await prisma.campaignRecipient.create({
                 data: {
                     campaignId: campaign.id,
@@ -809,7 +1026,8 @@ async function createCampaignRecipients(organizationId: string) {
                     status,
                     sentAt: status !== 'PENDING' ? sentAt : null,
                     openedAt,
-                    clickedAt
+                    clickedAt,
+                    failReason
                 }
             });
         }
@@ -818,7 +1036,10 @@ async function createCampaignRecipients(organizationId: string) {
     logger.info('[SEED] Created campaign recipients\n');
 }
 
-async function createConversations(organizations: { id: string }[]) {
+async function createConversations(
+    organizations: { id: string }[],
+    adminUserId: string
+) {
     logger.info('[SEED] Creating conversations and messages...');
 
     const providers = ['whatsapp', 'facebook', 'instagram'] as const;
@@ -944,6 +1165,14 @@ async function createConversations(organizations: { id: string }[]) {
                 template.inbound.length + template.outbound.length;
             const baseTime = faker.date.recent({ days: 30 });
 
+            const lastInboundAt = new Date(
+                baseTime.getTime() + faker.number.int({ min: 0, max: 600000 })
+            );
+            const lastOutboundAt = new Date(
+                lastInboundAt.getTime() +
+                    faker.number.int({ min: 60000, max: 300000 })
+            );
+
             const conversation = await prisma.conversation.create({
                 data: {
                     organizationId: org.id,
@@ -951,7 +1180,16 @@ async function createConversations(organizations: { id: string }[]) {
                     externalId: `ext_${faker.string.alphanumeric(12)}`,
                     provider,
                     status,
-                    lastMessageAt: baseTime
+                    lastMessageAt: baseTime,
+                    assignedAgentId: faker.datatype.boolean({
+                        probability: 0.6
+                    })
+                        ? adminUserId
+                        : null,
+                    lastReadAt: faker.date.recent({ days: 1 }),
+                    lastInboundAt,
+                    lastOutboundAt,
+                    unreadCount: faker.number.int({ min: 0, max: 5 })
                 }
             });
 
@@ -1022,7 +1260,12 @@ async function createConversations(organizations: { id: string }[]) {
                     externalId: `ext_${faker.string.alphanumeric(12)}`,
                     provider: faker.helpers.arrayElement(providers),
                     status: 'PENDING',
-                    lastMessageAt: sentTime
+                    lastMessageAt: sentTime,
+                    assignedAgentId: null,
+                    lastReadAt: null,
+                    lastInboundAt: sentTime,
+                    lastOutboundAt: null,
+                    unreadCount: 1
                 }
             });
 
@@ -1093,7 +1336,7 @@ async function main() {
     await createSegmentsAndCampaigns(mainOrgId, adminUserId);
     await createSupportTickets(organizations, adminUserId);
     await createCampaignRecipients(mainOrgId);
-    await createConversations(organizations);
+    await createConversations(organizations, adminUserId);
     await createPlans();
     await assignFreePlan(organizations);
 

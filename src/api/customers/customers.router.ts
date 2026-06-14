@@ -6,7 +6,6 @@ import * as timelineController from './timeline.controller.js';
 import * as customerSchema from './customer.schemas.js';
 import { getTimelineSchema } from './timeline.schemas.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
-import { paginationSchema } from '../../utils/pagination.util.js';
 
 const router = Router();
 
@@ -14,7 +13,6 @@ router
     .route('/')
     .get(
         requirePermission('customers:read'),
-        validateRequest(paginationSchema, 'query'),
         validateRequest(customerSchema.customerFilters, 'query'),
         customerController.getAllCustomers
     )

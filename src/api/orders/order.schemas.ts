@@ -56,6 +56,8 @@ export const updateOrder = z.object({
 });
 
 export const orderFilters = z.object({
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('10'),
     search: z.coerce.string().optional(),
     status: z.enum(['unfulfilled', 'partial', 'fulfilled']).optional(),
     paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),

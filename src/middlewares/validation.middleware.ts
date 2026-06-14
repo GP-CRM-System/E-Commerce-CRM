@@ -33,11 +33,12 @@ export const validateRequest = (
             if (source === 'body') {
                 req.body = result.data;
             } else if (source === 'query') {
-                const query = req.query;
-                for (const key in query) {
-                    delete query[key];
-                }
-                Object.assign(query, result.data);
+                Object.defineProperty(req, 'query', {
+                    value: result.data,
+                    writable: true,
+                    configurable: true,
+                    enumerable: true
+                });
             } else {
                 const params = req.params;
                 for (const key in params) {

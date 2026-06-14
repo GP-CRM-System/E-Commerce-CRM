@@ -54,7 +54,10 @@ export async function getAllProducts(
                 take,
                 skip,
                 include: {
-                    variants: true
+                    variants: true,
+                    orderItems: {
+                        select: { quantity: true, price: true }
+                    }
                 }
             }),
             prisma.product.count({
@@ -82,7 +85,19 @@ export async function getAllProducts(
             })
         ]);
 
-        return { products, total };
+        const productsWithSales = products.map(({ orderItems, ...rest }) => ({
+            ...rest,
+            totalSold: (orderItems ?? []).reduce(
+                (sum, oi) => sum + oi.quantity,
+                0
+            ),
+            totalRevenue: (orderItems ?? []).reduce(
+                (sum, oi) => sum + Number(oi.price) * oi.quantity,
+                0
+            )
+        }));
+
+        return { products: productsWithSales as unknown as Product[], total };
     } catch (error) {
         logger.error(`Error fetching products: ${error}`);
         throw error;

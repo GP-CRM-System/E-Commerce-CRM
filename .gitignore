@@ -50,3 +50,7 @@ export.zip
 /.postman
 /API-Postman-Collections-main
 /docs
+
+# Generated model artifacts
+/models
+!/models/models.md

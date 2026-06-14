@@ -32,6 +32,8 @@ export const list = asyncHandler(
         );
 
         const filters: ProductFilters = {
+            page: req.query.page as string,
+            limit: req.query.limit as string,
             search: req.query.search as string | undefined,
             category: req.query.category as string | undefined,
             status: req.query.status as ProductFilters['status'],
