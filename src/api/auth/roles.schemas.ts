@@ -46,7 +46,8 @@ export const permissionSchemas: Record<
     notifications: z.array(z.enum(['read', 'write', 'delete'])),
     templates: z.array(z.enum(['read', 'write', 'delete'])),
     conversations: z.array(z.enum(['read', 'write', 'delete'])),
-    subscriptions: z.array(z.enum(['read', 'write']))
+    subscriptions: z.array(z.enum(['read', 'write'])),
+    ai: z.array(z.enum(['read', 'write']))
 };
 
 export const createRoleSchema = z.object({

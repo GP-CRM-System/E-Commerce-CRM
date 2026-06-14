@@ -25,6 +25,7 @@ import auditRouter from './audit/audit.router.js';
 import reportRouter from './reports/report.router.js';
 import analyticsRouter from './analytics/analytics.router.js';
 import meRouter from './auth/me.router.js';
+import aiRouter from './ai/ai.router.js';
 
 // import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
 
@@ -57,6 +58,7 @@ router.use('/audit-logs', auditRouter);
 router.use('/reports', reportRouter);
 router.use('/analytics', analyticsRouter);
 router.use('/track', trackingRouter);
+router.use('/ai', aiRouter);
 
 router.use('/unsubscribe', unsubscribeRouter);
 

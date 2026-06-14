@@ -22,6 +22,8 @@ export const addNoteSchema = z.object({
 });
 
 export const ticketFilterSchema = z.object({
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('20'),
     status: z
         .enum(['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'])
         .optional(),

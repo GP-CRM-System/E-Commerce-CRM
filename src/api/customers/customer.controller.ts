@@ -26,6 +26,8 @@ export const getAllCustomers = asyncHandler(
         }
 
         const filters: CustomerFilters = {
+            page: req.query.page as string,
+            limit: req.query.limit as string,
             search: req.query.search as string | undefined,
             city: req.query.city as string | undefined,
             source: req.query.source as CustomerFilters['source'],

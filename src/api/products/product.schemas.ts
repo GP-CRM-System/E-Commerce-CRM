@@ -62,6 +62,8 @@ export const updateProductVariant = z.object({
 });
 
 export const productFilters = z.object({
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('10'),
     search: z.string().optional(),
     category: z.string().optional(),
     status: z.enum(['active', 'draft', 'archived']).optional(),

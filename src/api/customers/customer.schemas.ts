@@ -142,6 +142,8 @@ export const updateEvent = z.object({
 });
 
 export const customerFilters = z.object({
+    page: z.string().optional().default('1'),
+    limit: z.string().optional().default('10'),
     search: z.string().optional(),
     city: z.string().optional(),
     source: z

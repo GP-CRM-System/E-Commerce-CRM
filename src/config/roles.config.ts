@@ -1,6 +1,7 @@
 export type RolePermissions = {
     organization: ('read' | 'update' | 'delete')[];
     member: ('read' | 'create' | 'update' | 'delete')[];
+    ai: ('read' | 'write')[];
     invitation: ('read' | 'create' | 'cancel')[];
     team: ('read' | 'create' | 'update' | 'delete')[];
     ac: ('read' | 'create' | 'update' | 'delete')[];
@@ -26,6 +27,7 @@ export type RolePermissions = {
 
 export const DEFAULT_ROLES = {
     root: {
+        ai: ['read', 'write'],
         organization: ['read', 'update', 'delete'],
         member: ['read', 'create', 'update', 'delete'],
         invitation: ['read', 'create', 'cancel'],
@@ -51,6 +53,7 @@ export const DEFAULT_ROLES = {
         subscriptions: ['read', 'write']
     },
     admin: {
+        ai: ['read', 'write'],
         organization: ['read', 'update'],
         member: ['read', 'create', 'update', 'delete'],
         invitation: ['read', 'create', 'cancel'],
@@ -76,6 +79,7 @@ export const DEFAULT_ROLES = {
         subscriptions: ['read', 'write']
     },
     member: {
+        ai: ['read'],
         organization: [],
         member: [],
         invitation: [],
@@ -127,5 +131,6 @@ export const AVAILABLE_PERMISSIONS: RolePermissions = {
     notifications: ['read', 'write', 'delete'],
     templates: ['read', 'write', 'delete'],
     conversations: ['read', 'write', 'delete'],
+    ai: ['read', 'write'],
     subscriptions: ['read', 'write']
 };

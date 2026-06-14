@@ -3,7 +3,6 @@ import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as productController from './product.controller.js';
 import * as productSchema from './product.schemas.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
-import { paginationSchema } from '../../utils/pagination.util.js';
 
 const router = Router();
 
@@ -11,7 +10,6 @@ router
     .route('/')
     .get(
         requirePermission('products:read'),
-        validateRequest(paginationSchema, 'query'),
         validateRequest(productSchema.productFilters, 'query'),
         productController.list
     )
