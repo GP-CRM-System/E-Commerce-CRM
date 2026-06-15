@@ -9,13 +9,25 @@ export const getDashboardStats = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
 
-        const [revenue, acquisition, salesOverview, ticketStats] =
+        const [revenue, acquisition, salesOverview, ticketStats, dashboard] =
             await Promise.all([
                 reportService.getRevenueStats(organizationId),
                 reportService.getCustomerAcquisitionStats(organizationId),
                 dashboardService.getSalesOverview(organizationId),
-                dashboardService.getTicketStats(organizationId)
+                dashboardService.getTicketStats(organizationId),
+                dashboardService.getDashboardStats(organizationId)
             ]);
+
+        const stats = {
+            totalCustomers: dashboard.cards.customers.value,
+            customerChange: dashboard.cards.customers.percentage,
+            activeCampaigns: dashboard.cards.campaigns.value,
+            campaignChange: dashboard.cards.campaigns.percentage,
+            totalProducts: dashboard.cards.products.value,
+            productChange: dashboard.cards.products.percentage,
+            totalOrders: dashboard.cards.orders.value,
+            orderChange: dashboard.cards.orders.percentage
+        };
 
         return ResponseHandler.success(
             res,
@@ -25,7 +37,9 @@ export const getDashboardStats = asyncHandler(
                 revenue,
                 acquisition,
                 salesOverview,
-                ticketStats
+                ticketStats,
+                ticketBreakdown: ticketStats,
+                stats
             }
         );
     }

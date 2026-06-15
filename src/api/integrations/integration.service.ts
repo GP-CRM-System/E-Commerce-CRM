@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import logger from '../../utils/logger.util.js';
+import { decryptSafe, encrypt } from '../../utils/encryption.util.js';
 import { NotFoundError } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
 import type { Integration } from '../../generated/prisma/client.js';
@@ -83,7 +84,7 @@ export async function createMetaIntegration(
             orgId,
             provider: 'meta',
             name: data.name || `Meta ${data.channel}`,
-            accessToken: data.accessToken,
+            accessToken: encrypt(data.accessToken),
             syncStatus: 'connected',
             syncMode: 'webhook',
             isActive: true,
@@ -140,7 +141,7 @@ export async function updateIntegrationData(
         where: { id: integrationId },
         data: {
             ...rest,
-            ...(accessToken ? { accessToken } : {}),
+            ...(accessToken ? { accessToken: encrypt(accessToken) } : {}),
             ...(metadata !== undefined ? { metadata: metadata as object } : {}),
             updatedAt: new Date()
         }
@@ -187,7 +188,9 @@ export async function testConnection(
                 `https://${shop}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
                 {
                     headers: {
-                        'X-Shopify-Access-Token': integration.accessToken,
+                        'X-Shopify-Access-Token': decryptSafe(
+                            integration.accessToken
+                        ),
                         'Content-Type': 'application/json'
                     }
                 }
@@ -218,7 +221,7 @@ export async function testConnection(
                 'https://graph.facebook.com/v18.0/me',
                 {
                     headers: {
-                        Authorization: `Bearer ${integration.accessToken}`
+                        Authorization: `Bearer ${decryptSafe(integration.accessToken)}`
                     }
                 }
             );
@@ -268,6 +271,7 @@ export async function getShopifyClient(integration: Integration): Promise<{
     ) => Promise<{ data: T; linkHeader: string | null }>;
 }> {
     const shop = integration.shopDomain!.replace('.myshopify.com', '');
+    const decryptedToken = decryptSafe(integration.accessToken);
 
     const apiCall = async <T>(
         endpoint: string,
@@ -277,7 +281,7 @@ export async function getShopifyClient(integration: Integration): Promise<{
         const response = await fetch(url, {
             ...options,
             headers: {
-                'X-Shopify-Access-Token': integration.accessToken,
+                'X-Shopify-Access-Token': decryptedToken,
                 'Content-Type': 'application/json',
                 ...options.headers
             }
@@ -302,7 +306,7 @@ export async function getShopifyClient(integration: Integration): Promise<{
 
         const response = await fetch(url, {
             headers: {
-                'X-Shopify-Access-Token': integration.accessToken,
+                'X-Shopify-Access-Token': decryptedToken,
                 'Content-Type': 'application/json'
             }
         });
@@ -320,7 +324,7 @@ export async function getShopifyClient(integration: Integration): Promise<{
 
     return {
         shop,
-        accessToken: integration.accessToken,
+        accessToken: decryptedToken,
         apiCall,
         apiCallPaginated
     };

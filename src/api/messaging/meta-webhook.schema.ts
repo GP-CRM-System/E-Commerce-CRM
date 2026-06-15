@@ -188,6 +188,12 @@ export const MetaWebhookSchema = z.object({
                                 .object({
                                     watermark: z.number().optional()
                                 })
+                                .optional(),
+                            sender_action: z.string().optional(),
+                            typing: z
+                                .object({
+                                    status: z.string()
+                                })
                                 .optional()
                         })
                     )

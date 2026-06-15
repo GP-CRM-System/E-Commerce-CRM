@@ -103,6 +103,19 @@ export async function initSocket(server: HttpServer) {
         socket.join(`org_${orgId}`);
         onlineUsers.set(userId, orgId);
 
+        // Update database user presence
+        prisma.user
+            .update({
+                where: { id: userId },
+                data: { isOnline: true, lastSeen: new Date() }
+            })
+            .catch((err) =>
+                logger.error(
+                    { err },
+                    `[Socket] Failed to update user ${userId} presence on connect`
+                )
+            );
+
         // Broadcast presence online to organization
         io?.to(`org_${orgId}`).emit('presence:update', {
             userId,
@@ -216,6 +229,20 @@ export async function initSocket(server: HttpServer) {
         // Disconnect presence tracking
         socket.on('disconnect', () => {
             onlineUsers.delete(userId);
+
+            // Update database user presence
+            prisma.user
+                .update({
+                    where: { id: userId },
+                    data: { isOnline: false, lastSeen: new Date() }
+                })
+                .catch((err) =>
+                    logger.error(
+                        { err },
+                        `[Socket] Failed to update user ${userId} presence on disconnect`
+                    )
+                );
+
             io?.to(`org_${orgId}`).emit('presence:update', {
                 userId,
                 status: 'offline',
@@ -234,16 +261,53 @@ export function getIO() {
     return io;
 }
 
-export function emitToOrg(orgId: string, event: string, data: unknown) {
-    if (io) {
-        logger.info(
-            `[Socket] Emitting event "${event}" to organization room "org_${orgId}"`
-        );
-        io.to(`org_${orgId}`).emit(event, data);
-    } else {
+export function emitToOrg(
+    orgId: string,
+    event: string,
+    data: Record<string, unknown>
+) {
+    if (!io) {
         logger.warn(
             `[Socket] Cannot emit event "${event}" to "org_${orgId}": socket server not initialized`
         );
+        return;
+    }
+
+    logger.info(
+        `[Socket] Emitting event "${event}" to organization room "org_${orgId}"`
+    );
+
+    const conversation = data?.conversation as
+        | { assignedAgentId?: string }
+        | undefined;
+    if (conversation) {
+        const assignedAgentId = conversation.assignedAgentId;
+        const orgRoom = `org_${orgId}`;
+        const socketsInRoom = io.sockets.adapter.rooms.get(orgRoom);
+
+        if (socketsInRoom) {
+            for (const socketId of socketsInRoom) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    const userId = socket.data.user?.id;
+                    const role = socket.data.role?.toLowerCase();
+                    const isManager = [
+                        'root',
+                        'admin',
+                        'owner',
+                        'manager'
+                    ].includes(role);
+                    const isAssigned =
+                        assignedAgentId && userId === assignedAgentId;
+
+                    if (isManager || isAssigned) {
+                        socket.emit(event, data);
+                    }
+                }
+            }
+        }
+    } else {
+        io.to(`org_${orgId}`).emit(event, data);
     }
 }
 

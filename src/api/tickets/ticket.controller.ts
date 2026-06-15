@@ -115,10 +115,25 @@ export const addNote = asyncHandler(
         const note = await ticketService.addTicketNote({
             ticketId: req.params.id as string,
             authorId: userId,
-            body: req.body.body,
+            body: req.body.content,
             isInternal: req.body.isInternal
         });
 
         return ResponseHandler.created(res, 'Note added successfully', note);
+    }
+);
+
+export const remove = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const ticketId = req.params.id as string;
+
+        await ticketService.deleteTicket(ticketId, organizationId);
+
+        return ResponseHandler.success(
+            res,
+            'Ticket deleted successfully',
+            HttpStatus.OK
+        );
     }
 );

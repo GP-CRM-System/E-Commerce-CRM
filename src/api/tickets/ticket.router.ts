@@ -31,7 +31,8 @@ router
         requirePermission('supportTickets:write'),
         validateRequest(updateTicketSchema),
         ticketController.update
-    );
+    )
+    .delete(requirePermission('supportTickets:write'), ticketController.remove);
 
 router
     .route('/:id/notes')

@@ -6,7 +6,7 @@ import {
     runCleanupIdempotencyJob
 } from './cron.controller.js';
 import { validateRequest } from '../../middlewares/validation.middleware.js';
-import { requirePermission } from '../../middlewares/auth.middleware.js';
+import { requireRole } from '../../middlewares/auth.middleware.js';
 import {
     triggerRFMJob,
     triggerLifecycleJob,
@@ -18,28 +18,28 @@ const router = Router();
 
 router.post(
     '/rfm',
-    requirePermission('customers:write'),
+    requireRole('admin', 'root'),
     validateRequest(triggerRFMJob),
     runRFMJob
 );
 
 router.post(
     '/lifecycle',
-    requirePermission('customers:write'),
+    requireRole('admin', 'root'),
     validateRequest(triggerLifecycleJob),
     runLifecycleJob
 );
 
 router.post(
     '/vip',
-    requirePermission('customers:write'),
+    requireRole('admin', 'root'),
     validateRequest(triggerVipJob),
     runVipJob
 );
 
 router.post(
     '/cleanup/idempotency',
-    requirePermission('integrations:write'),
+    requireRole('admin', 'root'),
     validateRequest(cleanupWebhookIdempotency),
     runCleanupIdempotencyJob
 );

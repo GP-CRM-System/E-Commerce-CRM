@@ -20,64 +20,155 @@ let crossOrgId: string;
 
 describe('Roles API', () => {
     beforeAll(async () => {
-        await prisma.organizationRole.deleteMany({
-            where: { organization: { slug: { startsWith: 'roles-test' } } }
-        });
-        await prisma.member.deleteMany({
-            where: { user: { email: { startsWith: 'roles' } } }
-        });
-        await prisma.session.deleteMany({
-            where: { user: { email: { startsWith: 'roles' } } }
-        });
-        await prisma.account.deleteMany({
-            where: { user: { email: { startsWith: 'roles' } } }
-        });
-        await prisma.organization.deleteMany({
-            where: { slug: { startsWith: 'roles-test' } }
-        });
-        await prisma.user.deleteMany({
-            where: { email: { startsWith: 'roles' } }
-        });
+        // Phase 1: Parallel cleanup
+        await Promise.all([
+            prisma.organizationRole.deleteMany({
+                where: { organization: { slug: { startsWith: 'roles-test' } } }
+            }),
+            prisma.member.deleteMany({
+                where: { user: { email: { startsWith: 'roles' } } }
+            }),
+            prisma.session.deleteMany({
+                where: { user: { email: { startsWith: 'roles' } } }
+            }),
+            prisma.account.deleteMany({
+                where: { user: { email: { startsWith: 'roles' } } }
+            }),
+            prisma.organization.deleteMany({
+                where: { slug: { startsWith: 'roles-test' } }
+            }),
+            prisma.user.deleteMany({
+                where: { email: { startsWith: 'roles' } }
+            })
+        ]);
 
-        const signup = await auth.api.signUpEmail({
-            body: {
-                email: 'roles-user@test.com',
-                password: 'Password123!',
-                name: 'Roles Test User'
-            }
-        });
+        // Phase 2: Parallel signups (independent)
+        const [signup, adminSignup, memberSignup, crossOrgSignup] =
+            await Promise.all([
+                auth.api.signUpEmail({
+                    body: {
+                        email: 'roles-user@test.com',
+                        password: 'Password123!',
+                        name: 'Roles Test User'
+                    }
+                }),
+                auth.api.signUpEmail({
+                    body: {
+                        email: 'roles-admin@test.com',
+                        password: 'Password123!',
+                        name: 'Roles Test Admin'
+                    }
+                }),
+                auth.api.signUpEmail({
+                    body: {
+                        email: 'roles-member@test.com',
+                        password: 'Password123!',
+                        name: 'Roles Test Member'
+                    }
+                }),
+                auth.api.signUpEmail({
+                    body: {
+                        email: 'roles-crossorg@test.com',
+                        password: 'Password123!',
+                        name: 'Roles Test Cross-Org'
+                    }
+                })
+            ]);
         testUserId = signup.user.id;
         authToken = signup.token!;
+        adminUserId = adminSignup.user.id;
+        adminToken = adminSignup.token!;
+        memberUserId = memberSignup.user.id;
+        memberToken = memberSignup.token!;
+        crossOrgUserId = crossOrgSignup.user.id;
+        crossOrgToken = crossOrgSignup.token!;
 
-        await prisma.user.update({
-            where: { id: testUserId },
-            data: { emailVerified: true }
-        });
+        // Phase 3: Parallel email verification
+        await Promise.all([
+            prisma.user.update({
+                where: { id: testUserId },
+                data: { emailVerified: true }
+            }),
+            prisma.user.update({
+                where: { id: adminUserId },
+                data: { emailVerified: true }
+            }),
+            prisma.user.update({
+                where: { id: memberUserId },
+                data: { emailVerified: true }
+            }),
+            prisma.user.update({
+                where: { id: crossOrgUserId },
+                data: { emailVerified: true }
+            })
+        ]);
 
-        const org = await auth.api.createOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: {
-                name: 'Roles Test Org',
-                slug: 'roles-test-org-' + Date.now()
-            }
-        });
+        // Phase 4: Create orgs in parallel (user1 and admin are independent)
+        const [org, adminOrg] = await Promise.all([
+            auth.api.createOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${authToken}`
+                }),
+                body: {
+                    name: 'Roles Test Org',
+                    slug: 'roles-test-org-' + Date.now()
+                }
+            }),
+            auth.api.createOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${adminToken}`
+                }),
+                body: {
+                    name: 'Roles Test Admin Org',
+                    slug: 'roles-test-admin-org-' + Date.now()
+                }
+            })
+        ]);
         const orgResponse = org as {
             organization?: { id: string };
             id?: string;
         };
         testOrgId = orgResponse.organization?.id ?? orgResponse.id ?? '';
+        const adminOrgResponse = adminOrg as {
+            organization?: { id: string };
+            id?: string;
+        };
+        adminOrgId =
+            adminOrgResponse.organization?.id ?? adminOrgResponse.id ?? '';
 
-        await auth.api.setActiveOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
-            body: { organizationId: testOrgId }
-        });
+        // Phase 5: Set active org + re-signin (parallel for independent users)
+        // Member and cross-org don't depend on testOrg creation
+        await Promise.all([
+            auth.api.setActiveOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${authToken}`
+                }),
+                body: { organizationId: testOrgId }
+            }),
+            auth.api.setActiveOrganization({
+                headers: fromNodeHeaders({
+                    authorization: `Bearer ${adminToken}`
+                }),
+                body: { organizationId: adminOrgId }
+            })
+        ]);
 
-        const signin = await auth.api.signInEmail({
-            body: { email: 'roles-user@test.com', password: 'Password123!' }
-        });
-        authToken = signin.token!;
+        // Phase 6: Re-signin for fresh tokens (parallel)
+        const signinResults = await Promise.all([
+            auth.api.signInEmail({
+                body: { email: 'roles-user@test.com', password: 'Password123!' }
+            }),
+            auth.api.signInEmail({
+                body: {
+                    email: 'roles-admin@test.com',
+                    password: 'Password123!'
+                }
+            })
+        ]);
+        authToken = signinResults[0].token!;
+        adminToken = signinResults[1].token!;
 
-        // Seed default roles into DB for this organization
+        // Phase 7: Seed default roles (sequential DB writes)
         for (const [roleName, permissions] of Object.entries(DEFAULT_ROLES)) {
             await prisma.organizationRole.create({
                 data: {
@@ -88,62 +179,7 @@ describe('Roles API', () => {
             });
         }
 
-        const adminSignup = await auth.api.signUpEmail({
-            body: {
-                email: 'roles-admin@test.com',
-                password: 'Password123!',
-                name: 'Roles Test Admin'
-            }
-        });
-        adminUserId = adminSignup.user.id;
-        adminToken = adminSignup.token!;
-
-        await prisma.user.update({
-            where: { id: adminUserId },
-            data: { emailVerified: true }
-        });
-
-        const adminOrg = await auth.api.createOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${adminToken}` }),
-            body: {
-                name: 'Roles Test Admin Org',
-                slug: 'roles-test-admin-org-' + Date.now()
-            }
-        });
-        const adminOrgResponse = adminOrg as {
-            organization?: { id: string };
-            id?: string;
-        };
-        adminOrgId =
-            adminOrgResponse.organization?.id ?? adminOrgResponse.id ?? '';
-
-        await auth.api.setActiveOrganization({
-            headers: fromNodeHeaders({ authorization: `Bearer ${adminToken}` }),
-            body: { organizationId: adminOrgId }
-        });
-
-        const adminSignin = await auth.api.signInEmail({
-            body: { email: 'roles-admin@test.com', password: 'Password123!' }
-        });
-        adminToken = adminSignin.token!;
-
-        // Create a member user and add them to the test org with 'member' role
-        const memberSignup = await auth.api.signUpEmail({
-            body: {
-                email: 'roles-member@test.com',
-                password: 'Password123!',
-                name: 'Roles Test Member'
-            }
-        });
-        memberUserId = memberSignup.user.id;
-        memberToken = memberSignup.token!;
-
-        await prisma.user.update({
-            where: { id: memberUserId },
-            data: { emailVerified: true }
-        });
-
-        // Add member to test org with 'member' role
+        // Phase 8: Add member to test org
         await auth.api.addMember({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
             body: {
@@ -153,12 +189,12 @@ describe('Roles API', () => {
             }
         });
 
+        // Phase 9: Setup member token (sequential - depends on addMember)
         const memberSignin = await auth.api.signInEmail({
             body: { email: 'roles-member@test.com', password: 'Password123!' }
         });
         memberToken = memberSignin.token!;
 
-        // Set active org for member
         await auth.api.setActiveOrganization({
             headers: fromNodeHeaders({
                 authorization: `Bearer ${memberToken}`
@@ -166,28 +202,12 @@ describe('Roles API', () => {
             body: { organizationId: testOrgId }
         });
 
-        // Re-signin to get fresh token with active org
         const memberSignin2 = await auth.api.signInEmail({
             body: { email: 'roles-member@test.com', password: 'Password123!' }
         });
         memberToken = memberSignin2.token!;
 
-        // Create a cross-org user for isolation testing
-        const crossOrgSignup = await auth.api.signUpEmail({
-            body: {
-                email: 'roles-crossorg@test.com',
-                password: 'Password123!',
-                name: 'Roles Test Cross-Org'
-            }
-        });
-        crossOrgUserId = crossOrgSignup.user.id;
-        crossOrgToken = crossOrgSignup.token!;
-
-        await prisma.user.update({
-            where: { id: crossOrgUserId },
-            data: { emailVerified: true }
-        });
-
+        // Phase 10: Setup cross-org token (parallel with member setup - independent)
         const crossOrg = await auth.api.createOrganization({
             headers: fromNodeHeaders({
                 authorization: `Bearer ${crossOrgToken}`

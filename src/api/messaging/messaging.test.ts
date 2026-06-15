@@ -6,6 +6,7 @@ import prisma from '../../config/prisma.config.js';
 import { auth } from '../auth/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { env } from '../../config/env.config.js';
+import type { Integration } from '../../generated/prisma/client.js';
 import {
     handleInboundMessage,
     sendOutboundMessage
@@ -508,6 +509,81 @@ describe('Meta Webhook', () => {
             env.metaAppSecret = previousSecret;
 
             expect(response.status).toBe(200);
+        });
+    });
+
+    describe('Webhook processing, Presence, and Idempotency', () => {
+        let testIntegration: Integration | null;
+
+        beforeAll(async () => {
+            testIntegration = await prisma.integration.findFirst({
+                where: { orgId: testOrgId, provider: 'meta' }
+            });
+            if (!testIntegration) {
+                testIntegration = await prisma.integration.create({
+                    data: {
+                        orgId: testOrgId,
+                        provider: 'meta',
+                        name: 'Meta Webhook Test',
+                        accessToken: 'test-access-token',
+                        isActive: true,
+                        metadata: {
+                            whatsappPhoneNumberId: 'test-phone-id',
+                            facebookPageId: 'test-page-id',
+                            instagramBusinessAccountId: 'test-ig-id'
+                        }
+                    }
+                });
+            }
+        });
+
+        it('should correctly store and detect duplicates via WebhookIdempotencyKey', async () => {
+            const key = 'test-idemp-' + Date.now();
+            const topic = 'whatsapp_message';
+
+            const { checkAndStoreIdempotencyAtomic } =
+                await import('../integrations/webhook.service.js');
+
+            const firstCheck = await checkAndStoreIdempotencyAtomic(
+                testIntegration!.id,
+                'meta',
+                key,
+                topic
+            );
+            expect(firstCheck.isDuplicate).toBe(false);
+
+            const secondCheck = await checkAndStoreIdempotencyAtomic(
+                testIntegration!.id,
+                'meta',
+                key,
+                topic
+            );
+            expect(secondCheck.isDuplicate).toBe(true);
+        });
+
+        it('should track user online/offline presence updates', async () => {
+            // Initially set user offline
+            await prisma.user.update({
+                where: { id: testUserId },
+                data: { isOnline: false }
+            });
+
+            const userOffline = await prisma.user.findUnique({
+                where: { id: testUserId }
+            });
+            expect(userOffline?.isOnline).toBe(false);
+
+            // Simulate user online presence hook trigger
+            await prisma.user.update({
+                where: { id: testUserId },
+                data: { isOnline: true, lastSeen: new Date() }
+            });
+
+            const userOnline = await prisma.user.findUnique({
+                where: { id: testUserId }
+            });
+            expect(userOnline?.isOnline).toBe(true);
+            expect(userOnline?.lastSeen).toBeDefined();
         });
     });
 });

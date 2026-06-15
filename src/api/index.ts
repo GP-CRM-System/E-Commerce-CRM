@@ -27,13 +27,13 @@ import analyticsRouter from './analytics/analytics.router.js';
 import meRouter from './auth/me.router.js';
 import aiRouter from './ai/ai.router.js';
 
-// import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
+import { getRateLimiter, getAuthLimiter } from '../config/ratelimit.config.js';
 
 const router = Router();
 router.use('/health', healthRouter);
-// router.use(getRateLimiter());
+router.use(getRateLimiter());
 
-// router.use('/auth', getAuthLimiter());
+router.use('/auth', getAuthLimiter());
 router.use('/uploads', uploadRouter);
 router.use('/auth', authRouter);
 router.use('/me', meRouter);

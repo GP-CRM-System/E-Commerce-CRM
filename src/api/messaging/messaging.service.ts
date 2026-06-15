@@ -3,6 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
 import { AppError } from '../../utils/response.util.js';
 import { emitToOrg } from '../../config/socket.config.js';
+import { decryptSafe } from '../../utils/encryption.util.js';
 
 type MetaProvider = 'whatsapp' | 'facebook' | 'messenger' | 'instagram';
 type StoredMetaProvider = 'whatsapp' | 'facebook' | 'instagram';
@@ -219,8 +220,8 @@ export async function sendOutboundMessage(data: {
         );
     }
 
-    const { accessToken, metadata: integrationMetadata } = integration;
-    const metaConfig = (integrationMetadata as Record<string, string>) || {};
+    const accessToken = decryptSafe(integration.accessToken);
+    const metaConfig = (integration.metadata as Record<string, string>) || {};
 
     let externalMessageId = `local-${Date.now()}`;
     let messageStatus: 'SENT' | 'FAILED' = 'SENT';
@@ -485,4 +486,76 @@ export async function startConversation(data: {
     });
 
     return { conversation, message };
+}
+
+export async function downloadAndUploadMetaMedia(data: {
+    accessToken: string;
+    mediaIdOrUrl: string;
+    mimeType: string;
+    fileName: string;
+    isWhatsApp: boolean;
+}): Promise<{ url: string; storageKey?: string }> {
+    let downloadUrl = data.mediaIdOrUrl;
+
+    if (data.isWhatsApp) {
+        // Step 1: Retrieve the media URL from Meta Graph API using the media ID
+        const response = await fetch(
+            `https://graph.facebook.com/v18.0/${data.mediaIdOrUrl}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${data.accessToken}`
+                }
+            }
+        );
+
+        const result = (await response.json()) as {
+            url?: string;
+            error?: { message?: string };
+        };
+        if (!response.ok || !result.url) {
+            logger.error(
+                { result },
+                `[Meta Media] Failed to fetch WhatsApp media metadata for ID: ${data.mediaIdOrUrl}`
+            );
+            throw new Error(
+                result.error?.message ||
+                    'Failed to retrieve WhatsApp media metadata'
+            );
+        }
+
+        downloadUrl = result.url;
+    }
+
+    // Step 2: Download the binary file using the URL
+    const fileResponse = await fetch(downloadUrl, {
+        headers: {
+            Authorization: `Bearer ${data.accessToken}`
+        }
+    });
+
+    if (!fileResponse.ok) {
+        throw new Error(
+            `Failed to download Meta media from URL: ${downloadUrl}`
+        );
+    }
+
+    const arrayBuffer = await fileResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Step 3: Upload the buffer
+    const { uploadFile } = await import('../uploads/upload.service.js');
+    const uploadResult = await uploadFile(
+        {
+            buffer,
+            originalname: data.fileName,
+            mimetype: data.mimeType,
+            size: buffer.length
+        },
+        'attachment'
+    );
+
+    return {
+        url: uploadResult.url,
+        storageKey: uploadResult.publicId
+    };
 }
