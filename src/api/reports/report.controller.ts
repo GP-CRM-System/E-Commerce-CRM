@@ -26,7 +26,7 @@ export const getDashboardStats = asyncHandler(
             totalProducts: dashboard.cards.products.value,
             productChange: dashboard.cards.products.percentage,
             totalOrders: dashboard.cards.orders.value,
-            orderChange: dashboard.cards.orders.percentage,
+            orderChange: dashboard.cards.orders.percentage
         };
 
         return ResponseHandler.success(

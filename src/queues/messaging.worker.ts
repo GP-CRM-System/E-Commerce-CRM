@@ -1,7 +1,10 @@
 import { Worker, type Job } from 'bullmq';
 import { getRedisConnectionOptions } from '../config/redis.config.js';
 import prisma from '../config/prisma.config.js';
-import { handleInboundMessage, downloadAndUploadMetaMedia } from '../api/messaging/messaging.service.js';
+import {
+    handleInboundMessage,
+    downloadAndUploadMetaMedia
+} from '../api/messaging/messaging.service.js';
 import { emitToConversation, emitToOrg } from '../config/socket.config.js';
 import logger from '../utils/logger.util.js';
 import { decryptSafe } from '../utils/encryption.util.js';
@@ -56,37 +59,53 @@ export const webhookWorker = new Worker(
                     // Process messages
                     for (const msg of value.messages || []) {
                         const idempotencyKey = `msg:${msg.id}`;
-                        const { isDuplicate } = await checkAndStoreIdempotencyAtomic(
-                            integration.id,
-                            'meta',
-                            idempotencyKey,
-                            'whatsapp_message'
-                        );
+                        const { isDuplicate } =
+                            await checkAndStoreIdempotencyAtomic(
+                                integration.id,
+                                'meta',
+                                idempotencyKey,
+                                'whatsapp_message'
+                            );
                         if (isDuplicate) {
-                            logger.info(`[Worker] Duplicate WhatsApp message ignored: ${msg.id}`);
+                            logger.info(
+                                `[Worker] Duplicate WhatsApp message ignored: ${msg.id}`
+                            );
                             continue;
                         }
 
                         let messageContent = getWhatsAppContent(msg);
-                        let finalType = msg.type || 'text';
-                        const isMedia = ['image', 'document', 'video', 'audio'].includes(msg.type);
+                        const finalType = msg.type || 'text';
+                        const isMedia = [
+                            'image',
+                            'document',
+                            'video',
+                            'audio'
+                        ].includes(msg.type);
 
                         if (isMedia) {
                             try {
-                                const accessToken = decryptSafe(integration.accessToken);
+                                const accessToken = decryptSafe(
+                                    integration.accessToken
+                                );
                                 const mediaData = msg[msg.type];
                                 if (mediaData && mediaData.id) {
-                                    const uploadRes = await downloadAndUploadMetaMedia({
-                                        accessToken,
-                                        mediaIdOrUrl: mediaData.id,
-                                        mimeType: mediaData.mime_type || '',
-                                        fileName: mediaData.filename || `${msg.type}_${mediaData.id}`,
-                                        isWhatsApp: true
-                                    });
+                                    const uploadRes =
+                                        await downloadAndUploadMetaMedia({
+                                            accessToken,
+                                            mediaIdOrUrl: mediaData.id,
+                                            mimeType: mediaData.mime_type || '',
+                                            fileName:
+                                                mediaData.filename ||
+                                                `${msg.type}_${mediaData.id}`,
+                                            isWhatsApp: true
+                                        });
                                     messageContent = uploadRes.url;
                                 }
                             } catch (mediaErr) {
-                                logger.error({ err: mediaErr, msgId: msg.id }, `[Worker] Failed to download/upload WhatsApp media`);
+                                logger.error(
+                                    { err: mediaErr, msgId: msg.id },
+                                    `[Worker] Failed to download/upload WhatsApp media`
+                                );
                             }
                         }
 
@@ -160,16 +179,27 @@ export const webhookWorker = new Worker(
 
                     // Handle Customer typing status updates
                     if (msgEvent.sender_action || msgEvent.typing) {
-                        const isTyping = msgEvent.sender_action === 'typing_on' || (msgEvent.typing && msgEvent.typing.status !== 'none');
-                        const conversation = await prisma.conversation.findFirst({
-                            where: { externalId: msgEvent.sender.id, organizationId: integration.orgId }
-                        });
-                        if (conversation) {
-                            emitToConversation(conversation.id, 'typing:status', {
-                                conversationId: conversation.id,
-                                userId: 'customer',
-                                isTyping
+                        const isTyping =
+                            msgEvent.sender_action === 'typing_on' ||
+                            (msgEvent.typing &&
+                                msgEvent.typing.status !== 'none');
+                        const conversation =
+                            await prisma.conversation.findFirst({
+                                where: {
+                                    externalId: msgEvent.sender.id,
+                                    organizationId: integration.orgId
+                                }
                             });
+                        if (conversation) {
+                            emitToConversation(
+                                conversation.id,
+                                'typing:status',
+                                {
+                                    conversationId: conversation.id,
+                                    userId: 'customer',
+                                    isTyping
+                                }
+                            );
                         }
                     }
 
@@ -180,14 +210,17 @@ export const webhookWorker = new Worker(
                         !msgEvent.message.is_deleted
                     ) {
                         const idempotencyKey = `msg:${msgEvent.message.mid}`;
-                        const { isDuplicate } = await checkAndStoreIdempotencyAtomic(
-                            integration.id,
-                            'meta',
-                            idempotencyKey,
-                            `${provider}_message`
-                        );
+                        const { isDuplicate } =
+                            await checkAndStoreIdempotencyAtomic(
+                                integration.id,
+                                'meta',
+                                idempotencyKey,
+                                `${provider}_message`
+                            );
                         if (isDuplicate) {
-                            logger.info(`[Worker] Duplicate Messenger/Instagram message ignored: ${msgEvent.message.mid}`);
+                            logger.info(
+                                `[Worker] Duplicate Messenger/Instagram message ignored: ${msgEvent.message.mid}`
+                            );
                             continue;
                         }
 
@@ -198,21 +231,38 @@ export const webhookWorker = new Worker(
                         const attachments = msgEvent.message.attachments || [];
                         if (attachments.length > 0) {
                             const att = attachments[0];
-                            const isMedia = ['image', 'video', 'audio', 'file'].includes(att.type);
+                            const isMedia = [
+                                'image',
+                                'video',
+                                'audio',
+                                'file'
+                            ].includes(att.type);
                             if (isMedia && att.payload?.url) {
                                 try {
-                                    const accessToken = decryptSafe(integration.accessToken);
-                                    const uploadRes = await downloadAndUploadMetaMedia({
-                                        accessToken,
-                                        mediaIdOrUrl: att.payload.url,
-                                        mimeType: '',
-                                        fileName: `messenger_${att.type}_${msgEvent.message.mid}`,
-                                        isWhatsApp: false
-                                    });
+                                    const accessToken = decryptSafe(
+                                        integration.accessToken
+                                    );
+                                    const uploadRes =
+                                        await downloadAndUploadMetaMedia({
+                                            accessToken,
+                                            mediaIdOrUrl: att.payload.url,
+                                            mimeType: '',
+                                            fileName: `messenger_${att.type}_${msgEvent.message.mid}`,
+                                            isWhatsApp: false
+                                        });
                                     content = uploadRes.url;
-                                    type = att.type === 'file' ? 'document' : att.type;
+                                    type =
+                                        att.type === 'file'
+                                            ? 'document'
+                                            : att.type;
                                 } catch (mediaErr) {
-                                    logger.error({ err: mediaErr, msgId: msgEvent.message.mid }, `[Worker] Failed to download/upload Messenger media`);
+                                    logger.error(
+                                        {
+                                            err: mediaErr,
+                                            msgId: msgEvent.message.mid
+                                        },
+                                        `[Worker] Failed to download/upload Messenger media`
+                                    );
                                 }
                             }
                         }
@@ -528,7 +578,11 @@ export const statusWorker = new Worker(
         // --- WhatsApp Status Updates ---
         if (statusEntry.id && statusEntry.status) {
             const integration = await prisma.integration.findFirst({
-                where: { orgId: organizationId, provider: 'meta', isActive: true }
+                where: {
+                    orgId: organizationId,
+                    provider: 'meta',
+                    isActive: true
+                }
             });
             if (integration) {
                 const idempotencyKey = `status:${statusEntry.id}:${statusEntry.status}`;
@@ -539,7 +593,9 @@ export const statusWorker = new Worker(
                     'whatsapp_status'
                 );
                 if (isDuplicate) {
-                    logger.info(`[Worker] Duplicate WhatsApp status ignored: ${statusEntry.id} -> ${statusEntry.status}`);
+                    logger.info(
+                        `[Worker] Duplicate WhatsApp status ignored: ${statusEntry.id} -> ${statusEntry.status}`
+                    );
                     return;
                 }
             }
@@ -592,21 +648,30 @@ export const statusWorker = new Worker(
 
             if (conversation) {
                 const integration = await prisma.integration.findFirst({
-                    where: { orgId: organizationId, provider: 'meta', isActive: true }
+                    where: {
+                        orgId: organizationId,
+                        provider: 'meta',
+                        isActive: true
+                    }
                 });
                 if (integration) {
                     const type = statusEntry.read ? 'read' : 'delivery';
-                    const watermark = statusEntry.read?.watermark || statusEntry.delivery?.watermark;
+                    const watermark =
+                        statusEntry.read?.watermark ||
+                        statusEntry.delivery?.watermark;
                     if (watermark) {
                         const idempotencyKey = `status:${senderId}:${type}:${watermark}`;
-                        const { isDuplicate } = await checkAndStoreIdempotencyAtomic(
-                            integration.id,
-                            'meta',
-                            idempotencyKey,
-                            `messenger_${type}`
-                        );
+                        const { isDuplicate } =
+                            await checkAndStoreIdempotencyAtomic(
+                                integration.id,
+                                'meta',
+                                idempotencyKey,
+                                `messenger_${type}`
+                            );
                         if (isDuplicate) {
-                            logger.info(`[Worker] Duplicate Messenger/Instagram status ignored: ${idempotencyKey}`);
+                            logger.info(
+                                `[Worker] Duplicate Messenger/Instagram status ignored: ${idempotencyKey}`
+                            );
                             return;
                         }
                     }

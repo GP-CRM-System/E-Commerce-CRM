@@ -499,16 +499,28 @@ export async function downloadAndUploadMetaMedia(data: {
 
     if (data.isWhatsApp) {
         // Step 1: Retrieve the media URL from Meta Graph API using the media ID
-        const response = await fetch(`https://graph.facebook.com/v18.0/${data.mediaIdOrUrl}`, {
-            headers: {
-                Authorization: `Bearer ${data.accessToken}`
+        const response = await fetch(
+            `https://graph.facebook.com/v18.0/${data.mediaIdOrUrl}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${data.accessToken}`
+                }
             }
-        });
+        );
 
-        const result = (await response.json()) as { url?: string; error?: { message?: string } };
+        const result = (await response.json()) as {
+            url?: string;
+            error?: { message?: string };
+        };
         if (!response.ok || !result.url) {
-            logger.error({ result }, `[Meta Media] Failed to fetch WhatsApp media metadata for ID: ${data.mediaIdOrUrl}`);
-            throw new Error(result.error?.message || 'Failed to retrieve WhatsApp media metadata');
+            logger.error(
+                { result },
+                `[Meta Media] Failed to fetch WhatsApp media metadata for ID: ${data.mediaIdOrUrl}`
+            );
+            throw new Error(
+                result.error?.message ||
+                    'Failed to retrieve WhatsApp media metadata'
+            );
         }
 
         downloadUrl = result.url;
@@ -522,7 +534,9 @@ export async function downloadAndUploadMetaMedia(data: {
     });
 
     if (!fileResponse.ok) {
-        throw new Error(`Failed to download Meta media from URL: ${downloadUrl}`);
+        throw new Error(
+            `Failed to download Meta media from URL: ${downloadUrl}`
+        );
     }
 
     const arrayBuffer = await fileResponse.arrayBuffer();

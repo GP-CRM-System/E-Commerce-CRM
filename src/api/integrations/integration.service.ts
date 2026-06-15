@@ -188,7 +188,9 @@ export async function testConnection(
                 `https://${shop}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
                 {
                     headers: {
-                        'X-Shopify-Access-Token': decryptSafe(integration.accessToken),
+                        'X-Shopify-Access-Token': decryptSafe(
+                            integration.accessToken
+                        ),
                         'Content-Type': 'application/json'
                     }
                 }

@@ -129,4 +129,3 @@ export async function deleteTicket(id: string, organizationId: string) {
         where: { id, organizationId }
     });
 }
-

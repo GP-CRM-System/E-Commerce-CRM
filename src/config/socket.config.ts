@@ -104,10 +104,17 @@ export async function initSocket(server: HttpServer) {
         onlineUsers.set(userId, orgId);
 
         // Update database user presence
-        prisma.user.update({
-            where: { id: userId },
-            data: { isOnline: true, lastSeen: new Date() }
-        }).catch(err => logger.error({ err }, `[Socket] Failed to update user ${userId} presence on connect`));
+        prisma.user
+            .update({
+                where: { id: userId },
+                data: { isOnline: true, lastSeen: new Date() }
+            })
+            .catch((err) =>
+                logger.error(
+                    { err },
+                    `[Socket] Failed to update user ${userId} presence on connect`
+                )
+            );
 
         // Broadcast presence online to organization
         io?.to(`org_${orgId}`).emit('presence:update', {
@@ -222,12 +229,19 @@ export async function initSocket(server: HttpServer) {
         // Disconnect presence tracking
         socket.on('disconnect', () => {
             onlineUsers.delete(userId);
-            
+
             // Update database user presence
-            prisma.user.update({
-                where: { id: userId },
-                data: { isOnline: false, lastSeen: new Date() }
-            }).catch(err => logger.error({ err }, `[Socket] Failed to update user ${userId} presence on disconnect`));
+            prisma.user
+                .update({
+                    where: { id: userId },
+                    data: { isOnline: false, lastSeen: new Date() }
+                })
+                .catch((err) =>
+                    logger.error(
+                        { err },
+                        `[Socket] Failed to update user ${userId} presence on disconnect`
+                    )
+                );
 
             io?.to(`org_${orgId}`).emit('presence:update', {
                 userId,
@@ -247,7 +261,11 @@ export function getIO() {
     return io;
 }
 
-export function emitToOrg(orgId: string, event: string, data: any) {
+export function emitToOrg(
+    orgId: string,
+    event: string,
+    data: Record<string, unknown>
+) {
     if (!io) {
         logger.warn(
             `[Socket] Cannot emit event "${event}" to "org_${orgId}": socket server not initialized`
@@ -259,21 +277,29 @@ export function emitToOrg(orgId: string, event: string, data: any) {
         `[Socket] Emitting event "${event}" to organization room "org_${orgId}"`
     );
 
-    const conversation = data?.conversation;
+    const conversation = data?.conversation as
+        | { assignedAgentId?: string }
+        | undefined;
     if (conversation) {
         const assignedAgentId = conversation.assignedAgentId;
         const orgRoom = `org_${orgId}`;
         const socketsInRoom = io.sockets.adapter.rooms.get(orgRoom);
-        
+
         if (socketsInRoom) {
             for (const socketId of socketsInRoom) {
                 const socket = io.sockets.sockets.get(socketId);
                 if (socket) {
                     const userId = socket.data.user?.id;
                     const role = socket.data.role?.toLowerCase();
-                    const isManager = ['root', 'admin', 'owner', 'manager'].includes(role);
-                    const isAssigned = assignedAgentId && userId === assignedAgentId;
-                    
+                    const isManager = [
+                        'root',
+                        'admin',
+                        'owner',
+                        'manager'
+                    ].includes(role);
+                    const isAssigned =
+                        assignedAgentId && userId === assignedAgentId;
+
                     if (isManager || isAssigned) {
                         socket.emit(event, data);
                     }

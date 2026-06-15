@@ -57,7 +57,9 @@ export function decrypt(encryptedText: string): string {
     );
 
     const key = crypto.pbkdf2Sync(getKey(), salt, 100000, KEY_LENGTH, 'sha512');
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, {
+        authTagLength: TAG_LENGTH
+    });
     decipher.setAuthTag(tag);
 
     const decrypted = Buffer.concat([
@@ -78,4 +80,3 @@ export function decryptSafe(encryptedText: string): string {
         return encryptedText;
     }
 }
-

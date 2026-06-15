@@ -6,6 +6,7 @@ import prisma from '../../config/prisma.config.js';
 import { auth } from '../auth/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { env } from '../../config/env.config.js';
+import type { Integration } from '../../generated/prisma/client.js';
 import {
     handleInboundMessage,
     sendOutboundMessage
@@ -512,7 +513,7 @@ describe('Meta Webhook', () => {
     });
 
     describe('Webhook processing, Presence, and Idempotency', () => {
-        let testIntegration: any;
+        let testIntegration: Integration | null;
 
         beforeAll(async () => {
             testIntegration = await prisma.integration.findFirst({
@@ -539,11 +540,12 @@ describe('Meta Webhook', () => {
         it('should correctly store and detect duplicates via WebhookIdempotencyKey', async () => {
             const key = 'test-idemp-' + Date.now();
             const topic = 'whatsapp_message';
-            
-            const { checkAndStoreIdempotencyAtomic } = await import('../integrations/webhook.service.js');
-            
+
+            const { checkAndStoreIdempotencyAtomic } =
+                await import('../integrations/webhook.service.js');
+
             const firstCheck = await checkAndStoreIdempotencyAtomic(
-                testIntegration.id,
+                testIntegration!.id,
                 'meta',
                 key,
                 topic
@@ -551,7 +553,7 @@ describe('Meta Webhook', () => {
             expect(firstCheck.isDuplicate).toBe(false);
 
             const secondCheck = await checkAndStoreIdempotencyAtomic(
-                testIntegration.id,
+                testIntegration!.id,
                 'meta',
                 key,
                 topic

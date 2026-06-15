@@ -181,9 +181,13 @@ export const requireRole = (...roles: string[]) =>
             }
         });
 
-        const userRole = membership?.role?.toLowerCase() || (session as any).role?.toLowerCase();
+        const userRole =
+            membership?.role?.toLowerCase() || req.session.role?.toLowerCase();
 
-        if (!userRole || !roles.map(r => r.toLowerCase()).includes(userRole)) {
+        if (
+            !userRole ||
+            !roles.map((r) => r.toLowerCase()).includes(userRole)
+        ) {
             throw new AuthorizationError(
                 'Access denied. Insufficient role privileges.'
             );
@@ -195,4 +199,3 @@ export const requireRole = (...roles: string[]) =>
 
         next();
     });
-
