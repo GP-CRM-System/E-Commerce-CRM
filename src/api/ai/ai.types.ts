@@ -4,6 +4,19 @@ export interface AiHealthStatus {
     recommendations: { available: boolean };
 }
 
+export interface ChurnResult {
+    customer_id: string;
+    churn_probability: number;
+    risk_level: 'stable' | 'low' | 'high';
+}
+
+export interface SegmentResult {
+    customer_id: string;
+    segment: number;
+    segment_name: string;
+    distances: [number, number, number];
+}
+
 export const SEGMENT_NAMES = [
     'Browsers',
     'Bargain/Casual',

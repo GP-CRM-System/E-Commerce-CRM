@@ -1,19 +1,33 @@
 import prisma from '../../config/prisma.config.js';
+import { env } from '../../config/env.config.js';
 import logger from '../../utils/logger.util.js';
 import { callHfApi } from './hf.client.js';
-import { buildCustomerCsv, buildInteractionCsv } from './csv.builder.js';
-import type {
-    CsvCustomerRow,
-    CsvInteractionRow,
-    HfApiResponse,
-    HfChurnResult,
-    HfSegmentResult
-} from './hf.types.js';
-import type { AiHealthStatus } from './ai.types.js';
+import { buildMasterCsv, buildCatalogCsv } from './csv.builder.js';
+import type { MasterCsvRow, CatalogCsvRow, HfApiResponse } from './hf.types.js';
+import type { AiHealthStatus, ChurnResult, SegmentResult } from './ai.types.js';
 import { AppError, HttpStatus, ErrorCode } from '../../utils/response.util.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 
-function toCustomerRow(
+function deriveAgeGroup(age: number | null): string {
+    if (age === null || age === undefined) return 'unknown';
+    if (age < 18) return 'Under 18';
+    if (age < 25) return '18-24';
+    if (age < 35) return '25-34';
+    if (age < 45) return '35-44';
+    if (age < 55) return '45-54';
+    if (age < 65) return '55-64';
+    return '65+';
+}
+
+function deriveTimeOfDay(): string {
+    const hour = new Date().getHours();
+    if (hour < 6) return 'night';
+    if (hour < 12) return 'morning';
+    if (hour < 18) return 'afternoon';
+    return 'evening';
+}
+
+function toMasterCsvData(
     c: {
         id: string;
         age: number | null;
@@ -34,7 +48,6 @@ function toCustomerRow(
         engagementScore: number | null;
         cartAbandonmentRate: number | null;
         supportTicketsCount: number;
-        priceSensitivityIndex: number | null;
         totalSpent: unknown;
         totalRefunded: unknown;
         lastSentimentScore: number | null;
@@ -46,67 +59,153 @@ function toCustomerRow(
         rfmMonetary: number | null;
         lifecycleStage: string;
         churnRiskScore: number | null;
+        city: string | null;
         metrics: {
             daysSinceLastPurchase: number | null;
             returnRate: number | null;
         } | null;
     },
     now: Date
-): CsvCustomerRow {
+): Omit<
+    MasterCsvRow,
+    | 'item_id'
+    | 'item_category'
+    | 'price'
+    | 'brand'
+    | 'tags'
+    | 'rating'
+    | 'interaction_type'
+    | 'timestamp'
+    | 'device'
+    | 'session_id'
+    | 'time_of_day'
+> {
     return {
-        customerId: c.id,
+        customer_id: c.id,
         age: c.age ?? 30,
         gender: c.gender ?? 'unknown',
-        annualIncome: c.annualIncome ?? Number(c.totalSpent ?? 0) * 2,
-        region: c.region ?? 'unknown',
-        preferredCategory: c.preferredCategory ?? 'general',
-        subscriptionTier: c.subscriptionTier,
-        loyaltyPoints: c.loyaltyPoints,
-        emailOpenRate: c.emailOpenRate ?? 0.3,
-        websiteVisitsLastMonth: c.websiteVisitsLastMonth ?? 10,
-        spendingScore: c.spendingScore ?? c.engagementScore ?? 50,
-        totalPurchases: c.totalOrders,
-        avgOrderValue: Number(c.avgOrderValue ?? 0),
-        daysSinceLastPurchase: c.lastOrderAt
+        annual_income: c.annualIncome ?? Number(c.totalSpent ?? 0) * 2,
+        spending_score: c.spendingScore ?? c.engagementScore ?? 50,
+        total_purchases: c.totalOrders,
+        avg_order_value: Number(c.avgOrderValue ?? 0),
+        website_visits_last_month: c.websiteVisitsLastMonth ?? 10,
+        days_since_last_purchase: c.lastOrderAt
             ? Math.floor((now.getTime() - c.lastOrderAt.getTime()) / 86400000)
             : 999,
-        browsingFrequencyPerWeek: c.browsingFrequency ?? 0,
-        satisfactionScore: c.satisfactionScore ?? 5,
-        returnRate: c.metrics?.returnRate ?? 0,
-        engagementScore: c.engagementScore ?? 50,
-        cartAbandonmentRate: c.cartAbandonmentRate ?? 0,
-        supportTicketsCount: c.supportTicketsCount,
-        priceSensitivityIndex: c.priceSensitivityIndex ?? 0.5,
-        totalSpent: Number(c.totalSpent ?? 0),
-        totalRefunded: Number(c.totalRefunded ?? 0),
-        lastSentimentScore: c.lastSentimentScore ?? 0,
-        accountAgeMonths: c.accountAgeMonths,
-        isLoyaltyMember: c.isLoyaltyMember,
-        avgDaysBetweenOrders: c.avgDaysBetweenOrders ?? 0,
-        rfmRecency: c.rfmRecency ?? 3,
-        rfmFrequency: c.rfmFrequency ?? 3,
-        rfmMonetary: c.rfmMonetary ?? 3,
-        lifecycleStage: c.lifecycleStage,
-        churnRiskScore: c.churnRiskScore ?? 0
+        email_open_rate: c.emailOpenRate ?? 0.3,
+        subscription_tier: c.subscriptionTier,
+        region: c.region ?? 'unknown',
+        preferred_category: c.preferredCategory ?? 'general',
+        return_rate: c.cartAbandonmentRate ?? 0,
+        loyalty_points: c.loyaltyPoints,
+        loyalty_member: c.isLoyaltyMember ? 'Yes' : 'No',
+        browsing_frequency_per_week: c.browsingFrequency ?? 0,
+        satisfaction_score: c.satisfactionScore ?? 5,
+        engagement_score: c.engagementScore ?? 50,
+        age_group: deriveAgeGroup(c.age),
+        location: c.city ?? 'unknown'
     };
 }
 
-function toInteractionRows(
-    interactions: {
+function buildMasterRowFromInteraction(
+    interaction: {
         customerId: string;
         productId: string;
         rating: number | null;
         interactionType: string;
         createdAt: Date;
-    }[]
-): CsvInteractionRow[] {
-    return interactions.map((i) => ({
-        userId: i.customerId,
-        itemId: i.productId,
-        rating: i.rating,
-        interactionType: i.interactionType,
-        timestamp: i.createdAt.toISOString()
-    }));
+        device: string | null;
+        sessionId: string | null;
+    },
+    customerData: Omit<
+        MasterCsvRow,
+        | 'item_id'
+        | 'item_category'
+        | 'price'
+        | 'brand'
+        | 'tags'
+        | 'rating'
+        | 'interaction_type'
+        | 'timestamp'
+        | 'device'
+        | 'session_id'
+        | 'time_of_day'
+    >,
+    product: { category: string | null; price: unknown } | null
+): MasterCsvRow {
+    return {
+        ...customerData,
+        item_id: interaction.productId,
+        item_category: product?.category ?? 'general',
+        price: Number(product?.price ?? 0),
+        brand: 'unknown',
+        tags: '',
+        rating: interaction.rating ?? '',
+        interaction_type: interaction.interactionType,
+        timestamp: interaction.createdAt.toISOString(),
+        device: interaction.device ?? 'desktop',
+        session_id: interaction.sessionId ?? '',
+        time_of_day: deriveTimeOfDay()
+    };
+}
+
+function buildMasterRowFromOrder(
+    orderItem: {
+        productId: string;
+        createdAt: Date;
+        order: { customerId: string };
+        price: unknown;
+    },
+    customerData: Omit<
+        MasterCsvRow,
+        | 'item_id'
+        | 'item_category'
+        | 'price'
+        | 'brand'
+        | 'tags'
+        | 'rating'
+        | 'interaction_type'
+        | 'timestamp'
+        | 'device'
+        | 'session_id'
+        | 'time_of_day'
+    >,
+    product: { category: string | null } | null
+): MasterCsvRow {
+    return {
+        ...customerData,
+        item_id: orderItem.productId,
+        item_category: product?.category ?? 'general',
+        price: Number(orderItem.price ?? 0),
+        brand: 'unknown',
+        tags: '',
+        rating: '',
+        interaction_type: 'purchase',
+        timestamp: orderItem.createdAt.toISOString(),
+        device: 'desktop',
+        session_id: '',
+        time_of_day: deriveTimeOfDay()
+    };
+}
+
+function buildCatalogRow(product: {
+    id: string;
+    category: string | null;
+    price: unknown;
+}): CatalogCsvRow {
+    return {
+        item_id: product.id,
+        item_category: product.category ?? 'general',
+        brand: 'unknown',
+        price: Number(product.price ?? 0),
+        tags: ''
+    };
+}
+
+function getRiskLevel(churnProbability: number): 'stable' | 'low' | 'high' {
+    if (churnProbability >= 0.7) return 'high';
+    if (churnProbability >= 0.3) return 'low';
+    return 'stable';
 }
 
 async function buildAndCallHf(organizationId: string): Promise<HfApiResponse> {
@@ -146,6 +245,7 @@ async function buildAndCallHf(organizationId: string): Promise<HfApiResponse> {
             rfmMonetary: true,
             lifecycleStage: true,
             churnRiskScore: true,
+            city: true,
             metrics: {
                 select: {
                     daysSinceLastPurchase: true,
@@ -163,6 +263,20 @@ async function buildAndCallHf(organizationId: string): Promise<HfApiResponse> {
         );
     }
 
+    const customerDataMap = new Map(
+        customers.map((c) => [c.id, toMasterCsvData(c, now)])
+    );
+
+    const products = await prisma.product.findMany({
+        where: { organizationId },
+        select: {
+            id: true,
+            category: true,
+            price: true
+        }
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
     const trackedInteractions =
         await prisma.customerProductInteraction.findMany({
             where: { organizationId },
@@ -171,14 +285,17 @@ async function buildAndCallHf(organizationId: string): Promise<HfApiResponse> {
                 productId: true,
                 rating: true,
                 interactionType: true,
-                createdAt: true
+                createdAt: true,
+                device: true,
+                sessionId: true
             }
         });
 
-    const orderInteractions = await prisma.orderItem.findMany({
+    const orderItems = await prisma.orderItem.findMany({
         where: { order: { organizationId } },
         select: {
             productId: true,
+            price: true,
             createdAt: true,
             order: {
                 select: { customerId: true }
@@ -186,52 +303,82 @@ async function buildAndCallHf(organizationId: string): Promise<HfApiResponse> {
         }
     });
 
-    const customerRows = customers.map((c) => toCustomerRow(c, now));
+    const masterRows: MasterCsvRow[] = [];
 
-    const purchaseRows: CsvInteractionRow[] = orderInteractions.map((oi) => ({
-        userId: oi.order.customerId,
-        itemId: oi.productId,
-        rating: null,
-        interactionType: 'purchase',
-        timestamp: oi.createdAt.toISOString()
-    }));
+    for (const interaction of trackedInteractions) {
+        const customerData = customerDataMap.get(interaction.customerId);
+        if (!customerData) continue;
+        const product = productMap.get(interaction.productId) ?? null;
+        masterRows.push(
+            buildMasterRowFromInteraction(interaction, customerData, product)
+        );
+    }
 
-    const uiRows = toInteractionRows(trackedInteractions);
-    const allInteractions = [...purchaseRows, ...uiRows];
+    for (const item of orderItems) {
+        const customerData = customerDataMap.get(item.order.customerId);
+        if (!customerData) continue;
+        const product = productMap.get(item.productId) ?? null;
+        masterRows.push(buildMasterRowFromOrder(item, customerData, product));
+    }
 
-    const customerCsv = buildCustomerCsv(customerRows);
-    const interactionCsv = buildInteractionCsv(allInteractions);
+    if (masterRows.length === 0) {
+        for (const [, customerData] of customerDataMap) {
+            masterRows.push({
+                ...customerData,
+                item_id: '',
+                item_category: 'general',
+                price: 0,
+                brand: 'unknown',
+                tags: '',
+                rating: '',
+                interaction_type: 'purchase',
+                timestamp: now.toISOString(),
+                device: 'desktop',
+                session_id: '',
+                time_of_day: deriveTimeOfDay()
+            });
+        }
+    }
+
+    const catalogRows = products.map(buildCatalogRow);
+
+    const masterCsv = buildMasterCsv(masterRows);
+    const catalogCsv = buildCatalogCsv(catalogRows);
 
     logger.info(
-        `[AiService] Calling HF API with ${customerRows.length} customers and ${allInteractions.length} interactions for org ${organizationId}`
+        `[AiService] Calling HF API with ${customerDataMap.size} customers, ${masterRows.length} events, ${catalogRows.length} products for org ${organizationId}`
     );
 
-    return callHfApi(customerCsv, interactionCsv, organizationId);
+    return callHfApi(masterCsv, catalogCsv, organizationId);
 }
 
 export async function computeChurnForOrganization(
     organizationId: string
-): Promise<{ totalCustomers: number; results: HfChurnResult[] }> {
+): Promise<{ totalCustomers: number; results: ChurnResult[] }> {
     const hfResult = await buildAndCallHf(organizationId);
 
     const results = hfResult.churn_results;
 
     for (const r of results) {
+        const customerId = r.Customer_ID;
+        const churnProbability = r.Churn_Probability;
+        const riskLevel = getRiskLevel(churnProbability);
+
         const daysSinceLastPurchase = 999;
         const totalOrders = 0;
 
         await prisma.customerMetric.upsert({
-            where: { customerId: r.customer_id },
+            where: { customerId },
             create: {
-                customerId: r.customer_id,
-                churnProbability: r.churn_probability,
+                customerId,
+                churnProbability,
                 daysSinceLastPurchase,
                 totalOrders,
                 avgOrderValue: 0,
                 returnRate: 0
             },
             update: {
-                churnProbability: r.churn_probability,
+                churnProbability,
                 daysSinceLastPurchase,
                 totalOrders,
                 avgOrderValue: 0,
@@ -251,18 +398,18 @@ export async function computeChurnForOrganization(
             | 'WINBACK';
 
         const updateData: Record<string, unknown> = {
-            churnRiskScore: r.churn_probability,
+            churnRiskScore: churnProbability,
             lastScoredAt: new Date()
         };
 
-        if (r.risk_level === 'high') {
+        if (riskLevel === 'high') {
             updateData.lifecycleStage = 'AT_RISK' as LifecycleStage;
-        } else if (r.risk_level === 'stable') {
+        } else if (riskLevel === 'stable') {
             updateData.lifecycleStage = 'RETURNING' as LifecycleStage;
         }
 
         await prisma.customer.update({
-            where: { id: r.customer_id },
+            where: { id: customerId },
             data: updateData
         });
     }
@@ -271,7 +418,14 @@ export async function computeChurnForOrganization(
         `[AiService] Churn computed for ${results.length} customers in org ${organizationId}`
     );
 
-    return { totalCustomers: results.length, results };
+    return {
+        totalCustomers: results.length,
+        results: results.map((r) => ({
+            customer_id: r.Customer_ID,
+            churn_probability: r.Churn_Probability,
+            risk_level: getRiskLevel(r.Churn_Probability)
+        }))
+    };
 }
 
 export async function computeSegmentsForOrganization(
@@ -284,18 +438,24 @@ export async function computeSegmentsForOrganization(
         count: number;
         percentage: number;
     }[];
-    results: HfSegmentResult[];
+    results: SegmentResult[];
 }> {
     const hfResult = await buildAndCallHf(organizationId);
     const results = hfResult.segmentation_results;
 
     const group = new Map<number, { name: string; count: number }>();
     for (const r of results) {
-        const existing = group.get(r.segment);
+        const existing = group.get(r.Segment);
         if (existing) {
             existing.count++;
         } else {
-            group.set(r.segment, { name: r.segment_name, count: 1 });
+            group.set(r.Segment, {
+                name:
+                    ['Browsers', 'Bargain/Casual', 'Premium Loyal'][
+                        r.Segment
+                    ] ?? `Segment ${r.Segment}`,
+                count: 1
+            });
         }
     }
 
@@ -313,7 +473,18 @@ export async function computeSegmentsForOrganization(
         `[AiService] Segments computed for ${results.length} customers in org ${organizationId}`
     );
 
-    return { totalCustomers: total, distribution, results };
+    return {
+        totalCustomers: total,
+        distribution,
+        results: results.map((r) => ({
+            customer_id: r.Customer_ID,
+            segment: r.Segment,
+            segment_name:
+                ['Browsers', 'Bargain/Casual', 'Premium Loyal'][r.Segment] ??
+                `Segment ${r.Segment}`,
+            distances: [0, 0, 0] as [number, number, number]
+        }))
+    };
 }
 
 export async function computeRecommendationsForOrganization(
@@ -325,29 +496,27 @@ export async function computeRecommendationsForOrganization(
     const hfResult = await buildAndCallHf(organizationId);
     const recommendations = hfResult.ibcf_recommendations;
 
-    for (const rec of recommendations) {
+    for (const [productId, recs] of Object.entries(recommendations)) {
         await prisma.aiRecommendation.upsert({
-            where: { productId: rec.product_id },
+            where: { productId },
             create: {
-                productId: rec.product_id,
-                recommendations:
-                    rec.recommendations as unknown as Prisma.InputJsonValue,
+                productId,
+                recommendations: recs as unknown as Prisma.InputJsonValue,
                 computedAt: new Date()
             },
             update: {
-                recommendations:
-                    rec.recommendations as unknown as Prisma.InputJsonValue,
+                recommendations: recs as unknown as Prisma.InputJsonValue,
                 computedAt: new Date()
             }
         });
     }
 
     logger.info(
-        `[AiService] Recommendations computed for ${recommendations.length} products in org ${organizationId}`
+        `[AiService] Recommendations computed for ${Object.keys(recommendations).length} products in org ${organizationId}`
     );
 
     return {
-        totalItems: recommendations.length,
+        totalItems: Object.keys(recommendations).length,
         totalInteractions: 0
     };
 }
@@ -410,15 +579,21 @@ export async function getRecommendationsForProduct(
 
 export async function getAiHealth(): Promise<AiHealthStatus> {
     try {
-        const minimalCsv = 'customerId,age,gender\nplaceholder,30,male\n';
-        const emptyInteractionCsv =
-            'userId,itemId,rating,interactionType,timestamp\n';
-        await callHfApi(minimalCsv, emptyInteractionCsv, 'health-check');
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(env.hfApiUrl, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${env.hfApiToken}` },
+            body: new FormData(),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const available = response.status !== 404 && response.status !== 502;
 
         return {
-            churnModel: { available: true, features: 32 },
-            segmentation: { available: true },
-            recommendations: { available: true }
+            churnModel: { available, features: available ? 32 : 0 },
+            segmentation: { available },
+            recommendations: { available }
         };
     } catch {
         return {

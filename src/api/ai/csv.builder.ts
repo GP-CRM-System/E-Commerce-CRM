@@ -1,46 +1,46 @@
-import type { CsvCustomerRow, CsvInteractionRow } from './hf.types.js';
+import type { MasterCsvRow, CatalogCsvRow } from './hf.types.js';
 
-const CUSTOMER_COLUMNS: (keyof CsvCustomerRow)[] = [
-    'customerId',
+const MASTER_COLUMNS: (keyof MasterCsvRow)[] = [
+    'customer_id',
+    'item_id',
+    'item_category',
+    'price',
+    'brand',
+    'tags',
+    'rating',
+    'interaction_type',
+    'timestamp',
+    'device',
+    'session_id',
+    'time_of_day',
     'age',
     'gender',
-    'annualIncome',
+    'annual_income',
+    'spending_score',
+    'total_purchases',
+    'avg_order_value',
+    'website_visits_last_month',
+    'days_since_last_purchase',
+    'email_open_rate',
+    'subscription_tier',
     'region',
-    'preferredCategory',
-    'subscriptionTier',
-    'loyaltyPoints',
-    'emailOpenRate',
-    'websiteVisitsLastMonth',
-    'spendingScore',
-    'totalPurchases',
-    'avgOrderValue',
-    'daysSinceLastPurchase',
-    'browsingFrequencyPerWeek',
-    'satisfactionScore',
-    'returnRate',
-    'engagementScore',
-    'cartAbandonmentRate',
-    'supportTicketsCount',
-    'priceSensitivityIndex',
-    'totalSpent',
-    'totalRefunded',
-    'lastSentimentScore',
-    'accountAgeMonths',
-    'isLoyaltyMember',
-    'avgDaysBetweenOrders',
-    'rfmRecency',
-    'rfmFrequency',
-    'rfmMonetary',
-    'lifecycleStage',
-    'churnRiskScore'
+    'preferred_category',
+    'return_rate',
+    'loyalty_points',
+    'loyalty_member',
+    'browsing_frequency_per_week',
+    'satisfaction_score',
+    'engagement_score',
+    'age_group',
+    'location'
 ];
 
-const INTERACTION_COLUMNS: (keyof CsvInteractionRow)[] = [
-    'userId',
-    'itemId',
-    'rating',
-    'interactionType',
-    'timestamp'
+const CATALOG_COLUMNS: (keyof CatalogCsvRow)[] = [
+    'item_id',
+    'item_category',
+    'brand',
+    'price',
+    'tags'
 ];
 
 function escapeCsvValue(value: unknown): string {
@@ -65,10 +65,10 @@ function toCsv<T>(rows: T[], columns: (keyof T)[]): string {
     return [header, ...data].join('\n');
 }
 
-export function buildCustomerCsv(rows: CsvCustomerRow[]): string {
-    return toCsv(rows, CUSTOMER_COLUMNS);
+export function buildMasterCsv(rows: MasterCsvRow[]): string {
+    return toCsv(rows, MASTER_COLUMNS);
 }
 
-export function buildInteractionCsv(rows: CsvInteractionRow[]): string {
-    return toCsv(rows, INTERACTION_COLUMNS);
+export function buildCatalogCsv(rows: CatalogCsvRow[]): string {
+    return toCsv(rows, CATALOG_COLUMNS);
 }

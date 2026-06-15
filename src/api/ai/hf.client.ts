@@ -3,22 +3,22 @@ import type { HfApiResponse } from './hf.types.js';
 import { AppError, HttpStatus, ErrorCode } from '../../utils/response.util.js';
 
 export async function callHfApi(
-    customerCsv: string,
-    interactionCsv: string,
+    masterCsv: string,
+    catalogCsv: string,
     orgId: string
 ): Promise<HfApiResponse> {
     const url = env.hfApiUrl;
 
     const formData = new FormData();
     formData.append(
-        'customer_file',
-        new Blob([customerCsv], { type: 'text/csv' }),
-        'customer_data.csv'
+        'master_file',
+        new Blob([masterCsv], { type: 'text/csv' }),
+        'master_data.csv'
     );
     formData.append(
-        'interaction_file',
-        new Blob([interactionCsv], { type: 'text/csv' }),
-        'interaction_data.csv'
+        'catalog_file',
+        new Blob([catalogCsv], { type: 'text/csv' }),
+        'catalog_data.csv'
     );
     formData.append('org_id', orgId);
 

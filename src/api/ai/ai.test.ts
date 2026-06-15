@@ -4,13 +4,13 @@ import supertest from 'supertest';
 let mockServer: { stop: () => void } | null = null;
 let hfApiUrl = '';
 
-function parseCsvIds(csvText: string): string[] {
+function parseCsvIds(csvText: string, columnIndex: number): string[] {
     const lines = csvText.trim().split('\n');
     if (lines.length < 2) return [];
     return lines
         .slice(1)
         .map((line) => {
-            const raw = line.split(',')[0];
+            const raw = line.split(',')[columnIndex];
             if (!raw) return '';
             return raw.startsWith('"') && raw.endsWith('"')
                 ? raw.slice(1, -1)
@@ -27,36 +27,13 @@ function startMockServer(
         async fetch(req) {
             if (req.method === 'POST') {
                 const formData = await req.formData();
-                const customerFile = formData.get('customer_file');
-                const interactionFile = formData.get('interaction_file');
+                const masterFile = formData.get('master_file');
 
-                const customerCsv =
-                    customerFile instanceof Blob
-                        ? await customerFile.text()
-                        : '';
-                const interactionCsv =
-                    interactionFile instanceof Blob
-                        ? await interactionFile.text()
-                        : '';
+                const masterCsv =
+                    masterFile instanceof Blob ? await masterFile.text() : '';
 
-                const customerIds = parseCsvIds(customerCsv);
-                const interactionLines = interactionCsv
-                    .trim()
-                    .split('\n')
-                    .slice(1);
-                const productIds = [
-                    ...new Set(
-                        interactionLines
-                            .map((l) => {
-                                const raw = l.split(',')[1];
-                                if (!raw) return '';
-                                return raw.startsWith('"') && raw.endsWith('"')
-                                    ? raw.slice(1, -1)
-                                    : raw;
-                            })
-                            .filter(Boolean)
-                    )
-                ];
+                const customerIds = parseCsvIds(masterCsv, 0);
+                const productIds = [...new Set(parseCsvIds(masterCsv, 1))];
 
                 const response = getResponse(customerIds, productIds);
                 return new Response(JSON.stringify(response), {
@@ -90,19 +67,14 @@ const testEmails = { a: '', b: '' };
 beforeAll(async () => {
     hfApiUrl = startMockServer((customerIds: string[]) => ({
         churn_results: customerIds.map((id) => ({
-            customer_id: id,
-            churn_probability: 0.15,
-            risk_level: 'stable' as const
+            Customer_ID: id,
+            Churn_Probability: 0.15
         })),
         segmentation_results: customerIds.map((id, i) => ({
-            customer_id: id,
-            segment: i % 3,
-            segment_name: ['Browsers', 'Bargain/Casual', 'Premium Loyal'][
-                i % 3
-            ]!,
-            distances: [1.2, 5.1, 9.8] as [number, number, number]
+            Customer_ID: id,
+            Segment: i % 3
         })),
-        ibcf_recommendations: [],
+        ibcf_recommendations: {},
         training_threshold: 0.35
     }));
     env.hfApiUrl = hfApiUrl;
@@ -373,21 +345,23 @@ describe('AI API Routes', () => {
                 });
             }
 
-            // Restart mock server with recommendations using real IDs
+            // Restart mock server with recommendations using real IDs (Record format)
             if (mockServer) mockServer.stop();
             hfApiUrl = startMockServer(
                 (_customerIds: string[], productIds: string[]) => ({
                     churn_results: [],
                     segmentation_results: [],
-                    ibcf_recommendations: productIds.map((pid) => ({
-                        product_id: pid,
-                        recommendations: productIds
-                            .filter((id) => id !== pid)
-                            .map((id) => ({
-                                item_id: id,
-                                similarity: 0.85
-                            }))
-                    })),
+                    ibcf_recommendations: Object.fromEntries(
+                        productIds.map((pid) => [
+                            pid,
+                            productIds
+                                .filter((id) => id !== pid)
+                                .map((id) => ({
+                                    item_id: id,
+                                    similarity: 0.85
+                                }))
+                        ])
+                    ),
                     training_threshold: 0.35
                 })
             );
