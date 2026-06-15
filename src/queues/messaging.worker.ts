@@ -4,6 +4,7 @@ import prisma from '../config/prisma.config.js';
 import { handleInboundMessage } from '../api/messaging/messaging.service.js';
 import { emitToConversation, emitToOrg } from '../config/socket.config.js';
 import logger from '../utils/logger.util.js';
+import { decryptSafe } from '../utils/encryption.util.js';
 
 // ----------------------------------------------------
 // 1. Webhook Worker: Processes Inbound Webhooks
@@ -247,7 +248,7 @@ export const outboundWorker = new Worker(
             );
         }
 
-        const accessToken = integration.accessToken;
+        const accessToken = decryptSafe(integration.accessToken);
         const metaConfig =
             (integration.metadata as Record<string, string>) || {};
         let externalMessageId: string | undefined;

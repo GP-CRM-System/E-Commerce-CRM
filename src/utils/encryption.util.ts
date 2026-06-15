@@ -66,3 +66,16 @@ export function decrypt(encryptedText: string): string {
     ]);
     return decrypted.toString('utf8');
 }
+
+/**
+ * Decrypts a string encrypted by `encrypt()`. Returns the original text if decryption fails.
+ */
+export function decryptSafe(encryptedText: string): string {
+    if (!encryptedText) return '';
+    try {
+        return decrypt(encryptedText);
+    } catch {
+        return encryptedText;
+    }
+}
+

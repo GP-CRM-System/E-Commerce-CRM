@@ -11,13 +11,17 @@ export async function getDashboardStats(organizationId: string) {
         activeCampaigns,
         totalProducts,
         totalOrders,
-        customerPercentage,
-        campaignPercentage,
-        productPercentage,
-        orderPercentage,
         recentActivity,
         salesOverview,
-        ticketStats
+        ticketStats,
+        customers7d,
+        customers14d,
+        campaigns7d,
+        campaigns14d,
+        products7d,
+        products14d,
+        orders7d,
+        orders14d
     ] = await Promise.all([
         prisma.customer.count({ where: { organizationId } }),
         prisma.campaign.count({
@@ -25,70 +29,48 @@ export async function getDashboardStats(organizationId: string) {
         }),
         prisma.product.count({ where: { organizationId } }),
         prisma.order.count({ where: { organizationId } }),
-        (Number(
-            prisma.customer.count({
-                where: { organizationId, createdAt: { gte: sevenDaysAgo } }
-            })
-        ) /
-            Number(
-                prisma.customer.count({
-                    where: {
-                        organizationId,
-                        createdAt: { gte: fourteenDaysAgo }
-                    }
-                })
-            )) *
-            100,
-        (Number(
-            prisma.campaign.count({
-                where: { organizationId, createdAt: { gte: sevenDaysAgo } }
-            })
-        ) /
-            Number(
-                prisma.campaign.count({
-                    where: {
-                        organizationId,
-                        createdAt: { gte: fourteenDaysAgo }
-                    }
-                })
-            )) *
-            100,
-        (Number(
-            prisma.product.count({
-                where: { organizationId, createdAt: { gte: sevenDaysAgo } }
-            })
-        ) /
-            Number(
-                prisma.product.count({
-                    where: {
-                        organizationId,
-                        createdAt: { gte: fourteenDaysAgo }
-                    }
-                })
-            )) *
-            100,
-        (Number(
-            prisma.order.count({
-                where: { organizationId, createdAt: { gte: sevenDaysAgo } }
-            })
-        ) /
-            Number(
-                prisma.order.count({
-                    where: {
-                        organizationId,
-                        createdAt: { gte: fourteenDaysAgo }
-                    }
-                })
-            )) *
-            100,
         prisma.customerEvent.findMany({
             where: { customer: { organizationId } },
             orderBy: { occurredAt: 'desc' },
             take: 5
         }),
         getSalesOverview(organizationId),
-        getTicketStats(organizationId)
+        getTicketStats(organizationId),
+        prisma.customer.count({
+            where: { organizationId, createdAt: { gte: sevenDaysAgo } }
+        }),
+        prisma.customer.count({
+            where: { organizationId, createdAt: { gte: fourteenDaysAgo } }
+        }),
+        prisma.campaign.count({
+            where: { organizationId, createdAt: { gte: sevenDaysAgo } }
+        }),
+        prisma.campaign.count({
+            where: { organizationId, createdAt: { gte: fourteenDaysAgo } }
+        }),
+        prisma.product.count({
+            where: { organizationId, createdAt: { gte: sevenDaysAgo } }
+        }),
+        prisma.product.count({
+            where: { organizationId, createdAt: { gte: fourteenDaysAgo } }
+        }),
+        prisma.order.count({
+            where: { organizationId, createdAt: { gte: sevenDaysAgo } }
+        }),
+        prisma.order.count({
+            where: { organizationId, createdAt: { gte: fourteenDaysAgo } }
+        })
     ]);
+
+    const calcPercentage = (current: number, total: number) => {
+        if (total === 0) return 0;
+        return Math.round((current / total) * 100);
+    };
+
+    const customerPercentage = calcPercentage(customers7d, customers14d);
+    const campaignPercentage = calcPercentage(campaigns7d, campaigns14d);
+    const productPercentage = calcPercentage(products7d, products14d);
+    const orderPercentage = calcPercentage(orders7d, orders14d);
 
     return {
         cards: {

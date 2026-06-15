@@ -123,3 +123,10 @@ export async function addTicketNote(data: {
         return note;
     });
 }
+
+export async function deleteTicket(id: string, organizationId: string) {
+    return prisma.supportTicket.delete({
+        where: { id, organizationId }
+    });
+}
+

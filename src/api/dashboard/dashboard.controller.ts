@@ -12,7 +12,7 @@ export const getDashboardStats = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session?.activeOrganizationId as string;
 
-        if (organizationId) {
+        if (!organizationId) {
             return ResponseHandler.error(
                 res,
                 'No active organization',

@@ -148,3 +148,51 @@ export const requirePermission = (...permissions: string[]) =>
 
         next();
     });
+
+/**
+ * Middleware factory that enforces user role check in the active organization.
+ * E.g. requireRole('admin', 'root')
+ */
+export const requireRole = (...roles: string[]) =>
+    asyncHandler<AuthenticatedRequest>(async (req, res, next) => {
+        const headers = fromNodeHeaders(req.headers);
+        const session = await auth.api.getSession({ headers });
+
+        if (!session) {
+            throw new AuthenticationError(
+                'Authentication required. Please log in.'
+            );
+        }
+
+        const activeOrganizationId = (
+            session as { activeOrganizationId?: string }
+        ).activeOrganizationId;
+
+        if (!activeOrganizationId) {
+            throw new AuthorizationError(
+                'No active organization selected for this session.'
+            );
+        }
+
+        const membership = await prisma.member.findFirst({
+            where: {
+                userId: session.user.id,
+                organizationId: activeOrganizationId
+            }
+        });
+
+        const userRole = membership?.role?.toLowerCase() || (session as any).role?.toLowerCase();
+
+        if (!userRole || !roles.map(r => r.toLowerCase()).includes(userRole)) {
+            throw new AuthorizationError(
+                'Access denied. Insufficient role privileges.'
+            );
+        }
+
+        req.user = session.user;
+        req.session = session as AuthenticatedRequest['session'];
+        req.membership = membership;
+
+        next();
+    });
+
