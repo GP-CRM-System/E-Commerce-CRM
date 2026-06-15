@@ -109,6 +109,7 @@ model Organization {
   conversations  Conversation[]
   transactions   Transaction[]
   subscription   Subscription?
+  productInteractions CustomerProductInteraction[]
 
   @@map("organization")
 }
@@ -269,6 +270,7 @@ model Customer {
   customerEvents       CustomerEvent[]
   metrics              CustomerMetric?
   interactions         Interaction[]
+  productInteractions  CustomerProductInteraction[]
   campaignRecipients   CampaignRecipient[]
   conversations        Conversation[]
 
@@ -282,6 +284,18 @@ model Customer {
   supportTicketsCount   Int     @default(0)
   lastSentimentScore    Float?
   priceSensitivityIndex Float?
+
+  // HF Model Fields (used for AI inference)
+  age                    Int?
+  gender                 String?
+  annualIncome           Float?
+  region                 String?
+  preferredCategory      String?
+  subscriptionTier       String  @default("free")
+  loyaltyPoints          Int     @default(0)
+  emailOpenRate          Float?
+  websiteVisitsLastMonth Int?
+  spendingScore          Float?
 
   @@index([organizationId])
   @@index([email])
@@ -433,6 +447,31 @@ model Interaction {
   @@index([type])
 }
 
+model CustomerProductInteraction {
+  id              String   @id @default(nanoid())
+  customerId      String
+  productId       String
+  organizationId  String
+  interactionType String // 'view' | 'add_to_cart'
+  rating          Float?
+  device          String?
+  sessionId       String?
+  timeOfDay       String?
+  createdAt       DateTime @default(now())
+
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([organizationId])
+  @@index([interactionType])
+  @@index([createdAt])
+  @@index([customerId, productId])
+  @@map("customer_product_interaction")
+}
+
 model Tag {
   id             String       @id @default(nanoid())
   name           String
@@ -546,6 +585,7 @@ model Product {
   orderItems     OrderItem[]
   variants       ProductVariant[]
   aiRecommendations AiRecommendation[]
+  productInteractions CustomerProductInteraction[]
 
   externalId String?
   sku        String?

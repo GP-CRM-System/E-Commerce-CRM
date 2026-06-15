@@ -69,6 +69,10 @@ export const env = {
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
 
+    // Hugging Face AI
+    hfApiUrl: process.env.HF_API_URL as string,
+    hfApiToken: process.env.HF_API_TOKEN,
+
     // Encryption
     encryptionKey: (process.env.ENCRYPTION_KEY ||
         process.env.BETTER_AUTH_SECRET) as string
@@ -101,6 +105,8 @@ export function checkEnv(): void {
         if (!env.paymobPublicKey) missingVars.push('PAYMOB_PUBLIC_KEY');
         if (!env.paymobCardIntegrationId)
             missingVars.push('PAYMOB_CARD_INTEGRATION_ID');
+        if (!env.hfApiToken) missingVars.push('HF_API_TOKEN');
+        if (!env.hfApiUrl) missingVars.push('HF_API_URL');
     }
     if (env.nodeEnv === 'production') {
         if (!env.metaVerifyToken) missingVars.push('META_VERIFY_TOKEN');
