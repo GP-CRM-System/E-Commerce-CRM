@@ -119,6 +119,10 @@
         {
             "name": "Unsubscribe",
             "description": "Email unsubscribe handling"
+        },
+        {
+            "name": "AI",
+            "description": "AI-powered churn prediction, customer segmentation, and product recommendations"
         }
     ],
     "paths": {
@@ -6158,6 +6162,261 @@
                     }
                 ]
             }
+        },
+        "/ai/health": {
+            "get": {
+                "operationId": "getAiHealth",
+                "summary": "Check AI engine health status",
+                "tags": ["AI"],
+                "responses": {
+                    "200": {
+                        "description": "AI health status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AiHealthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/churn": {
+            "post": {
+                "operationId": "computeChurn",
+                "summary": "Compute churn predictions for all customers in the active organization",
+                "tags": ["AI"],
+                "responses": {
+                    "200": {
+                        "description": "Churn prediction completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChurnComputeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "get": {
+                "operationId": "getChurnResults",
+                "summary": "Get churn prediction results (paginated, filterable by risk level)",
+                "tags": ["AI"],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "description": "Page number for pagination"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        },
+                        "description": "Number of items per page"
+                    },
+                    {
+                        "name": "riskLevel",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["stable", "low", "high"]
+                        },
+                        "description": "Filter by risk level"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Churn results fetched successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ChurnCustomer"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/ai/segment": {
+            "post": {
+                "operationId": "computeSegments",
+                "summary": "Compute customer segmentation for the active organization",
+                "tags": ["AI"],
+                "responses": {
+                    "200": {
+                        "description": "Segmentation completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SegmentComputeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "get": {
+                "operationId": "getSegmentResults",
+                "summary": "Get segmentation distribution summary",
+                "tags": ["AI"],
+                "responses": {
+                    "200": {
+                        "description": "Segmentation results fetched successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SegmentResultsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/ai/recommend": {
+            "post": {
+                "operationId": "computeRecommendations",
+                "summary": "Compute product recommendations for all products in the active organization",
+                "tags": ["AI"],
+                "responses": {
+                    "200": {
+                        "description": "Recommendations computed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecommendComputeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/ai/recommend/{productId}": {
+            "get": {
+                "operationId": "getProductRecommendations",
+                "summary": "Get recommendations for a specific product",
+                "tags": ["AI"],
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Product ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product recommendations fetched successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductRecommendationsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -7084,6 +7343,293 @@
                     "revenue": {
                         "type": "number",
                         "description": "Total revenue generated on this date"
+                    }
+                }
+            },
+            "AiHealthStatus": {
+                "type": "object",
+                "properties": {
+                    "churnModel": {
+                        "type": "object",
+                        "properties": {
+                            "available": {
+                                "type": "boolean"
+                            },
+                            "features": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "segmentation": {
+                        "type": "object",
+                        "properties": {
+                            "available": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "recommendations": {
+                        "type": "object",
+                        "properties": {
+                            "available": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            },
+            "AiHealthResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/AiHealthStatus"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ChurnResult": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string"
+                    },
+                    "churn_probability": {
+                        "type": "number"
+                    },
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["stable", "low", "high"]
+                    }
+                }
+            },
+            "ChurnComputeResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "totalCustomers": {
+                                "type": "integer"
+                            },
+                            "results": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ChurnResult"
+                                }
+                            }
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ChurnCustomer": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "churnRiskScore": {
+                        "type": "number"
+                    },
+                    "lifecycleStage": {
+                        "type": "string"
+                    },
+                    "lastScoredAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "SegmentDistribution": {
+                "type": "object",
+                "properties": {
+                    "segment": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "count": {
+                        "type": "integer"
+                    },
+                    "percentage": {
+                        "type": "number"
+                    }
+                }
+            },
+            "SegmentComputeResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "totalCustomers": {
+                                "type": "integer"
+                            },
+                            "distribution": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SegmentDistribution"
+                                }
+                            },
+                            "results": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SegmentResultItem"
+                                }
+                            }
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SegmentResultItem": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string"
+                    },
+                    "segment": {
+                        "type": "integer"
+                    },
+                    "segment_name": {
+                        "type": "string"
+                    },
+                    "distances": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "minItems": 3,
+                        "maxItems": 3
+                    }
+                }
+            },
+            "SegmentResultsResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "totalCustomers": {
+                                "type": "integer"
+                            },
+                            "distribution": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/SegmentDistribution"
+                                }
+                            }
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RecommendComputeResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "totalItems": {
+                                "type": "integer"
+                            },
+                            "totalInteractions": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RecommendationItem": {
+                "type": "object",
+                "properties": {
+                    "item_id": {
+                        "type": "string"
+                    },
+                    "similarity": {
+                        "type": "number"
+                    }
+                }
+            },
+            "ProductRecommendationsResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "productId": {
+                                "type": "string"
+                            },
+                            "recommendations": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/RecommendationItem"
+                                }
+                            }
+                        }
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "path": {
+                        "type": "string"
                     }
                 }
             }
