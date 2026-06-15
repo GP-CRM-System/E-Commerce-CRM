@@ -27,6 +27,8 @@ model User {
   assignedTickets SupportTicket[] @relation("AssignedTickets")
   ticketNotes     TicketNote[]
   segments        Segment[]
+  isOnline        Boolean         @default(false)
+  lastSeen        DateTime?
   assignedConversations Conversation[] @relation("AssignedConversations")
 
   @@unique([email])
