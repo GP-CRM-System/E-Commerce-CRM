@@ -186,25 +186,57 @@ export async function getCustomerDetails(id: string, organizationId: string) {
                 source: true,
                 acceptsMarketing: true,
                 address: true,
+                city: true,
                 isLoyaltyMember: true,
                 rfmScore: true,
                 rfmSegment: true,
+                rfmRecency: true,
+                rfmFrequency: true,
+                rfmMonetary: true,
                 cohortMonth: true,
                 totalOrders: true,
                 totalSpent: true,
                 totalRefunded: true,
                 lastOrderAt: true,
+                firstOrderAt: true,
+                avgDaysBetweenOrders: true,
+                churnRiskScore: true,
                 engagementScore: true,
                 satisfactionScore: true,
                 browsingFrequency: true,
                 cartAbandonmentRate: true,
                 priceSensitivityIndex: true,
                 supportTicketsCount: true,
+                lastSentimentScore: true,
+                emailOpenRate: true,
+                websiteVisitsLastMonth: true,
+                spendingScore: true,
+                loyaltyPoints: true,
+                subscriptionTier: true,
+                accountAgeMonths: true,
                 tags: true,
                 notes: true,
                 orders: true,
                 supportTickets: true,
-                customerEvents: true
+                customerEvents: true,
+                productInteractions: {
+                    select: {
+                        id: true,
+                        interactionType: true,
+                        rating: true,
+                        device: true,
+                        createdAt: true,
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                imageUrl: true
+                            }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: 50
+                }
             }
         });
 

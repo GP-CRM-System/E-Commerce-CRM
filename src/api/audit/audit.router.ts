@@ -20,4 +20,11 @@ router.get(
     auditController.listLogs
 );
 
+router.get(
+    '/user/:userId',
+    requirePermission('reports:read'),
+    validateRequest(auditQuerySchema, 'query'),
+    auditController.listLogsForUser
+);
+
 export default router;

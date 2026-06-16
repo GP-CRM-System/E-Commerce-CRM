@@ -1,4 +1,6 @@
 import * as Sentry from '@sentry/bun';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Queue } from 'bullmq';
 import prisma from '../../config/prisma.config.js';
 import type {
@@ -20,6 +22,14 @@ import {
     purgeCloudflareCache,
     getCloudflarePublicUrl
 } from '../../utils/cloudflare.util.js';
+
+const LOCAL_EXPORT_DIR = path.join(process.cwd(), 'tmp', 'exports');
+
+function ensureLocalExportDir() {
+    if (!fs.existsSync(LOCAL_EXPORT_DIR)) {
+        fs.mkdirSync(LOCAL_EXPORT_DIR, { recursive: true });
+    }
+}
 
 function getExportQueue(): Queue | null {
     if (!isRedisAvailable) return null;
@@ -186,7 +196,7 @@ export async function processExportJob(
                 customerName: o.customer?.name,
                 totalAmount: Number(o.totalAmount),
                 paymentStatus: o.paymentStatus,
-                shippingStatus: o.shippingStatus,
+                fulfillmentStatus: o.fulfillmentStatus,
                 createdAt: o.createdAt
             }));
         }
@@ -238,16 +248,40 @@ export async function processExportJob(
                 }
             });
         } else {
-            Sentry.captureMessage(
-                `Export ${jobId}: B2 not configured, export failed`,
-                'error'
+            // Local file fallback when B2 is not configured
+            ensureLocalExportDir();
+            const localPath = path.join(
+                LOCAL_EXPORT_DIR,
+                `${jobId}-${fileName}`
             );
-            throw new Error(
-                'Export storage (B2/Cloudflare) not configured. Set B2_KEY_ID, B2_APPLICATION_KEY, and B2_BUCKET_NAME environment variables.'
+            fs.writeFileSync(localPath, buffer);
+
+            const filePath = `local:${localPath}`;
+
+            logger.info(
+                `Export ${jobId}: saved locally to ${localPath} (${exportData.length} rows)`
             );
+
+            await prisma.exportJob.update({
+                where: { id: jobId },
+                data: {
+                    status: 'COMPLETED',
+                    fileName,
+                    filePath,
+                    totalRows: exportData.length,
+                    completedAt: new Date()
+                }
+            });
         }
     } catch (error) {
-        logger.error({ error, jobId }, 'Export job failed');
+        logger.error(
+            {
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                jobId
+            },
+            'Export job failed'
+        );
         try {
             await prisma.exportJob.update({
                 where: { id: jobId },

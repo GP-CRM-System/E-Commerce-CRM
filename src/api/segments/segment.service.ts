@@ -60,8 +60,12 @@ export async function getSegments(
             select: {
                 id: true,
                 name: true,
+                description: true,
+                filter: true,
                 size: true,
-                createdAt: true
+                creatorId: true,
+                createdAt: true,
+                updatedAt: true
             }
         }),
         prisma.segment.count({ where })

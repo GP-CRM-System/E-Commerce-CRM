@@ -19,8 +19,8 @@ export function initExportWorker() {
                 jobId,
                 entityType,
                 format,
-                selectedColumns,
-                filters,
+                selectedColumns || [],
+                (filters as Record<string, unknown>) || {},
                 organizationId
             );
         },
@@ -32,7 +32,14 @@ export function initExportWorker() {
     });
 
     worker.on('failed', (job, err) => {
-        logger.error({ err, jobId: job?.id }, 'Export job failed');
+        logger.error(
+            {
+                err: err instanceof Error ? err.message : String(err),
+                stack: err instanceof Error ? err.stack : undefined,
+                jobId: job?.id
+            },
+            'Export job worker failed'
+        );
     });
 
     return worker;

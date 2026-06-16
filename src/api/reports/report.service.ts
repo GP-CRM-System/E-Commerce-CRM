@@ -84,3 +84,30 @@ export async function getCustomerAcquisitionStats(organizationId: string) {
         .map(([month, count]) => ({ month, count }))
         .reverse();
 }
+
+export async function getCustomerEvents(organizationId: string) {
+    return prisma.customerEvent.findMany({
+        where: {
+            customer: {
+                organizationId
+            }
+        },
+        take: 5,
+        orderBy: {
+            occurredAt: 'desc'
+        },
+        select: {
+            id: true,
+            customer: {
+                select: {
+                    name: true,
+                    id: true
+                }
+            },
+            eventType: true,
+            occurredAt: true,
+            description: true,
+            source: true
+        }
+    });
+}

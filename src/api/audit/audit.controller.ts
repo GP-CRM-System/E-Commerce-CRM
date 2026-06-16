@@ -2,7 +2,11 @@ import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import prisma from '../../config/prisma.config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
-import { ResponseHandler } from '../../utils/response.util.js';
+import {
+    ResponseHandler,
+    HttpStatus,
+    ErrorCode
+} from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 
@@ -39,6 +43,55 @@ export const listLogs = asyncHandler(
             res,
             logs,
             'Audit logs fetched successfully',
+            page,
+            limit,
+            total
+        );
+    }
+);
+
+export const listLogsForUser = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const userId = String(req.params.userId);
+
+        if (!userId) {
+            return ResponseHandler.error(
+                res,
+                'userId is required',
+                ErrorCode.VALIDATION_ERROR,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const { skip, take, page, limit } = getPagination(
+            {
+                page: (req.query.page as string) || '1',
+                limit: (req.query.limit as string) || '20'
+            },
+            20
+        );
+
+        const where: Prisma.AuditLogWhereInput = {
+            organizationId,
+            userId
+        };
+
+        const [logs, total] = await Promise.all([
+            prisma.auditLog.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                include: { user: { select: { name: true, email: true } } },
+                take,
+                skip
+            }),
+            prisma.auditLog.count({ where })
+        ]);
+
+        return ResponseHandler.paginated(
+            res,
+            logs,
+            'User audit logs fetched successfully',
             page,
             limit,
             total

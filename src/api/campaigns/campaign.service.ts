@@ -90,10 +90,16 @@ export async function listCampaigns(
                 id: true,
                 name: true,
                 type: true,
-                segment: true,
+                subject: true,
+                segment: { select: { id: true, name: true } },
+                template: { select: { id: true, name: true } },
                 status: true,
                 scheduledAt: true,
-                metrics: true
+                sentAt: true,
+                recipientCount: true,
+                metrics: true,
+                createdAt: true,
+                updatedAt: true
             }
         }),
         prisma.campaign.count({ where })
