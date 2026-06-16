@@ -9,6 +9,8 @@ export const env = {
 
     // Better Auth
     betterAuthSecret: process.env.BETTER_AUTH_SECRET as string,
+    betterAuthUrl: (process.env.BETTER_AUTH_URL ||
+        process.env.APP_URL) as string,
 
     // Database Configuration
     databaseUrl: process.env.DATABASE_URL as string,
@@ -28,7 +30,6 @@ export const env = {
     appUrl: process.env.APP_URL as string,
     googleClientId: process.env.GOOGLE_CLIENT_ID as string,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL as string,
 
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
@@ -85,6 +86,7 @@ export function checkEnv(): void {
     if (!env.nodeEnv) missingVars.push('NODE_ENV');
     if (!env.corsOrigin) missingVars.push('CORS_ORIGIN');
     if (!env.betterAuthSecret) missingVars.push('BETTER_AUTH_SECRET');
+    if (!env.betterAuthUrl) missingVars.push('BETTER_AUTH_URL');
     if (!env.databaseUrl) missingVars.push('DATABASE_URL');
     if (!env.smtpHost) missingVars.push('SMTP_HOST');
     if (!env.smtpPort) missingVars.push('SMTP_PORT');
@@ -95,7 +97,7 @@ export function checkEnv(): void {
     if (!env.appUrl) missingVars.push('APP_URL');
     if (!env.googleClientId) missingVars.push('GOOGLE_CLIENT_ID');
     if (!env.googleClientSecret) missingVars.push('GOOGLE_CLIENT_SECRET');
-    if (!env.googleCallbackUrl) missingVars.push('GOOGLE_CALLBACK_URL');
+    // GOOGLE_CALLBACK_URL is auto-derived by Better Auth from APP_URL as {appUrl}/api/auth/callback/social
     if (env.nodeEnv !== 'test') {
         if (!env.shopifyClientId) missingVars.push('SHOPIFY_CLIENT_ID');
         if (!env.shopifyClientSecret) missingVars.push('SHOPIFY_CLIENT_SECRET');

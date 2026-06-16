@@ -35,9 +35,11 @@ export async function createTestUserAndOrg(options?: {
         }
     });
 
-    if (!signup) throw new Error('Signup failed');
-    const authToken = signup.token!;
+    if (!signup?.user?.id) throw new Error('Signup failed - no user returned');
+
     const userId = signup.user.id;
+    const signupToken = signup.token;
+    if (!signupToken) throw new Error('Signup failed - no token returned');
 
     await prisma.user.update({
         where: { id: userId },
@@ -45,7 +47,7 @@ export async function createTestUserAndOrg(options?: {
     });
 
     const org = await auth.api.createOrganization({
-        headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
+        headers: fromNodeHeaders({ authorization: `Bearer ${signupToken}` }),
         body: {
             name: orgName,
             slug: orgSlug
@@ -61,15 +63,16 @@ export async function createTestUserAndOrg(options?: {
     if (!orgId) throw new Error('Failed to get organization ID');
 
     await auth.api.setActiveOrganization({
-        headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
+        headers: fromNodeHeaders({ authorization: `Bearer ${signupToken}` }),
         body: { organizationId: orgId }
     });
 
+    // Use signInEmail for a guaranteed non-null token (signUpEmail can return token: null)
     const signin = await auth.api.signInEmail({
         body: { email, password: 'Password123!' }
     });
 
-    if (!signin || !signin.token) throw new Error('Signin failed');
+    if (!signin?.token) throw new Error('Signin failed - no token returned');
 
     return {
         token: signin.token,

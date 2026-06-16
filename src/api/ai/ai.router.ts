@@ -42,6 +42,8 @@ router.get(
     aiController.getProductRecommendations
 );
 
+router.get('/order/:orderId', aiController.getOrderStatus);
+
 // AI service health (no auth required — used by monitoring tools)
 router.get('/health', aiController.getAiHealth);
 

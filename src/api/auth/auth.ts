@@ -4,7 +4,7 @@ import { bearer } from 'better-auth/plugins/bearer';
 import { organization } from 'better-auth/plugins/organization';
 import { openAPI, customSession } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
-import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { prismaAdapter } from '@better-auth/prisma-adapter';
 import prisma from '../../config/prisma.config.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
@@ -20,7 +20,8 @@ import { AuditService } from '../audit/audit.service.js';
 const ac = createAccessControl(AVAILABLE_PERMISSIONS);
 
 export const auth = betterAuth({
-    baseURL: env.appUrl,
+    appName: 'Briefly CRM',
+    baseURL: env.betterAuthUrl,
     database: prismaAdapter(prisma, {
         provider: 'postgresql'
     }),
@@ -33,7 +34,8 @@ export const auth = betterAuth({
         updateAge: 60 * 60 * 24,
         cookieCache: {
             maxAge: 60 * 60 * 24,
-            enabled: false
+            enabled: true,
+            strategy: 'compact'
         }
     },
     emailAndPassword: {
@@ -79,6 +81,7 @@ export const auth = betterAuth({
     },
     account: {
         accountLinking: { enabled: true }
+        // encryptOAuthTokens: true
     },
     plugins: [
         customSession(async ({ user, session }) => {
@@ -211,11 +214,22 @@ export const auth = betterAuth({
         }),
         openAPI()
     ],
-    trustedOrigins: [
-        env.appUrl!,
-        'http://localhost:5173',
-        'https://briefly-azure.vercel.app'
-    ],
+    trustedOrigins: Array.from(
+        new Set(
+            [
+                env.appUrl,
+                env.betterAuthUrl,
+                ...(env.corsOrigin
+                    ? env.corsOrigin
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                    : []),
+                'http://localhost:5173',
+                'https://briefly-azure.vercel.app'
+            ].filter(Boolean)
+        )
+    ),
     socialProviders: {
         google: {
             clientId: env.googleClientId!,
@@ -223,6 +237,11 @@ export const auth = betterAuth({
         }
     },
     advanced: {
+        // CSRF check is kept enabled for security.
+        // Trusted origins are configured above to allow legitimate cross-origin requests.
+        ipAddress: {
+            ipAddressHeaders: ['x-forwarded-for', 'x-real-ip']
+        },
         disableCSRFCheck: true
     },
     databaseHooks: {

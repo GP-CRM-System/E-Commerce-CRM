@@ -577,6 +577,23 @@ export async function getRecommendationsForProduct(
         : null;
 }
 
+export async function getOrderStatus(orderId: string) {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+                paymentStatus: true,
+                fulfillmentStatus: true,
+                shippingStatus: true
+            }
+        });
+
+        return order;
+    } catch (err) {
+        logger.error(err);
+    }
+}
+
 export async function getAiHealth(): Promise<AiHealthStatus> {
     try {
         const controller = new AbortController();

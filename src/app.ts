@@ -24,6 +24,7 @@ import {
     outboundWorker,
     statusWorker
 } from './queues/messaging.worker.js';
+import { toNodeHandler } from 'better-auth/node';
 import { closeImportQueue } from './api/imports/imports.service.js';
 import {
     isRedisAvailable,
@@ -39,7 +40,14 @@ import { configureB2Cors } from './config/b2.config.js';
 checkEnv();
 
 const app = express();
-
+app.use(
+    cors({
+        origin: process.env.CORS_ORIGIN?.split(',') || [],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization']
+    })
+);
 app.use(
     express.json({
         limit: '10mb',
@@ -51,14 +59,8 @@ app.use(
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(process.cwd(), 'public')));
 app.use(cookieParser(env.betterAuthSecret));
-app.use(
-    cors({
-        origin: process.env.CORS_ORIGIN?.split(',') || [],
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-        credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization']
-    })
-);
+
+app.all('/api/auth/*splat', toNodeHandler(auth));
 
 // Auth routes
 app.use('/api', apiRouter);

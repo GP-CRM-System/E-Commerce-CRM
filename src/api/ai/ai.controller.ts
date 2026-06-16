@@ -186,6 +186,23 @@ export const getProductRecommendations = asyncHandler(
     }
 );
 
+export const getOrderStatus = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const orderId = req.params.orderId as string;
+        if (!orderId) throw new BadRequestError('Order ID is required');
+
+        const status = await aiService.getOrderStatus(orderId);
+
+        ResponseHandler.success(
+            res,
+            'Order status fetched successfully',
+            HttpStatus.OK,
+            status,
+            req.url
+        );
+    }
+);
+
 /**
  * GET /api/ai/health
  * Check AI engine health status.

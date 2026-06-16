@@ -31,10 +31,11 @@ describe('Auth Middleware', () => {
             }
         });
 
-        authToken = signup!.token!;
+        if (!signup?.token) throw new Error('Signup failed');
+        authToken = signup.token;
 
         await prisma.user.update({
-            where: { id: signup!.user.id },
+            where: { id: signup.user.id },
             data: { emailVerified: true }
         });
 
@@ -60,7 +61,8 @@ describe('Auth Middleware', () => {
         const signin = await auth.api.signInEmail({
             body: { email: testEmail, password: 'Password123!' }
         });
-        authToken = signin.token!;
+        if (!signin?.token) throw new Error('Signin failed');
+        authToken = signin.token;
     });
 
     afterAll(async () => {
@@ -117,9 +119,11 @@ describe('Auth Middleware', () => {
                 }
             });
 
+            if (!signup?.token) throw new Error('Signup failed');
+
             const response = await request(app)
                 .get('/api/customers')
-                .set('Authorization', `Bearer ${signup!.token}`);
+                .set('Authorization', `Bearer ${signup.token}`);
 
             expect(response.status).toBe(403);
 
