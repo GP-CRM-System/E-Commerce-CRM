@@ -257,6 +257,26 @@ async function createSegmentsAndCampaigns(
         {
             name: 'Win-back Promo',
             desc: 'Re-engagement campaign for inactive customers'
+        },
+        {
+            name: 'New Arrivals Alert',
+            desc: 'Introducing the latest product collection'
+        },
+        {
+            name: 'Flash Weekend Sale',
+            desc: 'Limited-time weekend discount for all customers'
+        },
+        {
+            name: 'VIP Exclusive Offer',
+            desc: 'Exclusive perks and discounts for VIP members'
+        },
+        {
+            name: 'Referral Rewards',
+            desc: 'Refer a friend and earn bonus credits'
+        },
+        {
+            name: 'Holiday Specials',
+            desc: 'Seasonal promotions and gift ideas'
         }
     ];
     for (const { name, desc } of campaignNames) {
@@ -278,17 +298,17 @@ async function createSegmentsAndCampaigns(
                 sentAt: new Date(),
                 recipientCount: faker.number.int({ min: 50, max: 100 }),
                 metrics: {
-                    sent: 80,
-                    delivered: 75,
-                    opened: 45,
-                    clicked: 20,
-                    converted: 5
+                    sent: faker.number.int({ min: 80, max: 200 }),
+                    delivered: faker.number.int({ min: 60, max: 180 }),
+                    opened: faker.number.int({ min: 30, max: 100 }),
+                    clicked: faker.number.int({ min: 10, max: 50 }),
+                    converted: faker.number.int({ min: 1, max: 20 })
                 }
             }
         });
     }
 
-    logger.info('[SEED] Created 5 segments, 3 campaigns, 3 email templates\n');
+    logger.info('[SEED] Created 5 segments, 8 campaigns, 3 email templates\n');
 }
 
 async function createCustomers(
@@ -370,24 +390,41 @@ async function createCustomers(
                 avgOrderValue,
                 firstOrderAt,
                 lastOrderAt,
-                avgDaysBetweenOrders: faker.number.float({ min: 7, max: 60 }),
+                avgDaysBetweenOrders:
+                    Math.round(faker.number.float({ min: 7, max: 60 }) * 10) /
+                    10,
                 rfmRecency: r,
                 rfmFrequency: f,
                 rfmMonetary: m,
                 rfmScore: `${r}${f}${m}`,
                 rfmSegment: faker.helpers.arrayElement(segments),
-                churnRiskScore: faker.number.float({ min: 0, max: 1 }),
+                churnRiskScore:
+                    Math.round(faker.number.float({ min: 0, max: 1 }) * 1000) /
+                    1000,
                 lifecycleStage: faker.helpers.arrayElement(lifecycleStages),
                 cohortMonth: `2024-${String(faker.number.int({ min: 1, max: 12 })).padStart(2, '0')}`,
                 acceptsMarketing: faker.datatype.boolean(),
                 isLoyaltyMember: faker.datatype.boolean({ probability: 0.3 }),
                 accountAgeMonths: faker.number.int({ min: 1, max: 36 }),
-                engagementScore: faker.number.float({ min: 0, max: 100 }),
-                satisfactionScore: faker.number.float({ min: 1, max: 10 }),
-                browsingFrequency: faker.number.float({ min: 0, max: 50 }),
-                cartAbandonmentRate: faker.number.float({ min: 0, max: 0.8 }),
-                lastSentimentScore: faker.number.float({ min: -1, max: 1 }),
-                priceSensitivityIndex: faker.number.float({ min: 0, max: 1 }),
+                engagementScore:
+                    Math.round(faker.number.float({ min: 0, max: 100 }) * 10) /
+                    10,
+                satisfactionScore:
+                    Math.round(faker.number.float({ min: 1, max: 10 }) * 10) /
+                    10,
+                browsingFrequency:
+                    Math.round(faker.number.float({ min: 0, max: 50 }) * 10) /
+                    10,
+                cartAbandonmentRate:
+                    Math.round(
+                        faker.number.float({ min: 0, max: 0.8 }) * 1000
+                    ) / 1000,
+                lastSentimentScore:
+                    Math.round(faker.number.float({ min: -1, max: 1 }) * 1000) /
+                    1000,
+                priceSensitivityIndex:
+                    Math.round(faker.number.float({ min: 0, max: 1 }) * 1000) /
+                    1000,
                 supportTicketsCount: faker.number.int({ min: 0, max: 5 }),
                 organizationId: org.id,
                 createdAt: faker.date.past({ years: 2 })
@@ -401,24 +438,31 @@ async function createCustomers(
 
     for (const org of organizations) {
         const customers = await prisma.customer.findMany({
-            where: { organizationId: org.id },
-            take: 30
+            where: { organizationId: org.id }
         });
 
         for (const customer of customers) {
             await prisma.customerMetric.create({
                 data: {
                     customerId: customer.id,
-                    churnProbability: faker.number.float({ min: 0, max: 1 }),
+                    churnProbability:
+                        Math.round(
+                            faker.number.float({ min: 0, max: 1 }) * 1000
+                        ) / 1000,
                     avgOrderValue: new Prisma.Decimal(
-                        faker.number.float({ min: 50, max: 500 })
+                        Math.round(
+                            faker.number.float({ min: 50, max: 500 }) * 100
+                        ) / 100
                     ),
                     daysSinceLastPurchase: faker.number.int({
                         min: 0,
                         max: 90
                     }),
                     totalOrders: faker.number.int({ min: 1, max: 50 }),
-                    returnRate: faker.number.float({ min: 0, max: 0.3 })
+                    returnRate:
+                        Math.round(
+                            faker.number.float({ min: 0, max: 0.3 }) * 1000
+                        ) / 1000
                 }
             });
 
@@ -484,7 +528,7 @@ async function createCustomers(
                     source: 'shopify'
                 }
             ];
-            const numEvents = faker.number.int({ min: 1, max: 5 });
+            const numEvents = faker.number.int({ min: 3, max: 5 });
             const selectedEvents = faker.helpers.arrayElements(
                 eventTypes,
                 numEvents
@@ -664,13 +708,14 @@ async function createProducts(organizations: { id: string }[]) {
             const price =
                 Math.round(faker.number.float({ min: 10, max: 1000 }) * 100) /
                 100;
+            const name = faker.commerce.productName();
             products.push({
-                name: faker.commerce.productName(),
+                name,
                 description: faker.commerce.productDescription(),
                 price: new Prisma.Decimal(price),
                 sku: faker.string.alphanumeric(8).toUpperCase(),
                 barcode: faker.string.numeric(13),
-                imageUrl: faker.image.url(),
+                imageUrl: `https://placehold.co/400x400/EEE/31343C?text=${encodeURIComponent(name.split(' ').slice(0, 3).join(' '))}`,
                 weight: faker.number.float({ min: 0.1, max: 25 }),
                 weightUnit: faker.helpers.arrayElement(weightUnits),
                 inventory: faker.number.int({ min: 0, max: 500 }),
@@ -712,7 +757,7 @@ async function createProducts(organizations: { id: string }[]) {
                             'oz',
                             'g'
                         ]),
-                        imageUrl: faker.image.url(),
+                        imageUrl: `https://placehold.co/400x400/EEE/31343C?text=${encodeURIComponent(product.name.split(' ').slice(0, 3).join(' '))}`,
                         externalId: `ext-variant-${faker.string.alphanumeric(8)}`,
                         options: {
                             size: faker.helpers.arrayElement([

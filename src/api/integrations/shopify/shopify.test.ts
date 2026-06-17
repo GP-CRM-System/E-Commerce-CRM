@@ -202,7 +202,7 @@ describe('Shopify Integration Controller', () => {
             );
 
             expect(res.redirect).toHaveBeenCalledWith(
-                expect.stringContaining('?success=true&provider=shopify')
+                expect.stringContaining('shopify=connected')
             );
         });
 
@@ -249,7 +249,7 @@ describe('Shopify Integration Controller', () => {
             await runHandler(callback, req, res);
 
             expect(res.redirect).toHaveBeenCalledWith(
-                expect.stringContaining('?error=shopify_auth_failed')
+                expect.stringContaining('shopify=error')
             );
         });
 

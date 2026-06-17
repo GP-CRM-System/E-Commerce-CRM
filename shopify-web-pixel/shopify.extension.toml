@@ -3,5 +3,5 @@ type = "web_pixel"
 name = "CRM Web Pixel"
 handle = "crm-web-pixel"
 
-[extensing.config]
+[extensions.config]
 ingestion_url = "https://briefly-server-drab.vercel.app/api/integrations/shopify/pixel-ingest"

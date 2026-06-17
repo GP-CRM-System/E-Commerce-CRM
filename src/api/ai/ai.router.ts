@@ -1,12 +1,8 @@
-/**
- * AI Intelligence Router — Route definitions.
- *
- * Controller functions are already wrapped with asyncHandler internally,
- * so no need to wrap them again here.
- */
 import { Router } from 'express';
 import { requirePermission } from '../../middlewares/auth.middleware.js';
 import * as aiController from './ai.controller.js';
+import { createTicketSchema } from './ai.schemas.js';
+import { validateRequest } from '../../middlewares/validation.middleware.js';
 
 const router = Router();
 
@@ -43,6 +39,13 @@ router.get(
 );
 
 router.get('/order/:orderId', aiController.getOrderStatus);
+
+router.post(
+    '/ticket',
+    requirePermission('ai:write'),
+    validateRequest(createTicketSchema),
+    aiController.createTicket
+);
 
 // AI service health (no auth required — used by monitoring tools)
 router.get('/health', aiController.getAiHealth);

@@ -11,7 +11,7 @@ import {
 import { buildPrismaWhere } from '../segments/segment.utils.js';
 import type { Customer } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
-import { sendEmail } from '../../utils/email.util.js';
+import { sendEmail, buildEmailHtml } from '../../utils/email.util.js';
 import { checkEmailLimit } from '../../utils/plan-limits.util.js';
 
 export interface CampaignJobData {
@@ -391,11 +391,28 @@ export async function processCampaignSend(jobData: CampaignJobData) {
         const renderedSubject = renderTemplate(subject, context);
         const renderedBody = renderTemplate(body, context);
 
-        // Send the email via the configured SMTP provider
+        const isFullHtml = /^<!DOCTYPE html|<html/i.test(renderedBody.trim());
+        const orgLogo =
+            (
+                await prisma.organization.findUnique({
+                    where: { id: organizationId },
+                    select: { logo: true }
+                })
+            )?.logo ?? undefined;
+
+        const finalHtml = isFullHtml
+            ? renderedBody
+            : buildEmailHtml({
+                  title: renderedSubject,
+                  body: renderedBody,
+                  orgLogo,
+                  footerText: `You're receiving this because you're subscribed to ${campaign.name}.`
+              });
+
         await sendEmail({
             to: customer.email,
             subject: renderedSubject,
-            html: renderedBody
+            html: finalHtml
         });
 
         await prisma.campaignRecipient.update({

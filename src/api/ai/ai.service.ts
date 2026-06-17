@@ -6,7 +6,10 @@ import { buildMasterCsv, buildCatalogCsv } from './csv.builder.js';
 import type { MasterCsvRow, CatalogCsvRow, HfApiResponse } from './hf.types.js';
 import type { AiHealthStatus, ChurnResult, SegmentResult } from './ai.types.js';
 import { AppError, HttpStatus, ErrorCode } from '../../utils/response.util.js';
-import type { Prisma } from '../../generated/prisma/client.js';
+import type {
+    Prisma,
+    SupportTicketPriority
+} from '../../generated/prisma/client.js';
 
 function deriveAgeGroup(age: number | null): string {
     if (age === null || age === undefined) return 'unknown';
@@ -592,6 +595,45 @@ export async function getOrderStatus(orderId: string) {
     } catch (err) {
         logger.error(err);
     }
+}
+
+export async function createTicket(data: {
+    customerId: string;
+    organizationId: string;
+    subject: string;
+    description: string;
+    priority?: string;
+    orderId?: string;
+}) {
+    let order = null;
+
+    if (data.orderId) {
+        order = await prisma.order.findUnique({
+            where: { id: data.orderId },
+            select: {
+                id: true,
+                customer: {
+                    select: {
+                        id: true
+                    }
+                }
+            }
+        });
+    }
+
+    const ticket = await prisma.supportTicket.create({
+        data: {
+            customerId: data.customerId,
+            organizationId: data.organizationId,
+            subject: data.subject,
+            description: data.description,
+            priority: (data.priority as SupportTicketPriority) || 'MEDIUM',
+            orderId: order?.id ?? null,
+            status: 'OPEN'
+        }
+    });
+
+    return ticket;
 }
 
 export async function getAiHealth(): Promise<AiHealthStatus> {

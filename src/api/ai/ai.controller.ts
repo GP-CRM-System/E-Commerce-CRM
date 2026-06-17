@@ -203,6 +203,19 @@ export const getOrderStatus = asyncHandler(
     }
 );
 
+export const createTicket = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const ticket = await aiService.createTicket(req.body);
+
+        ResponseHandler.created(
+            res,
+            'Ticket created successfully',
+            ticket,
+            req.url
+        );
+    }
+);
+
 /**
  * GET /api/ai/health
  * Check AI engine health status.

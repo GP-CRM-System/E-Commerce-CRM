@@ -581,17 +581,19 @@ export async function fullSync(
                 metadata: { entityType, error: message, stats }
             });
             await updateSyncLog(syncLog.id, stats, 'failed', message);
-            await prisma.integration.update({
-                where: { id: integrationId },
-                data: { syncStatus: 'failed' }
-            });
-            throw error;
+            // Mark integration as failed but continue to next entity type
+            stats.itemsFailed++;
+            // Don't throw — continue to next entity type
         }
     }
 
     await prisma.integration.update({
         where: { id: integrationId },
-        data: { syncStatus: 'completed', lastSyncedAt: new Date() }
+        data: {
+            syncStatus:
+                stats.itemsFailed > 0 ? 'completed_with_errors' : 'completed',
+            lastSyncedAt: new Date()
+        }
     });
     AuditService.log({
         organizationId: integration.orgId,

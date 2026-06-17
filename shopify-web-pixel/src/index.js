@@ -1,4 +1,7 @@
-const INGESTION_URL = 'https://briefly-server-drab.vercel.app/api/integrations/shopify/pixel-ingest';
+// Use the extension config ingestion URL, with a localhost fallback for development.
+const INGESTION_URL = (typeof __EXTENSION_CONFIG__ !== 'undefined' && __EXTENSION_CONFIG__.ingestion_url)
+    ? __EXTENSION_CONFIG__.ingestion_url
+    : 'http://localhost:6892/api/integrations/shopify/pixel-ingest';
 
 function sendEvent(eventName, metadata = {}) {
     const payload = {

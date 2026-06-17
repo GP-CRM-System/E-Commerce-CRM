@@ -190,16 +190,22 @@ export const callback = asyncHandler(
                 );
             });
 
-            // 10. Redirect back to the frontend
-            const frontendUrl = env.appUrl || 'http://localhost:5173';
+            // 10. Redirect back to the frontend connections tab
+            const frontendUrl = (env.appUrl || 'http://localhost:5173').replace(
+                /\/$/,
+                ''
+            );
             res.redirect(
-                `${frontendUrl}/settings/integrations?success=true&provider=shopify`
+                `${frontendUrl}/dashboard/settings?tab=connections&shopify=connected`
             );
         } catch (error) {
             logger.error({ err: error }, 'Shopify OAuth callback failed');
-            const frontendUrl = env.appUrl || 'http://localhost:5173';
+            const frontendUrl = (env.appUrl || 'http://localhost:5173').replace(
+                /\/$/,
+                ''
+            );
             res.redirect(
-                `${frontendUrl}/settings/integrations?error=shopify_auth_failed`
+                `${frontendUrl}/dashboard/settings?tab=connections&shopify=error`
             );
         }
     }

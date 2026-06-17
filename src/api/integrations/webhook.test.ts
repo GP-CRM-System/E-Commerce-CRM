@@ -3,6 +3,7 @@ import { it, describe, expect, beforeAll, afterAll } from 'bun:test';
 import crypto from 'crypto';
 import app from '../../app.js';
 import prisma from '../../config/prisma.config.js';
+import { env } from '../../config/env.config.js';
 import {
     createTestUser,
     cleanupTestUser,
@@ -13,7 +14,6 @@ import * as webhookService from './webhook.service.js';
 describe('Webhook & Idempotency API', () => {
     let authA: TestAuth;
     let testIntegrationId: string;
-    const TEST_SECRET = 'test-shopify-secret';
 
     const getSignature = (body: string, secret: string) => {
         return crypto
@@ -32,6 +32,8 @@ describe('Webhook & Idempotency API', () => {
             `webhook-org-a-${Date.now()}`
         );
 
+        // Uses the env-level SHOPIFY_CLIENT_SECRET for signing (matches controller behavior)
+        // No apiSecret set — the controller prioritizes env.shopifyClientSecret
         const integration = await prisma.integration.create({
             data: {
                 orgId: authA.orgId,
@@ -39,7 +41,6 @@ describe('Webhook & Idempotency API', () => {
                 name: 'Test Store',
                 shopDomain: 'test-webhook.myshopify.com',
                 accessToken: 'test-token',
-                apiSecret: TEST_SECRET,
                 isActive: true
             }
         });
@@ -129,7 +130,7 @@ describe('Webhook & Idempotency API', () => {
 
         it('should process a valid webhook', async () => {
             const bodyStr = JSON.stringify(payload);
-            const sig = getSignature(bodyStr, TEST_SECRET);
+            const sig = getSignature(bodyStr, env.shopifyClientSecret);
 
             const response = await request(app)
                 .post(`/api/webhooks/shopify/${testIntegrationId}`)
@@ -164,7 +165,7 @@ describe('Webhook & Idempotency API', () => {
         it('should reject duplicates', async () => {
             const uniquePayload = { id: Date.now(), email: 'dup@test.com' };
             const uniqueBody = JSON.stringify(uniquePayload);
-            const uniqueSig = getSignature(uniqueBody, TEST_SECRET);
+            const uniqueSig = getSignature(uniqueBody, env.shopifyClientSecret);
 
             const res1 = await request(app)
                 .post(`/api/webhooks/shopify/${testIntegrationId}`)
@@ -237,7 +238,7 @@ describe('Webhook & Idempotency API', () => {
         it('should persist webhook logs correctly', async () => {
             const payload = { id: Date.now() + 1, email: 'log-test@test.com' };
             const bodyStr = JSON.stringify(payload);
-            const sig = getSignature(bodyStr, TEST_SECRET);
+            const sig = getSignature(bodyStr, env.shopifyClientSecret);
 
             await request(app)
                 .post(`/api/webhooks/shopify/${testIntegrationId}`)

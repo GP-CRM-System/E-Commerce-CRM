@@ -12,6 +12,89 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+export type BuildEmailHtmlParams = {
+    title: string;
+    body: string;
+    previewText?: string;
+    orgLogo?: string;
+    cta?: {
+        url: string;
+        text: string;
+    };
+    footerText?: string;
+};
+
+export function buildEmailHtml(params: BuildEmailHtmlParams): string {
+    const { title, body, previewText, orgLogo, cta, footerText } = params;
+
+    const logoHtml = orgLogo
+        ? `<img src="${orgLogo}" alt="Organization logo" style="height: 32px; width: auto; display: block; border: 0; outline: none;" />`
+        : `<span style="font-family: 'Poppins', Arial, sans-serif; font-size: 22px; font-weight: 700; color: #4B91E2; letter-spacing: -0.3px;">Briefly</span>`;
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>${title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+    ${previewText ? `<div style="display: none; font-size: 1px; color: #F8FAFC; line-height: 1px; max-height: 0; max-width: 0; opacity: 0; overflow: hidden;">${previewText}</div>` : ''}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F8FAFC; min-height: 100vh;">
+        <tr>
+            <td align="center" style="padding: 40px 16px;">
+
+                <!-- Logo -->
+                <table width="600" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                    <tr>
+                        <td align="center">
+                            ${logoHtml}
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Card -->
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #FFFFFF; border-radius: 16px; border: 1px solid #E5E7EB; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td style="padding: 40px 40px 32px;">
+                            <h1 style="margin: 0 0 12px; font-size: 22px; font-weight: 600; color: #1A1A1A; line-height: 1.3;">${title}</h1>
+                            <div style="font-size: 15px; line-height: 1.7; color: #6B7280;">
+                                ${body}
+                            </div>
+                            ${cta ? `\n                            <table cellpadding="0" cellspacing="0" style="margin-top: 28px;">\n                                <tr>\n                                    <td style="background-color: #4B91E2; border-radius: 8px; padding: 0;">\n                                        <a href="${cta.url}" style="display: inline-block; padding: 12px 28px; font-family: 'Poppins', Arial, sans-serif; font-size: 14px; font-weight: 500; color: #FFFFFF; text-decoration: none; border-radius: 8px;">${cta.text}</a>\n                                    </td>\n                                </tr>\n                            </table>\n                            ` : ''}
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Footer -->
+                <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+                    <tr>
+                        <td align="center" style="padding: 0 40px;">
+                            <p style="margin: 0 0 4px; font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+                                ${footerText || 'This is an automated email from Briefly CRM.'}
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #D1D5DB; line-height: 1.5;">
+                                &copy; ${new Date().getFullYear()} Briefly CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+}
+
 export const sendEmail = async ({
     to,
     subject,
@@ -33,7 +116,6 @@ export const sendEmail = async ({
             return info;
         }
 
-        // In non-production, log the email content for debugging
         logger.info(
             {
                 to,
@@ -60,50 +142,12 @@ type NotificationEmailData = {
 const getNotificationEmailTemplate = (data: NotificationEmailData): string => {
     const { title, message, actionUrl } = data;
 
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f6f6f6;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f6f6f6;">
-        <tr>
-            <td align="center" style="padding: 20px 0;">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <tr>
-                        <td style="padding: 30px;">
-                            <h1 style="margin: 0 0 15px 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">${title}</h1>
-                            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5; color: #4a4a4a;">${message}</p>
-                            ${
-                                actionUrl
-                                    ? `
-                            <table cellpadding="0" cellspacing="0" style="margin-top: 20px;">
-                                <tr>
-                                    <td style="background-color: #2563eb; border-radius: 6px; padding: 12px 24px;">
-                                        <a href="${actionUrl}" style="color: #ffffff; text-decoration: none; font-weight: 500; display: inline-block;">View Details</a>
-                                    </td>
-                                </tr>
-                            </table>
-                            `
-                                    : ''
-                            }
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 20px 30px; border-top: 1px solid #e5e5e5; background-color: #fafafa; border-radius: 0 0 8px 8px;">
-                            <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">This is an automated notification from your CRM.</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-    `.trim();
+    return buildEmailHtml({
+        title,
+        body: `<p style="margin: 0 0 16px;">${message}</p>`,
+        cta: actionUrl ? { url: actionUrl, text: 'View Details' } : undefined,
+        footerText: 'This is an automated notification from Briefly CRM.'
+    });
 };
 
 export const sendNotificationEmail = async ({

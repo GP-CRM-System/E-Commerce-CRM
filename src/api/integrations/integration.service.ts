@@ -39,6 +39,7 @@ export async function createShopifyIntegration(
             name: data.name || data.shopDomain,
             shopDomain: data.shopDomain,
             accessToken: data.accessToken,
+            apiSecret: data.apiSecret,
             syncStatus: 'pending',
             syncMode: 'webhook',
             isActive: true

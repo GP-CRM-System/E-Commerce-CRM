@@ -9,7 +9,7 @@ import prisma from '../../config/prisma.config.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Request } from 'express';
 import { env } from '../../config/env.config.js';
-import { sendEmail } from '../../utils/email.util.js';
+import { sendEmail, buildEmailHtml } from '../../utils/email.util.js';
 import {
     AVAILABLE_PERMISSIONS,
     DEFAULT_ROLES
@@ -45,13 +45,17 @@ export const auth = betterAuth({
             await sendEmail({
                 to: user.email,
                 subject: 'Reset your password',
-                html: `
-					<p>Hi ${user.name ?? 'there'},</p>
-					<p>You requested to reset your password. Click the button below to continue:</p>
-					<br/>
-					<a href="${url}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
-					<p>If you didn't request this, you can safely ignore this email.</p>
-				`
+                html: buildEmailHtml({
+                    title: 'Reset your password',
+                    previewText:
+                        'Click the link to reset your Briefly CRM password',
+                    body: `
+                        <p style="margin: 0 0 16px;">Hi ${user.name ?? 'there'},</p>
+                        <p style="margin: 0 0 16px;">You requested to reset your password. Click the button below to continue:</p>
+                        <p style="margin: 0; font-size: 13px; color: #9CA3AF;">If you didn't request this, you can safely ignore this email.</p>
+                    `,
+                    cta: { url, text: 'Reset Password' }
+                })
             });
         }
     },
@@ -61,12 +65,15 @@ export const auth = betterAuth({
                 await sendEmail({
                     to: user.email,
                     subject: 'Verify your email address',
-                    html: `
-    					<p>Hi ${user.name ?? 'there'},</p>
-    					<p>Welcome to Briefly CRM! Please verify your email address by clicking the button below:</p>
-    					<br/>
-    					<a href="${url}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
-    				`
+                    html: buildEmailHtml({
+                        title: 'Welcome to Briefly CRM!',
+                        previewText: 'Verify your email to get started',
+                        body: `
+                            <p style="margin: 0 0 16px;">Hi ${user.name ?? 'there'},</p>
+                            <p style="margin: 0 0 16px;">Thanks for signing up! Please verify your email address by clicking the button below:</p>
+                        `,
+                        cta: { url, text: 'Verify Email' }
+                    })
                 });
             } else {
                 loggerUtil.info(
@@ -164,20 +171,29 @@ export const auth = betterAuth({
                         include: { user: true }
                     });
 
-                    if (owner?.user.email) {
+                    if (owner?.user.email && exportResult.downloadUrl) {
                         await sendEmail({
                             to: owner.user.email,
                             subject: `Your organization data export is ready`,
-                            html: `
-                                <p>Hi ${owner.user.name ?? 'there'},</p>
-                                <p>Your organization <strong>${data.organization.name}</strong> is scheduled for deletion.</p>
-                                <p>Your data export is ready for download:</p>
-                                <br/>
-                                <a href="${exportResult.downloadUrl}" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">Download Your Data</a>
-                                <br/><br/>
-                                <p>This link will expire in 7 days.</p>
-                                <p><strong>Warning:</strong> Your organization and all associated data will be permanently deleted. This action cannot be undone.</p>
-                            `
+                            html: buildEmailHtml({
+                                title: 'Organization Deletion Scheduled',
+                                previewText: `Data export ready for ${data.organization.name}`,
+                                orgLogo: data.organization.logo ?? undefined,
+                                body: `
+                                    <p style="margin: 0 0 16px;">Hi ${owner.user.name ?? 'there'},</p>
+                                    <p style="margin: 0 0 16px;">Your organization <strong style="color: #1A1A1A;">${data.organization.name}</strong> is scheduled for deletion.</p>
+                                    <p style="margin: 0 0 16px;">Your data export is ready for download. This link will expire in 7 days.</p>
+                                    <div style="background-color: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 16px; margin-bottom: 8px;">
+                                        <p style="margin: 0; font-size: 14px; color: #DC2626; font-weight: 500;">
+                                            Warning: Your organization and all associated data will be permanently deleted. This action cannot be undone.
+                                        </p>
+                                    </div>
+                                `,
+                                cta: {
+                                    url: exportResult.downloadUrl,
+                                    text: 'Download Your Data'
+                                }
+                            })
                         });
                     }
 
@@ -195,12 +211,22 @@ export const auth = betterAuth({
                 await sendEmail({
                     to: data.email,
                     subject: `You've been invited to join ${data.organization.name}`,
-                    html: `
-						<p>Hi there,</p>
-						<p>${data.inviter.user.name} has invited you to join the organization <strong>${data.organization.name}</strong> as a <em>${data.role}</em>.</p>
-						<br/>
-						<a href="${inviteUrl}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Accept Invitation</a>
-					`
+                    html: buildEmailHtml({
+                        title: `Join ${data.organization.name} on Briefly CRM`,
+                        previewText: `${data.inviter.user.name} has invited you to join ${data.organization.name}`,
+                        orgLogo:
+                            (data.organization as { logo?: string }).logo ??
+                            undefined,
+                        body: `
+                            <p style="margin: 0 0 16px;">Hi there,</p>
+                            <p style="margin: 0 0 16px;">
+                                <strong style="color: #1A1A1A;">${data.inviter.user.name}</strong> has invited you to join the organization
+                                <strong style="color: #1A1A1A;">${data.organization.name}</strong> as
+                                <em style="color: #4B91E2;">${data.role}</em>.
+                            </p>
+                        `,
+                        cta: { url: inviteUrl, text: 'Accept Invitation' }
+                    })
                 });
             },
             roles: {

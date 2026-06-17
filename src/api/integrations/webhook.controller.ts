@@ -8,6 +8,7 @@ import {
 } from './webhook.service.js';
 import { HttpStatus, ResponseHandler } from '../../utils/response.util.js';
 import prisma from '../../config/prisma.config.js';
+import { env } from '../../config/env.config.js';
 import type { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 import logger from '../../utils/logger.util.js';
 import { addShopifyWebhookJob } from '../../queues/shopify-webhook.queue.js';
@@ -40,8 +41,18 @@ export const handleShopifyWebhookRequest = asyncHandler(
             return;
         }
 
-        const rawBody = JSON.stringify(req.body);
-        const secret = integration.apiSecret || integration.accessToken;
+        // Use the raw body buffer captured by express.json verify callback
+        // to guarantee byte-for-byte HMAC accuracy
+        const rawBody =
+            (req as Request & { rawBody?: Buffer }).rawBody?.toString('utf8') ||
+            JSON.stringify(req.body);
+        // Shopify signs all webhooks with the app's client secret (SHOPIFY_CLIENT_SECRET),
+        // NOT the store's access token. Using the env var directly avoids decryption overhead.
+        // For integrations that have a custom apiSecret (manual connect), that is the fallback.
+        const secret =
+            env.shopifyClientSecret ||
+            integration.apiSecret ||
+            integration.accessToken;
         const isValid = verifyShopifyWebhookSignature(
             rawBody,
             hmacHeader || '',
