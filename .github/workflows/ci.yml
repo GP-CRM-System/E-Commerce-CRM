@@ -72,11 +72,13 @@ jobs:
               env:
                   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
                   NODE_ENV: test
+                  SHOPIFY_CLIENT_SECRET: 'test-shopify-secret'
 
             - name: Type Check
               run: bun run typecheck
               env:
                   NODE_ENV: test
+                  SHOPIFY_CLIENT_SECRET: 'test-shopify-secret'
 
             - name: Lint
               run: bun run lint
@@ -99,6 +101,7 @@ jobs:
                   SMTP_FROM: ${{secrets.SMTP_FROM}}
                   BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'test-secret' }}
                   NODE_ENV: test
+                  SHOPIFY_CLIENT_SECRET: 'test-shopify-secret'
                   BASE_URL: ${{secrets.BASE_URL}}
                   GOOGLE_CALLBACK_URL: ${{secrets.GOOGLE_CALLBACK_URL}}
                   GOOGLE_CLIENT_ID: ${{secrets.GOOGLE_CLIENT_ID}}
