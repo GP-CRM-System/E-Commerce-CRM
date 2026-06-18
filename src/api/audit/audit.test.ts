@@ -56,12 +56,21 @@ describe('Audit API', () => {
             }
         });
         adminUserId = adminSignup.user.id;
-        adminToken = adminSignup.token!;
 
+        // With requireEmailVerification: true, signUpEmail may not return a token.
+        // Set email as verified first, then sign in to get a session token.
         await prisma.user.update({
             where: { id: adminUserId },
             data: { emailVerified: true }
         });
+
+        const adminSignin = await auth.api.signInEmail({
+            body: {
+                email: 'audit-test-admin@test.com',
+                password: 'Password123!'
+            }
+        });
+        adminToken = adminSignin.token!;
 
         const adminOrg = await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${adminToken}` }),
@@ -95,12 +104,19 @@ describe('Audit API', () => {
             }
         });
         memberUserId = memberSignup.user.id;
-        memberToken = memberSignup.token!;
 
         await prisma.user.update({
             where: { id: memberUserId },
             data: { emailVerified: true }
         });
+
+        const memberSigninToken = await auth.api.signInEmail({
+            body: {
+                email: 'audit-test-member@test.com',
+                password: 'Password123!'
+            }
+        });
+        memberToken = memberSigninToken.token!;
 
         // Invite member to admin's org with 'member' role
         const invite = await auth.api.createInvitation({
@@ -143,7 +159,11 @@ describe('Audit API', () => {
             where: { organizationId: adminOrgId }
         });
         await prisma.member.deleteMany({
-            where: { userId: { in: [adminUserId, memberUserId] } }
+            where: {
+                userId: {
+                    in: [adminUserId, memberUserId].filter(Boolean) as string[]
+                }
+            }
         });
         await prisma.session.deleteMany({
             where: { user: { email: { startsWith: 'audit-test' } } }

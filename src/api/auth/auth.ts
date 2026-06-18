@@ -40,7 +40,7 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
-        requireEmailVerification: false,
+        requireEmailVerification: true,
         sendResetPassword: async ({ user, url }) => {
             await sendEmail({
                 to: user.email,
@@ -61,26 +61,51 @@ export const auth = betterAuth({
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
-            if (env.nodeEnv !== 'development') {
-                await sendEmail({
-                    to: user.email,
-                    subject: 'Verify your email address',
-                    html: buildEmailHtml({
-                        title: 'Welcome to Briefly CRM!',
-                        previewText: 'Verify your email to get started',
-                        body: `
-                            <p style="margin: 0 0 16px;">Hi ${user.name ?? 'there'},</p>
-                            <p style="margin: 0 0 16px;">Thanks for signing up! Please verify your email address by clicking the button below:</p>
-                        `,
-                        cta: { url, text: 'Verify Email' }
-                    })
-                });
-            } else {
+            // corsOrigin = the frontend URL (e.g. http://localhost:5173)
+            const frontendUrl = env.corsOrigin || 'http://localhost:5173';
+            const callbackUrl = `${frontendUrl}/verify-email?verified=true`;
+            // Replace the callbackURL in the Better Auth generated URL
+            const modifiedUrl = url.includes('callbackURL=')
+                ? url.replace(
+                      /callbackURL=[^&]*/,
+                      `callbackURL=${encodeURIComponent(callbackUrl)}`
+                  )
+                : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+
+            // Always call sendEmail — it actually sends in production and simulates/logs in dev
+            await sendEmail({
+                to: user.email,
+                subject: 'Verify your email address',
+                html: buildEmailHtml({
+                    title: 'Welcome to Briefly CRM!',
+                    previewText: 'Verify your email to get started',
+                    body: `
+                        <p style="margin: 0 0 16px;">Hi ${user.name ?? 'there'},</p>
+                        <p style="margin: 0 0 16px;">Thanks for signing up! Please verify your email address by clicking the button below:</p>
+                    `,
+                    cta: { url: modifiedUrl, text: 'Verify Email' }
+                })
+            });
+
+            // In development, also print the verification link prominently to the console
+            if (env.nodeEnv === 'development') {
+                const separator = '='.repeat(70);
+                console.log('\n' + separator);
+                console.log('  🔐 EMAIL VERIFICATION [DEV]');
+                console.log(separator);
+                console.log(`  User: ${user.email}`);
+                console.log(`  Link: ${modifiedUrl}`);
+                console.log(separator + '\n');
+
                 loggerUtil.info(
-                    `User ${user.email} was sent a verification mail with url ${url}`
+                    { user: user.email, verificationUrl: modifiedUrl },
+                    `[DEV] Verification email for ${user.email}`
                 );
             }
-        }
+        },
+        autoSignInAfterVerification: true,
+        sendOnSignUp: true,
+        sendOnSignIn: true
     },
     user: {
         changeEmail: { enabled: true },
@@ -88,7 +113,6 @@ export const auth = betterAuth({
     },
     account: {
         accountLinking: { enabled: true }
-        // encryptOAuthTokens: true
     },
     plugins: [
         customSession(async ({ user, session }) => {
@@ -270,6 +294,10 @@ export const auth = betterAuth({
         google: {
             clientId: env.googleClientId!,
             clientSecret: env.googleClientSecret!
+        },
+        facebook: {
+            clientId: env.metaAppId!,
+            clientSecret: env.metaAppSecret!
         }
     },
     advanced: {

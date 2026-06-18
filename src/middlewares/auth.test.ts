@@ -31,13 +31,20 @@ describe('Auth Middleware', () => {
             }
         });
 
-        if (!signup?.token) throw new Error('Signup failed');
-        authToken = signup.token;
+        if (!signup?.user?.id) throw new Error('Signup failed - no user');
 
+        // With requireEmailVerification: true, signUpEmail may not return a token.
+        // Set email as verified, then sign in for a session token.
         await prisma.user.update({
             where: { id: signup.user.id },
             data: { emailVerified: true }
         });
+
+        const signin = await auth.api.signInEmail({
+            body: { email: testEmail, password: 'Password123!' }
+        });
+        if (!signin?.token) throw new Error('Signin failed');
+        authToken = signin.token;
 
         const org = await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
@@ -57,12 +64,6 @@ describe('Auth Middleware', () => {
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
             body: { organizationId: testOrgId }
         });
-
-        const signin = await auth.api.signInEmail({
-            body: { email: testEmail, password: 'Password123!' }
-        });
-        if (!signin?.token) throw new Error('Signin failed');
-        authToken = signin.token;
     });
 
     afterAll(async () => {
@@ -111,7 +112,7 @@ describe('Auth Middleware', () => {
             const noOrgEmail = 'no-org-' + Date.now() + '@test.com';
 
             // Create a new user without an active org
-            const signup = await auth.api.signUpEmail({
+            const noOrgSignup = await auth.api.signUpEmail({
                 body: {
                     email: noOrgEmail,
                     password: 'Password123!',
@@ -119,11 +120,23 @@ describe('Auth Middleware', () => {
                 }
             });
 
-            if (!signup?.token) throw new Error('Signup failed');
+            if (!noOrgSignup?.user?.id)
+                throw new Error('Signup failed - no user');
+
+            // Verify the email and sign in to get a token
+            await prisma.user.update({
+                where: { id: noOrgSignup.user.id },
+                data: { emailVerified: true }
+            });
+
+            const noOrgSignin = await auth.api.signInEmail({
+                body: { email: noOrgEmail, password: 'Password123!' }
+            });
+            if (!noOrgSignin?.token) throw new Error('Signin failed');
 
             const response = await request(app)
                 .get('/api/customers')
-                .set('Authorization', `Bearer ${signup.token}`);
+                .set('Authorization', `Bearer ${noOrgSignin.token}`);
 
             expect(response.status).toBe(403);
 

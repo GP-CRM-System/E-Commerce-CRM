@@ -34,6 +34,7 @@ export const env = {
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
     metaAppSecret: process.env.META_APP_SECRET,
+    metaAppId: process.env.META_APP_ID,
 
     // Sentry Monitoring
     sentryDsn: process.env.SENTRY_DSN,
@@ -113,6 +114,7 @@ export function checkEnv(): void {
     if (env.nodeEnv === 'production') {
         if (!env.metaVerifyToken) missingVars.push('META_VERIFY_TOKEN');
         if (!env.metaAppSecret) missingVars.push('META_APP_SECRET');
+        if (!env.metaAppId) missingVars.push('META_APP_ID');
     }
 
     if (missingVars.length > 0) {

@@ -47,13 +47,19 @@ describe('Customer Analytics API', () => {
         });
 
         if (!signup) throw new Error('Signup failed');
-        authToken = signup.token!;
 
         testUserId = signup.user.id;
         await prisma.user.update({
             where: { id: testUserId },
             data: { emailVerified: true }
         });
+
+        const initialSignin = await auth.api.signInEmail({
+            body: { email: 'analytics-test@test.com', password: 'Password123!' }
+        });
+        if (!initialSignin?.token)
+            throw new Error('Signin after verification failed');
+        authToken = initialSignin.token;
 
         const org = await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),
@@ -295,9 +301,18 @@ describe('Customer Analytics API', () => {
             data: { emailVerified: true }
         });
 
+        const orgBSignin = await auth.api.signInEmail({
+            body: {
+                email: uniqueEmail,
+                password: 'Password123!'
+            }
+        });
+
+        let orgBToken = orgBSignin.token!;
+
         const orgB = await auth.api.createOrganization({
             headers: fromNodeHeaders({
-                authorization: `Bearer ${signupOrgB.token!}`
+                authorization: `Bearer ${orgBToken}`
             }),
             body: {
                 name: 'Org B Test',
@@ -313,19 +328,19 @@ describe('Customer Analytics API', () => {
 
         await auth.api.setActiveOrganization({
             headers: fromNodeHeaders({
-                authorization: `Bearer ${signupOrgB.token!}`
+                authorization: `Bearer ${orgBToken}`
             }),
             body: { organizationId: orgBId }
         });
 
-        const signinOrgB = await auth.api.signInEmail({
+        const freshSigninOrgB = await auth.api.signInEmail({
             body: {
                 email: uniqueEmail,
                 password: 'Password123!'
             }
         });
 
-        const orgBToken = signinOrgB.token!;
+        orgBToken = freshSigninOrgB.token!;
 
         // Try to access Org A's customer analytics from Org B's context
         const response = await request(app)

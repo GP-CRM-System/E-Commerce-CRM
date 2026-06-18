@@ -66,13 +66,19 @@ describe('Lifecycle Service', () => {
         });
 
         if (!signup) throw new Error('Signup failed');
-        authToken = signup.token!;
 
         testUserId = signup.user.id;
         await prisma.user.update({
             where: { id: testUserId },
             data: { emailVerified: true }
         });
+
+        const initialSignin = await auth.api.signInEmail({
+            body: { email: 'lifecycle-test@test.com', password: 'Password123!' }
+        });
+        if (!initialSignin?.token)
+            throw new Error('Signin after verification failed');
+        authToken = initialSignin.token;
 
         const org = await auth.api.createOrganization({
             headers: fromNodeHeaders({ authorization: `Bearer ${authToken}` }),

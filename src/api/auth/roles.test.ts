@@ -103,6 +103,28 @@ describe('Roles API', () => {
             })
         ]);
 
+        // Phase 3.5: Sign-in to get real tokens (signup tokens are null with requireEmailVerification)
+        const initialSignins = await Promise.all([
+            auth.api.signInEmail({
+                body: { email: 'roles-user@test.com', password: 'Password123!' }
+            }),
+            auth.api.signInEmail({
+                body: {
+                    email: 'roles-admin@test.com',
+                    password: 'Password123!'
+                }
+            }),
+            auth.api.signInEmail({
+                body: {
+                    email: 'roles-crossorg@test.com',
+                    password: 'Password123!'
+                }
+            })
+        ]);
+        authToken = initialSignins[0].token!;
+        adminToken = initialSignins[1].token!;
+        crossOrgToken = initialSignins[2].token!;
+
         // Phase 4: Create orgs in parallel (user1 and admin are independent)
         const [org, adminOrg] = await Promise.all([
             auth.api.createOrganization({

@@ -47,13 +47,23 @@ beforeAll(async () => {
         }
 
         testUserId = signup.user.id;
-        authToken = signup.token!;
 
         // Mark as verified manually in DB just in case
         await prisma.user.update({
             where: { id: testUserId },
             data: { emailVerified: true }
         });
+
+        // Sign in to get real token after verification
+        const initialSignin = await auth.api.signInEmail({
+            body: {
+                email: 'test-user@test.com',
+                password: 'Password123!'
+            }
+        });
+        if (!initialSignin?.token)
+            throw new Error('Signin after verification failed');
+        authToken = initialSignin.token;
 
         // 3. Create test organization
         const org = await auth.api.createOrganization({
@@ -452,9 +462,18 @@ describe('Customer API', () => {
                 data: { emailVerified: true }
             });
 
+            const crossSignin = await auth.api.signInEmail({
+                body: {
+                    email: uniqueEmail,
+                    password: 'Password123!'
+                }
+            });
+            if (!crossSignin?.token) throw new Error('Cross-org signin failed');
+            crossOrgToken = crossSignin.token;
+
             const org = await auth.api.createOrganization({
                 headers: fromNodeHeaders({
-                    authorization: `Bearer ${signup.token!}`
+                    authorization: `Bearer ${crossOrgToken}`
                 }),
                 body: {
                     name: 'Cross Org Test',
@@ -471,7 +490,7 @@ describe('Customer API', () => {
 
             await auth.api.setActiveOrganization({
                 headers: fromNodeHeaders({
-                    authorization: `Bearer ${signup.token!}`
+                    authorization: `Bearer ${crossOrgToken}`
                 }),
                 body: { organizationId: crossOrgId }
             });
