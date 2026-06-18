@@ -37,6 +37,8 @@ import { initRateLimitStore } from './config/ratelimit.config.js';
 import { initSocket } from './config/socket.config.js';
 import { configureB2Cors } from './config/b2.config.js';
 
+import { createServer } from 'http';
+
 checkEnv();
 
 const app = express();
@@ -137,7 +139,8 @@ export async function startServer(): Promise<void> {
             );
         }
 
-        const server = app.listen(env.port, async () => {
+        const server = createServer(app);
+        server.listen(env.port, async () => {
             if (isRedisAvailable) {
                 initExportWorker();
             }
@@ -197,3 +200,4 @@ export async function startServer(): Promise<void> {
 }
 
 export default app;
+// Trigger watch reload for Prisma Client schema update & Socket.io broadcast updates

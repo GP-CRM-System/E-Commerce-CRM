@@ -3,12 +3,56 @@ import { getRedisConnectionOptions } from '../config/redis.config.js';
 import prisma from '../config/prisma.config.js';
 import {
     handleInboundMessage,
-    downloadAndUploadMetaMedia
+    downloadAndUploadMetaMedia,
+    signMessageMedia
 } from '../api/messaging/messaging.service.js';
 import { emitToConversation, emitToOrg } from '../config/socket.config.js';
 import logger from '../utils/logger.util.js';
 import { decryptSafe } from '../utils/encryption.util.js';
 import { checkAndStoreIdempotencyAtomic } from '../api/integrations/webhook.service.js';
+
+// ----------------------------------------------------
+// Inbound Routing Helper: Resolves correct integration in case of multi-tenant ID sharing
+// ----------------------------------------------------
+async function resolveIntegrationForInbound(
+    channelKey: 'whatsappPhoneNumberId' | 'facebookPageId' | 'instagramBusinessAccountId',
+    channelValue: string,
+    senderId: string,
+    provider: 'whatsapp' | 'facebook' | 'instagram'
+) {
+    const integrations = await prisma.integration.findMany({
+        where: {
+            provider: 'meta',
+            isActive: true,
+            metadata: {
+                path: [channelKey],
+                equals: channelValue
+            }
+        }
+    });
+
+    if (integrations.length === 0) return null;
+    if (integrations.length === 1) return integrations[0];
+
+    const orgIds = integrations.map((i) => i.orgId);
+    const conversation = await prisma.conversation.findFirst({
+        where: {
+            organizationId: { in: orgIds },
+            externalId: senderId,
+            provider
+        },
+        orderBy: {
+            lastMessageAt: 'desc'
+        }
+    });
+
+    if (conversation) {
+        const matched = integrations.find((i) => i.orgId === conversation.organizationId);
+        if (matched) return matched;
+    }
+
+    return integrations[0];
+}
 
 // ----------------------------------------------------
 // 1. Webhook Worker: Processes Inbound Webhooks
@@ -33,16 +77,13 @@ export const webhookWorker = new Worker(
                 const value = change.value;
                 if (value && value.metadata) {
                     const phoneNumberId = value.metadata.phone_number_id;
-                    const integration = await prisma.integration.findFirst({
-                        where: {
-                            provider: 'meta',
-                            isActive: true,
-                            metadata: {
-                                path: ['whatsappPhoneNumberId'],
-                                equals: phoneNumberId
-                            }
-                        }
-                    });
+                    const senderId = value.messages?.[0]?.from || value.statuses?.[0]?.recipient_id || '';
+                    const integration = await resolveIntegrationForInbound(
+                        'whatsappPhoneNumberId',
+                        phoneNumberId,
+                        senderId,
+                        'whatsapp'
+                    );
 
                     if (!integration) continue;
 
@@ -79,8 +120,11 @@ export const webhookWorker = new Worker(
                             'image',
                             'document',
                             'video',
-                            'audio'
+                            'audio',
+                            'sticker'
                         ].includes(msg.type);
+
+                        let storageKey: string | undefined;
 
                         if (isMedia) {
                             try {
@@ -100,6 +144,7 @@ export const webhookWorker = new Worker(
                                             isWhatsApp: true
                                         });
                                     messageContent = uploadRes.url;
+                                    storageKey = uploadRes.storageKey;
                                 }
                             } catch (mediaErr) {
                                 logger.error(
@@ -116,6 +161,10 @@ export const webhookWorker = new Worker(
                             contact?.profile?.name ||
                             value.contacts?.[0]?.profile?.name;
 
+                        logger.info(
+                            `[Worker] [WhatsApp Inbound] Received message: "${messageContent}" from wa_id: ${msg.from} for orgId: ${integration.orgId}`
+                        );
+
                         const result = await handleInboundMessage({
                             organizationId: integration.orgId,
                             externalChatId: msg.from,
@@ -123,17 +172,22 @@ export const webhookWorker = new Worker(
                             provider: 'whatsapp',
                             content: messageContent,
                             type: finalType,
-                            metadata: msg,
+                            metadata: {
+                                ...msg,
+                                storageKey
+                            },
                             customerPhone: msg.from,
                             customerName
                         });
 
-                        // Emit visual changes
+                        const signedMsg = await signMessageMedia(result.message);
+
+                        // Emit real-time events (centralized here, not in service layer)
                         emitToConversation(
                             result.conversation.id,
                             'message:created',
                             {
-                                message: result.message
+                                message: signedMsg
                             }
                         );
                         emitToOrg(integration.orgId, 'inbox:updated', {
@@ -149,20 +203,18 @@ export const webhookWorker = new Worker(
                 const provider = isInstagram ? 'instagram' : 'facebook';
                 const entryId = entry.id;
 
-                const integration = await prisma.integration.findFirst({
-                    where: {
-                        provider: 'meta',
-                        isActive: true,
-                        metadata: {
-                            path: [
-                                isInstagram
-                                    ? 'instagramBusinessAccountId'
-                                    : 'facebookPageId'
-                            ],
-                            equals: entryId
-                        }
-                    }
-                });
+                const channelKey = isInstagram
+                    ? 'instagramBusinessAccountId'
+                    : 'facebookPageId';
+                const firstMsgEvent = entry.messaging?.[0];
+                const senderId = firstMsgEvent?.sender?.id || '';
+
+                const integration = await resolveIntegrationForInbound(
+                    channelKey,
+                    entryId,
+                    senderId,
+                    provider
+                );
 
                 if (!integration) continue;
 
@@ -228,6 +280,8 @@ export const webhookWorker = new Worker(
                             msgEvent.message
                         );
 
+                        let storageKey: string | undefined;
+
                         const attachments = msgEvent.message.attachments || [];
                         if (attachments.length > 0) {
                             const att = attachments[0];
@@ -251,6 +305,7 @@ export const webhookWorker = new Worker(
                                             isWhatsApp: false
                                         });
                                     content = uploadRes.url;
+                                    storageKey = uploadRes.storageKey;
                                     type =
                                         att.type === 'file'
                                             ? 'document'
@@ -267,6 +322,10 @@ export const webhookWorker = new Worker(
                             }
                         }
 
+                        logger.info(
+                            `[Worker] [${provider.toUpperCase()} Inbound] Received message: "${content}" from sender: ${msgEvent.sender.id} for orgId: ${integration.orgId}`
+                        );
+
                         const result = await handleInboundMessage({
                             organizationId: integration.orgId,
                             externalChatId: msgEvent.sender.id,
@@ -274,14 +333,24 @@ export const webhookWorker = new Worker(
                             provider,
                             content,
                             type,
-                            metadata: msgEvent
+                            metadata: {
+                                ...msgEvent,
+                                storageKey
+                            }
                         });
 
+                        logger.info(
+                            `[Worker] [${provider.toUpperCase()} Inbound] Processed and saved message: "${result.message.content}" (ID: ${result.message.id})`
+                        );
+
+                        const signedMsg = await signMessageMedia(result.message);
+
+                        // Emit real-time events (centralized here, not in service layer)
                         emitToConversation(
                             result.conversation.id,
                             'message:created',
                             {
-                                message: result.message
+                                message: signedMsg
                             }
                         );
                         emitToOrg(integration.orgId, 'inbox:updated', {
@@ -351,12 +420,15 @@ export const outboundWorker = new Worker(
             include: { conversation: true }
         });
 
-        if (!message || message.status !== 'SENT') {
-            // PENDING messages are processed (SENT is initial default in DB model prior to update)
-            // Wait, we default to SENT in DB currently, we will change it to PENDING in implementation.
+        if (!message) return;
+
+        // Only dispatch PENDING messages — skip if already SENT/DELIVERED/READ/FAILED
+        if (message.status !== 'PENDING') {
+            logger.info(`[Worker] Skipping outbound message ${messageId}: already in status ${message.status}`);
+            return;
         }
 
-        const conversation = message?.conversation;
+        const conversation = message.conversation;
         if (!conversation) return;
 
         // Fetch Integration token
@@ -528,7 +600,8 @@ export const outboundWorker = new Worker(
             emitToConversation(conversationId, 'message:status_updated', {
                 conversationId,
                 messageId,
-                status: 'SENT'
+                status: 'SENT',
+                tempId: (message.metadata as any)?.tempId
             });
         } catch (err: unknown) {
             const error =
@@ -556,7 +629,8 @@ export const outboundWorker = new Worker(
                     conversationId,
                     messageId,
                     status: 'FAILED',
-                    errorMessage: error.message
+                    errorMessage: error.message || 'API delivery failed',
+                    tempId: (message.metadata as any)?.tempId
                 });
             } else {
                 throw err; // Trigger retry in BullMQ
@@ -633,7 +707,8 @@ export const statusWorker = new Worker(
                         conversationId: message.conversationId,
                         messageId: message.id,
                         status: newStatus,
-                        errorMessage
+                        errorMessage,
+                        tempId: (message.metadata as any)?.tempId
                     }
                 );
             }

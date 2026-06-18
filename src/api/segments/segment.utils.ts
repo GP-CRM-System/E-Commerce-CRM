@@ -23,6 +23,7 @@ const ALLOWED_FIELDS = [
     'email',
     'city',
     'address',
+    'country',
     'source',
     'lifecycleStage',
     'externalId',
@@ -165,10 +166,6 @@ function resolveConditionValue(
         'updatedAt'
     ];
 
-    if (dateFields.includes(field) && typeof value === 'string') {
-        return new Date(value);
-    }
-
     const numericFields = [
         'totalOrders',
         'totalSpent',
@@ -185,6 +182,18 @@ function resolveConditionValue(
         'satisfactionScore',
         'supportTicketsCount'
     ];
+
+    if ((operator === 'in' || operator === 'notIn') && typeof value === 'string') {
+        const parts = value.split(',').map((v) => v.trim()).filter(Boolean);
+        if (numericFields.includes(field)) {
+            return parts.map((p) => parseFloat(p)).filter((n) => !isNaN(n));
+        }
+        return parts;
+    }
+
+    if (dateFields.includes(field) && typeof value === 'string') {
+        return new Date(value);
+    }
 
     if (numericFields.includes(field) && typeof value === 'string') {
         return parseFloat(value);

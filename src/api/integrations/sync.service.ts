@@ -337,6 +337,7 @@ export async function processCustomerWebhook(
         phone?: string;
         city?: string;
         address?: string;
+        country?: string;
         acceptsMarketing?: boolean;
         updatedAt: Date;
     } = {
@@ -352,6 +353,7 @@ export async function processCustomerWebhook(
     }
     if (address) {
         customerData.city = address.city || undefined;
+        customerData.country = address.country || undefined;
         customerData.address =
             [address.address1, address.city, address.province, address.zip]
                 .filter(Boolean)
@@ -620,15 +622,26 @@ async function syncCustomer(
 
     const isUpdate = !!existing;
 
-    const customerData = {
+    const addresses = data.addresses as Array<Record<string, any>> | undefined;
+    const address = addresses?.[0];
+
+    const customerData: Record<string, any> = {
         name,
         email: data.email as string | undefined,
         phone: data.phone as string | undefined,
-        acceptsMarketing: data.accepts_markting as boolean | undefined,
+        acceptsMarketing: data.accepts_marketing as boolean | undefined,
         externalId,
         organizationId: orgId,
         updatedAt: new Date()
     };
+
+    if (address) {
+        customerData.city = address.city as string | undefined;
+        customerData.country = address.country as string | undefined;
+        customerData.address = [address.address1, address.city, address.province, address.zip]
+            .filter(Boolean)
+            .join(', ') || undefined;
+    }
 
     let customerId: string;
 
@@ -644,7 +657,7 @@ async function syncCustomer(
                 ...customerData,
                 source: 'ORGANIC',
                 createdAt: new Date()
-            }
+            } as any
         });
         customerId = created.id;
     }

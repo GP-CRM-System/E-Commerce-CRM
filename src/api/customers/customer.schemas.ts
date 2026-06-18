@@ -6,6 +6,7 @@ export const createCustomer = z.object({
     email: z.email().trim().optional(),
     city: z.string().trim().optional(),
     address: z.string().trim().optional(),
+    country: z.string().trim().optional(),
     source: z
         .enum([
             'WEBSITE',
@@ -57,6 +58,7 @@ export const updateCustomer = z.object({
     email: z.string().email().trim().optional(),
     city: z.string().trim().optional(),
     address: z.string().trim().optional(),
+    country: z.string().trim().optional(),
     source: z
         .enum([
             'WEBSITE',
@@ -146,6 +148,7 @@ export const customerFilters = z.object({
     limit: z.string().optional().default('10'),
     search: z.string().optional(),
     city: z.string().optional(),
+    country: z.string().optional(),
     source: z
         .enum([
             'WEBSITE',

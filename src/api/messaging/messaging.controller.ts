@@ -9,7 +9,6 @@ import {
 } from '../../utils/response.util.js';
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
-import { addOutboundJob } from '../../queues/messaging.queue.js';
 import { emitToConversation, emitToOrg } from '../../config/socket.config.js';
 import logger from '../../utils/logger.util.js';
 import {
@@ -19,27 +18,7 @@ import {
     isB2Configured
 } from '../../config/b2.config.js';
 import crypto from 'crypto';
-
-export async function signMessageMedia(message: unknown) {
-    if (!message) return message;
-    const msg = message as {
-        metadata?: Record<string, unknown> | null;
-        content?: string;
-    };
-    const metadata = msg.metadata || {};
-    if (metadata.storageKey && isB2Configured) {
-        const result = await getSignedDownloadUrl(
-            metadata.storageKey as string
-        );
-        if (result.success && result.url) {
-            return {
-                ...message,
-                content: result.url
-            };
-        }
-    }
-    return message;
-}
+import { signMessageMedia } from './messaging.service.js';
 
 export const listConversations = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -56,7 +35,13 @@ export const listConversations = asyncHandler(
             prisma.conversation.findMany({
                 where: { organizationId },
                 orderBy: { lastMessageAt: 'desc' },
-                include: { customer: { select: { name: true, email: true } } },
+                include: {
+                    customer: { select: { name: true, email: true } },
+                    messages: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
+                },
                 take,
                 skip
             }),
@@ -143,67 +128,21 @@ export const sendMessage = asyncHandler(
             );
         }
 
-        const conversation = await prisma.conversation.findFirst({
-            where: { id: conversationId, organizationId },
-            select: { id: true }
+        const message = await messagingService.sendOutboundMessage({
+            organizationId,
+            conversationId,
+            content,
+            type: type || 'text',
+            metadata: metadata || {}
         });
 
-        if (!conversation) {
-            return ResponseHandler.error(
-                res,
-                'Conversation not found',
-                ErrorCode.RESOURCE_NOT_FOUND,
-                HttpStatus.NOT_FOUND
-            );
-        }
-
-        // 1. Create a message immediately with PENDING status in DB (only blocking write)
-        const message = await prisma.message.create({
-            data: {
-                conversationId,
-                direction: 'OUTBOUND',
-                content,
-                type: type || 'text',
-                status: 'PENDING',
-                metadata: metadata || {}
-            }
-        });
-
-        // 2. Perform background operations asynchronously (without blocking HTTP response)
-        Promise.all([
-            // Update conversation timestamp
-            prisma.conversation
-                .update({
-                    where: { id: conversationId },
-                    data: { lastMessageAt: new Date() },
-                    include: {
-                        customer: { select: { name: true, email: true } }
-                    }
-                })
-                .then((updatedConversation) => {
-                    emitToOrg(organizationId, 'inbox:updated', {
-                        conversation: updatedConversation
-                    });
-                }),
-
-            // Enqueue the outbound job for asynchronous dispatching to Meta API
-            addOutboundJob({
-                messageId: message.id,
-                organizationId,
-                conversationId
-            })
-        ]).catch((err) => {
-            logger.error({ err }, 'Error in background message operations');
-        });
-
-        // 3. Emit real-time event immediately to the conversation room
-        emitToConversation(conversationId, 'message:created', { message });
+        const signedMsg = await signMessageMedia(message);
 
         return ResponseHandler.success(
             res,
-            'Message queued successfully',
+            'Message sent successfully',
             HttpStatus.OK,
-            message
+            signedMsg
         );
     }
 );
@@ -277,7 +216,13 @@ export const assignConversation = asyncHandler(
         const updated = await prisma.conversation.update({
             where: { id: conversationId },
             data: { assignedAgentId: assignedAgentId || null },
-            include: { customer: { select: { name: true, email: true } } }
+            include: {
+                customer: { select: { name: true, email: true } },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
+                }
+            }
         });
 
         emitToOrg(organizationId, 'conversation:assigned', {
@@ -455,43 +400,17 @@ export const completeUpload = asyncHandler(
             );
         }
 
-        // 2. Update status to SENT and content to the signed URL
-        const updatedMessage = await prisma.message.update({
-            where: { id: messageId },
-            data: {
-                status: 'SENT',
-                content: signedDownloadResult.url
-            }
-        });
-
-        // 3. Update conversation lastMessageAt
-        await prisma.conversation.update({
-            where: { id: message.conversationId },
-            data: { lastMessageAt: new Date() }
-        });
-
-        // 4. Enqueue outbound message job for Meta dispatching
-        await addOutboundJob({
-            messageId: message.id,
+        // 2. Perform direct synchronous Meta API send using sendOutboundMessage
+        const sentMessage = await messagingService.sendOutboundMessage({
             organizationId,
-            conversationId: message.conversationId
-        });
-
-        // 5. Broadcast real-time message status updated event
-        const signedMsg = await signMessageMedia(updatedMessage);
-        emitToConversation(message.conversationId, 'message:status_updated', {
             conversationId: message.conversationId,
-            messageId: message.id,
-            status: 'SENT',
-            message: signedMsg
+            content: signedDownloadResult.url,
+            type: message.type,
+            metadata,
+            messageId
         });
 
-        emitToOrg(organizationId, 'inbox:updated', {
-            conversation: await prisma.conversation.findUnique({
-                where: { id: message.conversationId },
-                include: { customer: { select: { name: true, email: true } } }
-            })
-        });
+        const signedMsg = await signMessageMedia(sentMessage);
 
         return ResponseHandler.success(
             res,
@@ -545,6 +464,57 @@ export const deleteMessage = asyncHandler(
             res,
             'Message deleted successfully',
             HttpStatus.OK
+        );
+    }
+);
+
+export const markConversationAsRead = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const conversationId = req.params.id as string;
+
+        const conversation = await prisma.conversation.findFirst({
+            where: { id: conversationId, organizationId }
+        });
+
+        if (!conversation) {
+            return ResponseHandler.error(
+                res,
+                'Conversation not found',
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND
+            );
+        }
+
+        const updated = await prisma.conversation.update({
+            where: { id: conversationId },
+            data: {
+                unreadCount: 0,
+                lastReadAt: new Date()
+            },
+            include: {
+                customer: { select: { name: true, email: true } },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
+                }
+            }
+        });
+
+        emitToOrg(organizationId, 'inbox:updated', {
+            conversation: updated
+        });
+
+        emitToConversation(conversationId, 'conversation:read', {
+            conversationId,
+            unreadCount: 0
+        });
+
+        return ResponseHandler.success(
+            res,
+            'Conversation marked as read successfully',
+            HttpStatus.OK,
+            updated
         );
     }
 );

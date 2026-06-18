@@ -83,7 +83,7 @@ export const initializeSubscription = asyncHandler(
                     },
                     notification_url: notificationUrl,
                     redirection_url: redirectionUrl,
-                    special_reference: organizationId
+                    special_reference: `${organizationId}__${Date.now()}`
                 };
 
                 const intention = await createIntention(intentionPayload);
@@ -147,8 +147,10 @@ export const subscriptionCallback = asyncHandler(
 
         const { obj } = body;
         const isSuccess = obj.success === true;
-        const organizationId =
+        const rawRef =
             obj.merchant_order_id || obj.extra?.special_reference;
+        // Extract organizationId from compound reference (orgId__timestamp)
+        const organizationId = rawRef?.split('__')[0];
 
         if (!organizationId) {
             logger.warn('Paymob callback missing organizationId reference');
@@ -201,7 +203,8 @@ export const subscriptionRedirect = asyncHandler(
         }
 
         const { obj } = parsed.payload;
-        const organizationId = obj.merchant_order_id;
+        // Extract organizationId from compound reference (orgId__timestamp)
+        const organizationId = obj.merchant_order_id?.split('__')[0];
 
         if (!organizationId) {
             logger.warn(

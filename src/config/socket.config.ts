@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import type { Server as HttpServer } from 'http';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from '@redis/client';
+import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from '../api/auth/auth.js';
 import prisma from './prisma.config.js';
 import { env } from './env.config.js';
@@ -57,16 +58,16 @@ export async function initSocket(server: HttpServer) {
     io.use(async (socket, next) => {
         try {
             const token = socket.handshake.auth?.token;
-            const headers = new Headers();
+            const rawHeaders: Record<string, string> = {};
             if (token) {
-                headers.set('authorization', token);
+                rawHeaders['authorization'] = token;
             }
             if (socket.handshake.headers.cookie) {
-                headers.set('cookie', socket.handshake.headers.cookie);
+                rawHeaders['cookie'] = socket.handshake.headers.cookie;
             }
 
             const session = await auth.api.getSession({
-                headers: headers
+                headers: fromNodeHeaders(rawHeaders)
             });
 
             if (!session) {
@@ -277,38 +278,7 @@ export function emitToOrg(
         `[Socket] Emitting event "${event}" to organization room "org_${orgId}"`
     );
 
-    const conversation = data?.conversation as
-        | { assignedAgentId?: string }
-        | undefined;
-    if (conversation) {
-        const assignedAgentId = conversation.assignedAgentId;
-        const orgRoom = `org_${orgId}`;
-        const socketsInRoom = io.sockets.adapter.rooms.get(orgRoom);
-
-        if (socketsInRoom) {
-            for (const socketId of socketsInRoom) {
-                const socket = io.sockets.sockets.get(socketId);
-                if (socket) {
-                    const userId = socket.data.user?.id;
-                    const role = socket.data.role?.toLowerCase();
-                    const isManager = [
-                        'root',
-                        'admin',
-                        'owner',
-                        'manager'
-                    ].includes(role);
-                    const isAssigned =
-                        assignedAgentId && userId === assignedAgentId;
-
-                    if (isManager || isAssigned) {
-                        socket.emit(event, data);
-                    }
-                }
-            }
-        }
-    } else {
-        io.to(`org_${orgId}`).emit(event, data);
-    }
+    io.to(`org_${orgId}`).emit(event, data);
 }
 
 export function emitToConversation(
