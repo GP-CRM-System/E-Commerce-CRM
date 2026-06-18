@@ -337,6 +337,7 @@ export async function processCustomerWebhook(
         phone?: string;
         city?: string;
         address?: string;
+        country?: string;
         acceptsMarketing?: boolean;
         updatedAt: Date;
     } = {
@@ -352,6 +353,7 @@ export async function processCustomerWebhook(
     }
     if (address) {
         customerData.city = address.city || undefined;
+        customerData.country = address.country || undefined;
         customerData.address =
             [address.address1, address.city, address.province, address.zip]
                 .filter(Boolean)
@@ -622,14 +624,36 @@ async function syncCustomer(
 
     const isUpdate = !!existing;
 
+    const addresses = data.addresses as
+        | Array<Record<string, string | undefined>>
+        | undefined;
+    const address = addresses?.[0];
+
+    const addressFields = address
+        ? {
+              city: address.city as string | undefined,
+              country: address.country as string | undefined,
+              address:
+                  [
+                      address.address1,
+                      address.city,
+                      address.province,
+                      address.zip
+                  ]
+                      .filter(Boolean)
+                      .join(', ') || undefined
+          }
+        : {};
+
     const customerData = {
         name,
         email: data.email as string | undefined,
         phone: data.phone as string | undefined,
-        acceptsMarketing: data.accepts_markting as boolean | undefined,
+        acceptsMarketing: data.accepts_marketing as boolean | undefined,
         externalId,
         organizationId: orgId,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        ...addressFields
     };
 
     let customerId: string;
@@ -637,7 +661,7 @@ async function syncCustomer(
     if (existing) {
         await prisma.customer.update({
             where: { id: existing.id },
-            data: customerData
+            data: customerData as Prisma.CustomerUncheckedUpdateInput
         });
         customerId = existing.id;
     } else {
@@ -646,7 +670,7 @@ async function syncCustomer(
                 ...customerData,
                 source: 'ORGANIC',
                 createdAt: new Date()
-            }
+            } as Prisma.CustomerUncheckedCreateInput
         });
         customerId = created.id;
     }

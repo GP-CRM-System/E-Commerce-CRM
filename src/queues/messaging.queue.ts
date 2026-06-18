@@ -39,7 +39,7 @@ export async function addOutboundJob(data: {
     try {
         const job = await outboundQueue.add('send-outbound', data, {
             attempts: 3,
-            backoff: { type: 'exponential', delay: 2000 },
+            backoff: { type: 'exponential', delay: 1000 },
             removeOnComplete: true,
             removeOnFail: 100
         });

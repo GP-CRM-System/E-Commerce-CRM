@@ -50,6 +50,13 @@ router
     );
 
 router
+    .route('/conversations/:id/read')
+    .post(
+        requirePermission('conversations:write'),
+        messagingController.markConversationAsRead
+    );
+
+router
     .route('/conversations/:id/messages/upload-session')
     .post(
         requirePermission('conversations:write'),

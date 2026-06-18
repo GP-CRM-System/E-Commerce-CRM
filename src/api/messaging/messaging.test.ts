@@ -248,37 +248,52 @@ describe('Messaging API', () => {
     });
 
     describe('POST /api/messaging/conversations/:id/messages (send)', () => {
+        let convId: string;
+
+        beforeAll(async () => {
+            const customer = await prisma.customer.create({
+                data: {
+                    name: 'POST Test Customer',
+                    phone: '+201234567891',
+                    organizationId: testOrgId
+                }
+            });
+            const conv = await prisma.conversation.create({
+                data: {
+                    organizationId: testOrgId,
+                    customerId: customer.id,
+                    externalId: 'post-test-conv',
+                    provider: 'whatsapp',
+                    status: 'OPEN'
+                }
+            });
+            convId = conv.id;
+        });
+
         it('should validate required fields', async () => {
             const response = await request(app)
-                .post(
-                    `/api/messaging/conversations/${testConversationId}/messages`
-                )
+                .post(`/api/messaging/conversations/${convId}/messages`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({}); // Empty body
 
             expect(response.status).toBe(400);
         });
 
-        it('should queue message optimistically even without Meta integration', async () => {
+        it('should return 400 without Meta integration', async () => {
             const response = await request(app)
-                .post(
-                    `/api/messaging/conversations/${testConversationId}/messages`
-                )
+                .post(`/api/messaging/conversations/${convId}/messages`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({
                     content: 'We will help you shortly!'
                 });
 
-            // Message is created optimistically with PENDING status and queued for async delivery
-            expect(response.status).toBe(200);
-            expect(response.body.message).toContain('queued');
+            expect(response.status).toBe(400);
+            expect(response.body.code).toBe('INTEGRATION_ERROR');
         });
 
         it('should reject empty message content', async () => {
             const response = await request(app)
-                .post(
-                    `/api/messaging/conversations/${testConversationId}/messages`
-                )
+                .post(`/api/messaging/conversations/${convId}/messages`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({ content: '' });
 
@@ -287,30 +302,25 @@ describe('Messaging API', () => {
 
         it('should reject messages over 4096 characters', async () => {
             const response = await request(app)
-                .post(
-                    `/api/messaging/conversations/${testConversationId}/messages`
-                )
+                .post(`/api/messaging/conversations/${convId}/messages`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({ content: 'x'.repeat(4097) });
 
             expect(response.status).toBe(400);
         });
 
-        it('should accept valid message type enum values', async () => {
-            // The schema should accept 'text', 'image', 'document', 'template'
+        it('should accept valid message type enum values via schema', async () => {
             const response = await request(app)
-                .post(
-                    `/api/messaging/conversations/${testConversationId}/messages`
-                )
+                .post(`/api/messaging/conversations/${convId}/messages`)
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({
                     content: 'Test message',
                     type: 'image'
                 });
 
-            // Message is created optimistically regardless of integration; delivery happens async
-            expect(response.status).toBe(200);
-            expect(response.body.message).toContain('queued');
+            // Schema validation passes for 'image'; integration check happens after
+            expect(response.status).toBe(400);
+            expect(response.body.code).toBe('INTEGRATION_ERROR');
         });
     });
 

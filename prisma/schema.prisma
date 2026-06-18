@@ -238,6 +238,7 @@ model Customer {
 
   city    String?
   address String?
+  country String?
 
   source         CustomerSource         @default(OTHER)
   lifecycleStage CustomerLifecycleStage @default(PROSPECT)

@@ -2,8 +2,33 @@ import prisma from '../../config/prisma.config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import logger from '../../utils/logger.util.js';
 import { AppError } from '../../utils/response.util.js';
-import { emitToOrg } from '../../config/socket.config.js';
+import { emitToOrg, emitToConversation } from '../../config/socket.config.js';
 import { decryptSafe } from '../../utils/encryption.util.js';
+import {
+    getSignedDownloadUrl,
+    isB2Configured
+} from '../../config/b2.config.js';
+
+export async function signMessageMedia(message: unknown) {
+    if (!message) return message;
+    const msg = message as {
+        metadata?: Record<string, unknown> | null;
+        content?: string;
+    };
+    const metadata = msg.metadata || {};
+    if (metadata.storageKey && isB2Configured) {
+        const result = await getSignedDownloadUrl(
+            metadata.storageKey as string
+        );
+        if (result.success && result.url) {
+            return {
+                ...message,
+                content: result.url
+            };
+        }
+    }
+    return message;
+}
 
 type MetaProvider = 'whatsapp' | 'facebook' | 'messenger' | 'instagram';
 type StoredMetaProvider = 'whatsapp' | 'facebook' | 'instagram';
@@ -163,14 +188,21 @@ export async function handleInboundMessage(data: {
     // 4. Update conversation timestamp
     const updatedConversation = await prisma.conversation.update({
         where: { id: conversation.id },
-        data: { lastMessageAt: new Date() },
-        include: { customer: { select: { name: true, email: true } } }
+        data: {
+            lastMessageAt: new Date(),
+            unreadCount: { increment: 1 }
+        },
+        include: {
+            customer: { select: { name: true, email: true } },
+            messages: {
+                orderBy: { createdAt: 'desc' },
+                take: 1
+            }
+        }
     });
 
-    emitToOrg(data.organizationId, 'message:created', {
-        conversation: updatedConversation,
-        message
-    });
+    // NOTE: Socket emissions are handled by the caller (worker) to avoid double-emit.
+    // The worker emits both message:created (to conversation room) and inbox:updated (to org room).
 
     return { conversation: updatedConversation, message };
 }
@@ -181,6 +213,7 @@ export async function sendOutboundMessage(data: {
     content: string;
     type?: string;
     metadata?: Record<string, unknown>;
+    messageId?: string;
 }) {
     const conversation = await prisma.conversation.findFirst({
         where: { id: data.conversationId, organizationId: data.organizationId }
@@ -236,6 +269,55 @@ export async function sendOutboundMessage(data: {
                 );
             }
 
+            const whatsappPayload: Record<string, unknown> = {
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to: conversation.externalId
+            };
+
+            const msgMetadata = data.metadata || {};
+
+            if (data.type === 'template') {
+                whatsappPayload.type = 'template';
+                const templatePayload = JSON.parse(
+                    JSON.stringify(msgMetadata.template || msgMetadata)
+                );
+                if (templatePayload && typeof templatePayload === 'object') {
+                    delete templatePayload.tempId;
+                }
+                whatsappPayload.template = templatePayload;
+            } else if (data.type === 'image') {
+                whatsappPayload.type = 'image';
+                whatsappPayload.image = {
+                    link: data.content,
+                    caption: msgMetadata.caption || undefined
+                };
+            } else if (data.type === 'document') {
+                whatsappPayload.type = 'document';
+                whatsappPayload.document = {
+                    link: data.content,
+                    filename:
+                        msgMetadata.originalName ||
+                        msgMetadata.fileName ||
+                        'Attachment',
+                    caption: msgMetadata.caption || undefined
+                };
+            } else if (data.type === 'video') {
+                whatsappPayload.type = 'video';
+                whatsappPayload.video = {
+                    link: data.content,
+                    caption: msgMetadata.caption || undefined
+                };
+            } else if (data.type === 'audio') {
+                whatsappPayload.type = 'audio';
+                whatsappPayload.audio = {
+                    link: data.content
+                };
+            } else {
+                whatsappPayload.type = 'text';
+                whatsappPayload.text = { body: data.content };
+            }
+
             const response = await fetch(
                 `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
                 {
@@ -244,15 +326,7 @@ export async function sendOutboundMessage(data: {
                         Authorization: `Bearer ${accessToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        messaging_product: 'whatsapp',
-                        recipient_type: 'individual',
-                        to: conversation.externalId,
-                        type: data.type === 'template' ? 'template' : 'text',
-                        ...(data.type === 'template'
-                            ? { template: data.metadata?.template }
-                            : { text: { body: data.content } })
-                    })
+                    body: JSON.stringify(whatsappPayload)
                 }
             );
 
@@ -267,16 +341,47 @@ export async function sendOutboundMessage(data: {
             if (result.messages && result.messages.length > 0) {
                 externalMessageId = result.messages[0]?.id ?? externalMessageId;
             }
-        } else if (conversation.provider === 'facebook') {
-            const pageId = metaConfig.facebookPageId;
-            if (!pageId) {
+        } else {
+            // Facebook Messenger or Instagram
+            const endpointId =
+                conversation.provider === 'instagram'
+                    ? metaConfig.instagramBusinessAccountId
+                    : metaConfig.facebookPageId;
+
+            if (!endpointId) {
                 throw new Error(
-                    'Facebook Page ID not configured for this integration'
+                    `${conversation.provider === 'instagram' ? 'Instagram Business Account' : 'Facebook Page'} ID not configured for this integration`
                 );
             }
 
+            const messengerMessage: Record<string, unknown> = {};
+
+            if (data.type === 'image') {
+                messengerMessage.attachment = {
+                    type: 'image',
+                    payload: { url: data.content, is_reusable: true }
+                };
+            } else if (data.type === 'video') {
+                messengerMessage.attachment = {
+                    type: 'video',
+                    payload: { url: data.content, is_reusable: true }
+                };
+            } else if (data.type === 'audio') {
+                messengerMessage.attachment = {
+                    type: 'audio',
+                    payload: { url: data.content, is_reusable: true }
+                };
+            } else if (data.type === 'document') {
+                messengerMessage.attachment = {
+                    type: 'file',
+                    payload: { url: data.content, is_reusable: true }
+                };
+            } else {
+                messengerMessage.text = data.content;
+            }
+
             const response = await fetch(
-                `https://graph.facebook.com/v22.0/${pageId}/messages`,
+                `https://graph.facebook.com/v22.0/${endpointId}/messages`,
                 {
                     method: 'POST',
                     headers: {
@@ -286,7 +391,7 @@ export async function sendOutboundMessage(data: {
                     body: JSON.stringify({
                         recipient: { id: conversation.externalId },
                         messaging_type: 'RESPONSE',
-                        message: { text: data.content }
+                        message: messengerMessage
                     })
                 }
             );
@@ -296,42 +401,10 @@ export async function sendOutboundMessage(data: {
                 message_id?: string;
             };
             if (!response.ok) {
-                logger.error({ result }, 'Failed to send Facebook message');
-                throw new Error(result.error?.message || 'Meta API error');
-            }
-            if (result.message_id) {
-                externalMessageId = result.message_id;
-            }
-        } else if (conversation.provider === 'instagram') {
-            const igId = metaConfig.instagramBusinessAccountId;
-            if (!igId) {
-                throw new Error(
-                    'Instagram Business Account ID not configured for this integration'
+                logger.error(
+                    { result },
+                    'Failed to send Messenger/Instagram message'
                 );
-            }
-
-            const response = await fetch(
-                `https://graph.facebook.com/v22.0/${igId}/messages`,
-                {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        recipient: { id: conversation.externalId },
-                        messaging_type: 'RESPONSE',
-                        message: { text: data.content }
-                    })
-                }
-            );
-
-            const result = (await response.json()) as {
-                error?: { message?: string };
-                message_id?: string;
-            };
-            if (!response.ok) {
-                logger.error({ result }, 'Failed to send Instagram message');
                 throw new Error(result.error?.message || 'Meta API error');
             }
             if (result.message_id) {
@@ -348,27 +421,51 @@ export async function sendOutboundMessage(data: {
         errorMessage = err.message;
     }
 
-    const message = await prisma.message.create({
-        data: {
-            conversationId: conversation.id,
-            externalId: externalMessageId,
-            direction: 'OUTBOUND',
-            content: data.content,
-            type: data.type || 'text',
-            status: messageStatus,
-            errorMessage,
-            metadata: (data.metadata as Prisma.InputJsonValue) || {}
-        }
-    });
+    let message;
+    if (data.messageId) {
+        message = await prisma.message.update({
+            where: { id: data.messageId },
+            data: {
+                content: data.content,
+                type: data.type || 'text',
+                externalId: externalMessageId,
+                status: messageStatus,
+                errorMessage,
+                metadata: (data.metadata as Prisma.InputJsonValue) || {}
+            }
+        });
+    } else {
+        message = await prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                externalId: externalMessageId,
+                direction: 'OUTBOUND',
+                content: data.content,
+                type: data.type || 'text',
+                status: messageStatus,
+                errorMessage,
+                metadata: (data.metadata as Prisma.InputJsonValue) || {}
+            }
+        });
+    }
 
     const updatedConversation = await prisma.conversation.update({
         where: { id: conversation.id },
         data: { lastMessageAt: new Date() },
-        include: { customer: { select: { name: true, email: true } } }
+        include: {
+            customer: { select: { name: true, email: true } },
+            messages: {
+                orderBy: { createdAt: 'desc' },
+                take: 1
+            }
+        }
     });
 
-    emitToOrg(data.organizationId, 'message:created', {
-        conversation: updatedConversation,
+    emitToOrg(data.organizationId, 'inbox:updated', {
+        conversation: updatedConversation
+    });
+
+    emitToConversation(data.conversationId, 'message:created', {
         message
     });
 
