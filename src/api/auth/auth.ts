@@ -207,27 +207,37 @@ export const auth = betterAuth({
                 }
             },
             sendInvitationEmail: async (data) => {
-                const inviteUrl = `${env.appUrl}/accept-invitation?id=${data.invitation.id}`;
-                await sendEmail({
-                    to: data.email,
-                    subject: `You've been invited to join ${data.organization.name}`,
-                    html: buildEmailHtml({
-                        title: `Join ${data.organization.name} on Briefly CRM`,
-                        previewText: `${data.inviter.user.name} has invited you to join ${data.organization.name}`,
-                        orgLogo:
-                            (data.organization as { logo?: string }).logo ??
-                            undefined,
-                        body: `
-                            <p style="margin: 0 0 16px;">Hi there,</p>
-                            <p style="margin: 0 0 16px;">
-                                <strong style="color: #1A1A1A;">${data.inviter.user.name}</strong> has invited you to join the organization
-                                <strong style="color: #1A1A1A;">${data.organization.name}</strong> as
-                                <em style="color: #4B91E2;">${data.role}</em>.
-                            </p>
-                        `,
-                        cta: { url: inviteUrl, text: 'Accept Invitation' }
-                    })
-                });
+                const inviteUrl = `${env.betterAuthUrl}/api/accept-invitation?id=${data.invitation.id}&email=${encodeURIComponent(data.email)}`;
+                if (env.nodeEnv !== 'development') {
+                    await sendEmail({
+                        to: data.email,
+                        subject: `You've been invited to join ${data.organization.name}`,
+                        html: buildEmailHtml({
+                            title: `Join ${data.organization.name} on Briefly CRM`,
+                            previewText: `${data.inviter.user.name} has invited you to join ${data.organization.name}`,
+                            orgLogo:
+                                (data.organization as { logo?: string }).logo ??
+                                undefined,
+                            body: `
+                                <p style="margin: 0 0 16px;">Hi there,</p>
+                                <p style="margin: 0 0 16px;">
+                                    <strong style="color: #1A1A1A;">${data.inviter.user.name}</strong> has invited you to join the organization
+                                    <strong style="color: #1A1A1A;">${data.organization.name}</strong> as
+                                    <em style="color: #4B91E2;">${data.role}</em>.
+                                </p>
+                            `,
+                            cta: { url: inviteUrl, text: 'Accept Invitation' }
+                        })
+                    });
+                } else {
+                    loggerUtil.info(
+                        `[DEV] Invitation email would be sent to ${data.email}`
+                    );
+                    loggerUtil.info(`[DEV] Invitation URL: ${inviteUrl}`);
+                    loggerUtil.info(
+                        `[DEV] Organization: ${data.organization.name} | Inviter: ${data.inviter.user.name} | Role: ${data.role}`
+                    );
+                }
             },
             roles: {
                 root: ac.newRole(DEFAULT_ROLES['root']),
