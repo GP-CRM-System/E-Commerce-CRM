@@ -183,8 +183,14 @@ function resolveConditionValue(
         'supportTicketsCount'
     ];
 
-    if ((operator === 'in' || operator === 'notIn') && typeof value === 'string') {
-        const parts = value.split(',').map((v) => v.trim()).filter(Boolean);
+    if (
+        (operator === 'in' || operator === 'notIn') &&
+        typeof value === 'string'
+    ) {
+        const parts = value
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean);
         if (numericFields.includes(field)) {
             return parts.map((p) => parseFloat(p)).filter((n) => !isNaN(n));
         }

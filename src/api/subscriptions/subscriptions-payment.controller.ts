@@ -147,8 +147,7 @@ export const subscriptionCallback = asyncHandler(
 
         const { obj } = body;
         const isSuccess = obj.success === true;
-        const rawRef =
-            obj.merchant_order_id || obj.extra?.special_reference;
+        const rawRef = obj.merchant_order_id || obj.extra?.special_reference;
         // Extract organizationId from compound reference (orgId__timestamp)
         const organizationId = rawRef?.split('__')[0];
 

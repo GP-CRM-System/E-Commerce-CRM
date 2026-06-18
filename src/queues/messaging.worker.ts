@@ -15,7 +15,10 @@ import { checkAndStoreIdempotencyAtomic } from '../api/integrations/webhook.serv
 // Inbound Routing Helper: Resolves correct integration in case of multi-tenant ID sharing
 // ----------------------------------------------------
 async function resolveIntegrationForInbound(
-    channelKey: 'whatsappPhoneNumberId' | 'facebookPageId' | 'instagramBusinessAccountId',
+    channelKey:
+        | 'whatsappPhoneNumberId'
+        | 'facebookPageId'
+        | 'instagramBusinessAccountId',
     channelValue: string,
     senderId: string,
     provider: 'whatsapp' | 'facebook' | 'instagram'
@@ -47,7 +50,9 @@ async function resolveIntegrationForInbound(
     });
 
     if (conversation) {
-        const matched = integrations.find((i) => i.orgId === conversation.organizationId);
+        const matched = integrations.find(
+            (i) => i.orgId === conversation.organizationId
+        );
         if (matched) return matched;
     }
 
@@ -77,7 +82,10 @@ export const webhookWorker = new Worker(
                 const value = change.value;
                 if (value && value.metadata) {
                     const phoneNumberId = value.metadata.phone_number_id;
-                    const senderId = value.messages?.[0]?.from || value.statuses?.[0]?.recipient_id || '';
+                    const senderId =
+                        value.messages?.[0]?.from ||
+                        value.statuses?.[0]?.recipient_id ||
+                        '';
                     const integration = await resolveIntegrationForInbound(
                         'whatsappPhoneNumberId',
                         phoneNumberId,
@@ -180,7 +188,9 @@ export const webhookWorker = new Worker(
                             customerName
                         });
 
-                        const signedMsg = await signMessageMedia(result.message);
+                        const signedMsg = await signMessageMedia(
+                            result.message
+                        );
 
                         // Emit real-time events (centralized here, not in service layer)
                         emitToConversation(
@@ -343,7 +353,9 @@ export const webhookWorker = new Worker(
                             `[Worker] [${provider.toUpperCase()} Inbound] Processed and saved message: "${result.message.content}" (ID: ${result.message.id})`
                         );
 
-                        const signedMsg = await signMessageMedia(result.message);
+                        const signedMsg = await signMessageMedia(
+                            result.message
+                        );
 
                         // Emit real-time events (centralized here, not in service layer)
                         emitToConversation(
@@ -424,7 +436,9 @@ export const outboundWorker = new Worker(
 
         // Only dispatch PENDING messages — skip if already SENT/DELIVERED/READ/FAILED
         if (message.status !== 'PENDING') {
-            logger.info(`[Worker] Skipping outbound message ${messageId}: already in status ${message.status}`);
+            logger.info(
+                `[Worker] Skipping outbound message ${messageId}: already in status ${message.status}`
+            );
             return;
         }
 
@@ -601,7 +615,8 @@ export const outboundWorker = new Worker(
                 conversationId,
                 messageId,
                 status: 'SENT',
-                tempId: (message.metadata as any)?.tempId
+                tempId: (message.metadata as Record<string, unknown> | null)
+                    ?.tempId
             });
         } catch (err: unknown) {
             const error =
@@ -630,7 +645,8 @@ export const outboundWorker = new Worker(
                     messageId,
                     status: 'FAILED',
                     errorMessage: error.message || 'API delivery failed',
-                    tempId: (message.metadata as any)?.tempId
+                    tempId: (message.metadata as Record<string, unknown> | null)
+                        ?.tempId
                 });
             } else {
                 throw err; // Trigger retry in BullMQ
@@ -708,7 +724,9 @@ export const statusWorker = new Worker(
                         messageId: message.id,
                         status: newStatus,
                         errorMessage,
-                        tempId: (message.metadata as any)?.tempId
+                        tempId: (
+                            message.metadata as Record<string, unknown> | null
+                        )?.tempId
                     }
                 );
             }

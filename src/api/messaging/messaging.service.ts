@@ -4,7 +4,10 @@ import logger from '../../utils/logger.util.js';
 import { AppError } from '../../utils/response.util.js';
 import { emitToOrg, emitToConversation } from '../../config/socket.config.js';
 import { decryptSafe } from '../../utils/encryption.util.js';
-import { getSignedDownloadUrl, isB2Configured } from '../../config/b2.config.js';
+import {
+    getSignedDownloadUrl,
+    isB2Configured
+} from '../../config/b2.config.js';
 
 export async function signMessageMedia(message: unknown) {
     if (!message) return message;
@@ -276,7 +279,9 @@ export async function sendOutboundMessage(data: {
 
             if (data.type === 'template') {
                 whatsappPayload.type = 'template';
-                const templatePayload = JSON.parse(JSON.stringify(msgMetadata.template || msgMetadata));
+                const templatePayload = JSON.parse(
+                    JSON.stringify(msgMetadata.template || msgMetadata)
+                );
                 if (templatePayload && typeof templatePayload === 'object') {
                     delete templatePayload.tempId;
                 }
@@ -291,7 +296,10 @@ export async function sendOutboundMessage(data: {
                 whatsappPayload.type = 'document';
                 whatsappPayload.document = {
                     link: data.content,
-                    filename: msgMetadata.originalName || msgMetadata.fileName || 'Attachment',
+                    filename:
+                        msgMetadata.originalName ||
+                        msgMetadata.fileName ||
+                        'Attachment',
                     caption: msgMetadata.caption || undefined
                 };
             } else if (data.type === 'video') {
@@ -393,7 +401,10 @@ export async function sendOutboundMessage(data: {
                 message_id?: string;
             };
             if (!response.ok) {
-                logger.error({ result }, 'Failed to send Messenger/Instagram message');
+                logger.error(
+                    { result },
+                    'Failed to send Messenger/Instagram message'
+                );
                 throw new Error(result.error?.message || 'Meta API error');
             }
             if (result.message_id) {

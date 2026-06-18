@@ -24,7 +24,9 @@ async function run() {
         console.log(`  Provider: ${c.provider}`);
         console.log(`  Messages Count in this Conv: ${c.messages.length}`);
         for (const m of c.messages) {
-            console.log(`    * [${m.direction}] [Status: ${m.status}] ID: ${m.id}, Content: "${m.content.slice(0, 50)}"`);
+            console.log(
+                `    * [${m.direction}] [Status: ${m.status}] ID: ${m.id}, Content: "${m.content.slice(0, 50)}"`
+            );
         }
     }
 

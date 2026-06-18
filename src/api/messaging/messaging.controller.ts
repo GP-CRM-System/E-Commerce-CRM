@@ -10,7 +10,6 @@ import {
 import { asyncHandler } from '../../middlewares/error.middleware.js';
 import { getPagination } from '../../utils/pagination.util.js';
 import { emitToConversation, emitToOrg } from '../../config/socket.config.js';
-import logger from '../../utils/logger.util.js';
 import {
     getSignedUploadUrl,
     getSignedDownloadUrl,

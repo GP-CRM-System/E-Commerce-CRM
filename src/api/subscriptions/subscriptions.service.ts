@@ -68,11 +68,6 @@ export async function subscribeOrganization(
 
     // Store the pending upgrade in metadata WITHOUT changing the current plan.
     // The plan will only be updated after successful payment via activateSubscription.
-    const existing = await prisma.subscription.findUnique({
-        where: { organizationId },
-        include: { plan: true }
-    });
-
     const subscription = await prisma.subscription.upsert({
         where: { organizationId },
         create: {
@@ -150,8 +145,11 @@ export async function activateSubscription(
 
     // Read the pending plan from metadata (set during initializeSubscription)
     const metadata = subscription.metadata as Record<string, unknown> | null;
-    const pendingPlanId = (metadata?.pendingPlanId as string) || subscription.planId;
-    const pendingBillingCycle = (metadata?.pendingBillingCycle as string) || subscription.plan.billingCycle;
+    const pendingPlanId =
+        (metadata?.pendingPlanId as string) || subscription.planId;
+    const pendingBillingCycle =
+        (metadata?.pendingBillingCycle as string) ||
+        subscription.plan.billingCycle;
 
     const startDate = new Date();
     const endDate = new Date();
