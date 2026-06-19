@@ -169,7 +169,8 @@ export async function getOrderDetails(id: string, organizationId: string) {
                                 price: true
                             }
                         },
-                        quantity: true
+                        quantity: true,
+                        price: true
                     }
                 },
                 fulfillmentStatus: true,
