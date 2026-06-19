@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import { fromNodeHeaders } from 'better-auth/node';
 import prisma from '../config/prisma.config.js';
 import { DEFAULT_ROLES } from '../config/roles.config.js';
 import { auth } from '../api/auth/auth.js';
@@ -57,8 +58,8 @@ async function resetDatabase() {
     logger.info('[SEED] Database reset complete\n');
 }
 
-async function createOrganizations(adminUserId: string) {
-    logger.info('[SEED] Creating organizations directly via Prisma...');
+async function createOrganizations(adminUserId: string, authToken: string) {
+    logger.info('[SEED] Creating organizations...');
 
     const orgNames = ['Demo Organization'];
     const organizations = [];
@@ -73,11 +74,13 @@ async function createOrganizations(adminUserId: string) {
             faker.string.alphanumeric(4);
 
         const org = await auth.api.createOrganization({
+            headers: fromNodeHeaders({
+                authorization: `Bearer ${authToken}`
+            }),
             body: {
                 name,
                 slug,
-                logo: faker.image.url(),
-                userId: adminUserId
+                logo: faker.image.url()
             }
         });
 
@@ -100,7 +103,10 @@ async function createOrganizations(adminUserId: string) {
     return organizations;
 }
 
-async function createUsers() {
+async function createUsers(): Promise<{
+    adminUserId: string;
+    authToken: string;
+}> {
     logger.info('[SEED] Creating users via Better Auth API...');
 
     const adminEmail = 'admin@example.com';
@@ -128,14 +134,29 @@ async function createUsers() {
                 throw new Error('User supposedly exists but not found in DB', {
                     cause: error
                 });
+
             adminUserId = existingUser.id;
         } else {
             throw error;
         }
     }
 
+    // Mark email as verified (required for sign-in since requireEmailVerification: true)
+    await prisma.user.update({
+        where: { id: adminUserId },
+        data: { emailVerified: true }
+    });
+
+    // Sign in to get a bearer token for subsequent API calls (e.g., createOrganization)
+    const signin = await auth.api.signInEmail({
+        body: { email: adminEmail, password: 'Admin123!' }
+    });
+
+    if (!signin?.token) throw new Error('Signin failed - no token returned');
+
     logger.info(`[SEED] Created/Found admin user\n`);
-    return adminUserId;
+
+    return { adminUserId, authToken: signin.token };
 }
 
 async function createSegmentsAndCampaigns(
@@ -1368,8 +1389,8 @@ async function main() {
     const startTime = Date.now();
 
     await resetDatabase();
-    const adminUserId = await createUsers();
-    const organizations = await createOrganizations(adminUserId);
+    const { adminUserId, authToken } = await createUsers();
+    const organizations = await createOrganizations(adminUserId, authToken);
     if (organizations.length === 0) throw new Error('No organizations created');
     const mainOrg = organizations[0];
     if (!mainOrg) throw new Error('Main organization not found');

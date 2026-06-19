@@ -147,10 +147,23 @@ export function verifyCallbackSignature(
         .update(stringToHash)
         .digest('hex');
 
-    const match = crypto.timingSafeEqual(
-        Buffer.from(computedHmac, 'hex'),
-        Buffer.from(hmacReceived, 'hex')
-    );
+    const computedBuf = Buffer.from(computedHmac, 'hex');
+    const receivedBuf = Buffer.from(hmacReceived, 'hex');
+
+    if (computedBuf.length !== receivedBuf.length) {
+        logger.warn(
+            {
+                computedHmac,
+                hmacReceived,
+                computedLen: computedBuf.length,
+                receivedLen: receivedBuf.length
+            },
+            'Paymob HMAC signature length mismatch'
+        );
+        return false;
+    }
+
+    const match = crypto.timingSafeEqual(computedBuf, receivedBuf);
 
     if (!match) {
         logger.warn(

@@ -36,7 +36,14 @@ export const auth = betterAuth({
             maxAge: 60 * 60 * 24,
             enabled: true,
             strategy: 'compact'
-        }
+        },
+        cookie:
+            env.nodeEnv === 'production'
+                ? {
+                      sameSite: 'none',
+                      secure: true
+                  }
+                : undefined
     },
     emailAndPassword: {
         enabled: true,

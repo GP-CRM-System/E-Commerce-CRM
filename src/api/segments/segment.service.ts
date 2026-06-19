@@ -38,6 +38,46 @@ export async function createSegment(
     });
 }
 
+const segmentInclude = (organizationId: string) =>
+    ({
+        creator: {
+            select: {
+                name: true,
+                image: true,
+                members: {
+                    where: { organizationId },
+                    select: { role: true }
+                }
+            }
+        },
+        _count: {
+            select: { campaigns: true }
+        }
+    }) as const;
+
+type SegmentWithCreator = Prisma.SegmentGetPayload<{
+    include: ReturnType<typeof segmentInclude>;
+}>;
+
+function flattenCreator(
+    s: SegmentWithCreator,
+    _organizationId: string
+): Prisma.SegmentGetPayload<object> & {
+    creator: string | null;
+    creatorRole: string | null;
+    creatorImage: string | null;
+    usedInCount: number;
+} {
+    const { creator, _count, ...rest } = s;
+    return {
+        ...rest,
+        creator: creator?.name ?? null,
+        creatorRole: creator?.members?.[0]?.role ?? null,
+        creatorImage: creator?.image ?? null,
+        usedInCount: _count?.campaigns ?? 0
+    };
+}
+
 export async function getSegments(
     organizationId: string,
     take: number,
@@ -57,21 +97,17 @@ export async function getSegments(
             orderBy: { createdAt: 'desc' },
             take,
             skip,
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                filter: true,
-                size: true,
-                creatorId: true,
-                createdAt: true,
-                updatedAt: true
-            }
+            include: segmentInclude(organizationId)
         }),
         prisma.segment.count({ where })
     ]);
 
-    return { segments, total };
+    return {
+        segments: segments.map((s) =>
+            flattenCreator(s as unknown as SegmentWithCreator, organizationId)
+        ),
+        total
+    };
 }
 
 async function getSegmentForOrg(id: string, organizationId: string) {
@@ -89,7 +125,15 @@ export async function getSegmentById(id: string, organizationId: string) {
 
 async function refreshSegmentSize(id: string, organizationId: string) {
     const size = await computeSegmentCustomerCount(id, organizationId);
-    return prisma.segment.update({ where: { id }, data: { size } });
+    const segment = await prisma.segment.update({
+        where: { id },
+        data: { size },
+        include: segmentInclude(organizationId)
+    });
+    return flattenCreator(
+        segment as unknown as SegmentWithCreator,
+        organizationId
+    );
 }
 
 async function computeSegmentCustomerCount(
