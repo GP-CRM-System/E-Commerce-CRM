@@ -437,6 +437,34 @@ export const updateEvent = asyncHandler(
     }
 );
 
+export const setCustomerTags = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { activeOrganizationId } = req.session;
+        const customerId = req.params.id as string;
+        const { tagIds } = req.body as { tagIds: string[] };
+
+        if (!customerId || !activeOrganizationId) {
+            throw new BadRequestError(
+                'Customer ID and Organization ID are required'
+            );
+        }
+
+        const result = await customerService.setCustomerTags(
+            customerId,
+            tagIds,
+            activeOrganizationId
+        );
+
+        ResponseHandler.success(
+            res,
+            'Customer tags updated successfully',
+            HttpStatus.OK,
+            result,
+            req.url
+        );
+    }
+);
+
 export const deleteEvent = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const { activeOrganizationId } = req.session;

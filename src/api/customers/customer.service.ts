@@ -215,7 +215,14 @@ export async function getCustomerDetails(id: string, organizationId: string) {
                 subscriptionTier: true,
                 accountAgeMonths: true,
                 tags: true,
-                notes: true,
+                notes: {
+                    include: {
+                        author: {
+                            select: { id: true, name: true }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                },
                 orders: true,
                 supportTickets: true,
                 customerEvents: true,
@@ -303,15 +310,9 @@ export async function deleteCustomer(
 
         if (!customer) return null;
 
-        await prisma.$transaction([
-            prisma.note.deleteMany({ where: { customerId: id } }),
-            prisma.customerEvent.deleteMany({ where: { customerId: id } }),
-            prisma.customer.delete({
-                where: {
-                    id
-                }
-            })
-        ]);
+        await prisma.customer.delete({
+            where: { id }
+        });
 
         await AuditService.log({
             organizationId,
@@ -554,6 +555,29 @@ export async function deleteEvent(
         logger.error(`Error deleting event: ${error}`);
         throw error;
     }
+}
+
+export async function setCustomerTags(
+    customerId: string,
+    tagIds: string[],
+    organizationId: string
+) {
+    const customer = await prisma.customer.findFirst({
+        where: { id: customerId, organizationId }
+    });
+    if (!customer) {
+        throw new NotFoundError('Customer not found');
+    }
+
+    return prisma.customer.update({
+        where: { id: customerId },
+        data: {
+            tags: {
+                set: tagIds.map((id) => ({ id }))
+            }
+        },
+        include: { tags: true }
+    });
 }
 
 export async function getCustomerByExternalId(

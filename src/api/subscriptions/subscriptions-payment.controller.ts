@@ -163,6 +163,7 @@ export const subscriptionCallback = asyncHandler(
             );
             await subscriptionService.activateSubscription(
                 organizationId,
+                String(obj.id),
                 String(obj.id)
             );
         } else {
@@ -219,6 +220,7 @@ export const subscriptionRedirect = asyncHandler(
         if (obj.success) {
             await subscriptionService.activateSubscription(
                 organizationId,
+                obj.id,
                 obj.id
             );
             logger.info(

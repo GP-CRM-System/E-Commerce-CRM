@@ -17,10 +17,11 @@ export function requireActiveSubscription() {
         }
 
         try {
-            const subscription =
+            const sub =
                 await subscriptionService.getCurrentSubscription(
                     organizationId
                 );
+            const subscription = sub?.subscription ?? null;
             const isActive =
                 subscriptionService.isSubscriptionActive(subscription);
 

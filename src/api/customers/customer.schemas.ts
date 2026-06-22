@@ -188,4 +188,8 @@ export const customerFilters = z.object({
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
 });
 
+export const setCustomerTags = z.object({
+    tagIds: z.array(z.string()).min(1, 'At least one tag ID is required')
+});
+
 export type CustomerFilters = z.infer<typeof customerFilters>;

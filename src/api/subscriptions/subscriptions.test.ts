@@ -98,7 +98,10 @@ describe('Subscriptions API', () => {
                 .set('Authorization', `Bearer ${auth.token}`);
 
             expect(response.status).toBe(200);
-            expect(response.body.data).toBeNull();
+            expect(response.body.data).toEqual({
+                subscription: null,
+                usage: { customers: 0, products: 0 }
+            });
         });
     });
 

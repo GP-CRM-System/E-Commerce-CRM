@@ -644,18 +644,18 @@ async function createCustomers(
             }
 
             const tagConfigs = [
-                { name: 'VIP', color: 'FFD700' },
-                { name: 'Premium', color: '8B5CF6' },
-                { name: 'Newsletter', color: '3B82F6' },
-                { name: 'Bulk Buyer', color: '10B981' },
-                { name: 'Wholesale', color: 'F59E0B' },
-                { name: 'New Customer', color: '22C55E' },
-                { name: 'Loyal', color: '14B8A6' },
-                { name: 'At Risk', color: 'EF4444' },
-                { name: 'Inactive', color: '6B7280' },
-                { name: 'First Time Buyer', color: 'EC4899' },
-                { name: 'Repeat Customer', color: '6366F1' },
-                { name: 'High Spender', color: 'F97316' }
+                { name: 'VIP', color: '#FFD700' },
+                { name: 'Premium', color: '#8B5CF6' },
+                { name: 'Newsletter', color: '#3B82F6' },
+                { name: 'Bulk Buyer', color: '#10B981' },
+                { name: 'Wholesale', color: '#F59E0B' },
+                { name: 'New Customer', color: '#22C55E' },
+                { name: 'Loyal', color: '#14B8A6' },
+                { name: 'At Risk', color: '#EF4444' },
+                { name: 'Inactive', color: '#6B7280' },
+                { name: 'First Time Buyer', color: '#EC4899' },
+                { name: 'Repeat Customer', color: '#6366F1' },
+                { name: 'High Spender', color: '#F97316' }
             ];
             const existingTags = await prisma.tag.findMany({
                 where: { organizationId: org.id }

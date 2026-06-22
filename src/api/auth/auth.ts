@@ -68,10 +68,8 @@ export const auth = betterAuth({
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
-            // corsOrigin = the frontend URL (e.g. http://localhost:5173)
             const frontendUrl = env.corsOrigin || 'http://localhost:5173';
             const callbackUrl = `${frontendUrl}/verify-email?verified=true`;
-            // Replace the callbackURL in the Better Auth generated URL
             const modifiedUrl = url.includes('callbackURL=')
                 ? url.replace(
                       /callbackURL=[^&]*/,
@@ -119,7 +117,10 @@ export const auth = betterAuth({
         deleteUser: { enabled: true }
     },
     account: {
-        accountLinking: { enabled: true }
+        accountLinking: {
+            enabled: true,
+            trustedProviders: ['google', 'facebook', 'microsoft']
+        }
     },
     plugins: [
         customSession(async ({ user, session }) => {
@@ -305,11 +306,16 @@ export const auth = betterAuth({
         facebook: {
             clientId: env.metaAppId!,
             clientSecret: env.metaAppSecret!
+        },
+        microsoft: {
+            clientId: env.microsoftClientId!,
+            clientSecret: env.microsoftClientSecret!,
+            tenantId: 'common',
+            authority: 'https://login.microsoftonline.com',
+            prompt: 'select_account'
         }
     },
     advanced: {
-        // CSRF check is kept enabled for security.
-        // Trusted origins are configured above to allow legitimate cross-origin requests.
         ipAddress: {
             ipAddressHeaders: ['x-forwarded-for', 'x-real-ip']
         },

@@ -253,7 +253,19 @@ export async function getSegmentCustomers(
             orderBy: { [actualSortBy]: sortOrder },
             take,
             skip,
-            include: { tags: true }
+            include: {
+                tags: true,
+                customerEvents: {
+                    select: {
+                        id: true,
+                        eventType: true,
+                        description: true,
+                        occurredAt: true
+                    },
+                    take: 1,
+                    orderBy: { occurredAt: 'desc' }
+                }
+            }
         }),
         prisma.customer.count({ where: segmentWhere })
     ]);

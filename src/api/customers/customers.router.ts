@@ -109,4 +109,12 @@ router
         customerController.deleteEvent
     );
 
+router
+    .route('/:id/tags')
+    .put(
+        requirePermission('customers:write'),
+        validateRequest(customerSchema.setCustomerTags),
+        customerController.setCustomerTags
+    );
+
 export default router;

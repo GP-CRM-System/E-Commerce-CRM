@@ -30,14 +30,14 @@ export const listPlans = asyncHandler(
 export const getCurrentSubscription = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
         const organizationId = req.session.activeOrganizationId!;
-        const subscription =
+        const { subscription, usage } =
             await subscriptionService.getCurrentSubscription(organizationId);
 
         ResponseHandler.success(
             res,
             'Subscription fetched successfully',
             HttpStatus.OK,
-            subscription,
+            { subscription, usage },
             req.url
         );
     }
@@ -83,6 +83,28 @@ export const cancel = asyncHandler(
             'Subscription canceled',
             HttpStatus.OK,
             subscription,
+            req.url
+        );
+    }
+);
+
+export const listInvoices = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+        const organizationId = req.session.activeOrganizationId!;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+
+        const result = await subscriptionService.listInvoices(
+            organizationId,
+            page,
+            limit
+        );
+
+        ResponseHandler.success(
+            res,
+            'Invoices fetched successfully',
+            HttpStatus.OK,
+            result,
             req.url
         );
     }

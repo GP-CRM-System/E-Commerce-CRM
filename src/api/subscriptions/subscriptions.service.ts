@@ -1,7 +1,11 @@
 import prisma from '../../config/prisma.config.js';
 import { NotFoundError } from '../../utils/response.util.js';
 import { Prisma } from '../../generated/prisma/client.js';
-import type { Subscription, Plan } from '../../generated/prisma/client.js';
+import type {
+    Subscription,
+    Plan,
+    SubscriptionInvoice
+} from '../../generated/prisma/client.js';
 export { isSubscriptionActive } from '../../utils/plan-limits.util.js';
 
 export type SubscriptionWithPlan = Subscription & { plan: Plan };
@@ -13,12 +17,24 @@ export async function listPlans(includeInactive = false) {
     });
 }
 
+export async function getUsage(organizationId: string) {
+    const [customersCount, productsCount] = await Promise.all([
+        prisma.customer.count({ where: { organizationId } }),
+        prisma.product.count({ where: { organizationId } })
+    ]);
+    return {
+        customers: customersCount,
+        products: productsCount
+    };
+}
+
 export async function getCurrentSubscription(organizationId: string) {
     const subscription = await prisma.subscription.findUnique({
         where: { organizationId },
         include: { plan: true }
     });
-    return subscription;
+    const usage = await getUsage(organizationId);
+    return { subscription, usage };
 }
 
 export async function subscribeOrganization(
@@ -132,7 +148,8 @@ export async function cancelSubscription(
 
 export async function activateSubscription(
     organizationId: string,
-    paymobSubscriptionId: string
+    paymobSubscriptionId: string,
+    paymobTransactionId: string
 ) {
     const subscription = await prisma.subscription.findUnique({
         where: { organizationId },
@@ -153,24 +170,46 @@ export async function activateSubscription(
 
     const startDate = new Date();
     const endDate = new Date();
-    if (pendingBillingCycle === 'yearly') {
+    const thisBillingCycle =
+        pendingBillingCycle || subscription.plan.billingCycle;
+    if (thisBillingCycle === 'yearly') {
         endDate.setFullYear(endDate.getFullYear() + 1);
     } else {
         endDate.setMonth(endDate.getMonth() + 1);
     }
 
-    return prisma.subscription.update({
-        where: { organizationId },
-        data: {
-            planId: pendingPlanId,
-            status: 'ACTIVE',
-            paymobSubscriptionId,
-            startDate,
-            endDate,
-            metadata: Prisma.DbNull // Clear pending upgrade metadata
-        },
-        include: { plan: true }
-    });
+    const [updated] = await prisma.$transaction([
+        prisma.subscription.update({
+            where: { organizationId },
+            data: {
+                planId: pendingPlanId,
+                status: 'ACTIVE',
+                paymobSubscriptionId,
+                startDate,
+                endDate,
+                metadata: Prisma.DbNull
+            },
+            include: { plan: true }
+        }),
+        prisma.subscriptionInvoice.create({
+            data: {
+                subscriptionId: subscription.id,
+                organizationId,
+                planId: pendingPlanId,
+                planName: subscription.plan.displayName,
+                amount: subscription.plan.price,
+                currency: 'EGP',
+                status: 'PAID',
+                billingCycle: thisBillingCycle,
+                periodStart: startDate,
+                periodEnd: endDate,
+                paidAt: new Date(),
+                paymobTransactionId
+            }
+        })
+    ]);
+
+    return updated;
 }
 
 export function hasFeature(
@@ -186,4 +225,63 @@ export function hasFeature(
     const features =
         (subscription.plan.features as Record<string, number>) || {};
     return (features[feature] ?? 0) > 0;
+}
+
+// ─── Invoice Functions ───
+
+export async function createInvoice(
+    organizationId: string,
+    subscriptionId: string,
+    plan: Plan,
+    billingCycle: string,
+    paymobTransactionId?: string
+): Promise<SubscriptionInvoice> {
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (billingCycle === 'yearly') {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+    }
+
+    return prisma.subscriptionInvoice.create({
+        data: {
+            subscriptionId,
+            organizationId,
+            planId: plan.id,
+            planName: plan.displayName,
+            amount: plan.price,
+            currency: 'EGP',
+            status: 'PAID',
+            billingCycle,
+            periodStart: now,
+            periodEnd,
+            paidAt: now,
+            paymobTransactionId
+        }
+    });
+}
+
+export async function listInvoices(
+    organizationId: string,
+    page: number = 1,
+    limit: number = 10
+) {
+    const skip = (page - 1) * limit;
+    const [invoices, total] = await Promise.all([
+        prisma.subscriptionInvoice.findMany({
+            where: { organizationId },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit
+        }),
+        prisma.subscriptionInvoice.count({ where: { organizationId } })
+    ]);
+    return { invoices, total, page, limit };
+}
+
+export async function getInvoiceById(id: string, organizationId: string) {
+    return prisma.subscriptionInvoice.findUnique({
+        where: { id, organizationId }
+    });
 }

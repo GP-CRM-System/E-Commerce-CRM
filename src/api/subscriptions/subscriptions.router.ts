@@ -46,4 +46,10 @@ router.post(
 router.post('/paymob/callback', paymentController.subscriptionCallback);
 router.get('/paymob/redirect', paymentController.subscriptionRedirect);
 
+router.get(
+    '/invoices',
+    requirePermission('subscriptions:read'),
+    subscriptionController.listInvoices
+);
+
 export default router;

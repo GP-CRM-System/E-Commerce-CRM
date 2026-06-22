@@ -12,3 +12,8 @@ export const subscribeSchema = z.object({
 export const cancelSubscriptionSchema = z.object({
     immediately: z.boolean().optional().default(false)
 });
+
+export const invoiceListQuerySchema = z.object({
+    page: z.coerce.number().optional().default(1),
+    limit: z.coerce.number().optional().default(10)
+});

@@ -31,6 +31,10 @@ export const env = {
     googleClientId: process.env.GOOGLE_CLIENT_ID as string,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
 
+    // Microsoft OAuth Configuration
+    microsoftClientId: process.env.MICROSOFT_CLIENT_ID as string,
+    microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET as string,
+
     // Meta Integration
     metaVerifyToken: process.env.META_VERIFY_TOKEN,
     metaAppSecret: process.env.META_APP_SECRET,

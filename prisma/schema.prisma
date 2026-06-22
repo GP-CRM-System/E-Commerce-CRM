@@ -110,8 +110,9 @@ model Organization {
   emailTemplates EmailTemplate[]
   conversations  Conversation[]
   transactions   Transaction[]
-  subscription   Subscription?
-  productInteractions CustomerProductInteraction[]
+  subscription           Subscription?
+  subscriptionInvoices   SubscriptionInvoice[]
+  productInteractions    CustomerProductInteraction[]
 
   @@map("organization")
 }
@@ -126,7 +127,7 @@ model Plan {
   isActive      Boolean        @default(true)
   sortOrder     Int            @default(0)
   createdAt     DateTime       @default(now())
-  subscriptions Subscription[]
+  subscriptions    Subscription[]
 
   @@map("plan")
 }
@@ -155,11 +156,42 @@ model Subscription {
   metadata       Json?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+  invoiceRecords SubscriptionInvoice[]
 
   @@unique([organizationId])
   @@index([organizationId])
   @@index([planId])
   @@map("subscription")
+}
+
+enum InvoiceStatus {
+  PAID
+  UNPAID
+  FAILED
+}
+
+model SubscriptionInvoice {
+  id              String         @id @default(nanoid())
+  subscriptionId  String
+  subscription    Subscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planId          String
+  planName        String
+  amount          Decimal        @db.Decimal(10, 2)
+  currency        String         @default("EGP")
+  status          InvoiceStatus  @default(PAID)
+  billingCycle    String         @default("monthly")
+  periodStart     DateTime
+  periodEnd       DateTime
+  paidAt          DateTime       @default(now())
+  paymobTransactionId String?
+  invoiceUrl      String?
+  createdAt       DateTime       @default(now())
+
+  @@index([organizationId])
+  @@index([subscriptionId])
+  @@map("subscription_invoice")
 }
 
 model OrganizationRole {
@@ -315,7 +347,7 @@ model Note {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  customer Customer @relation(fields: [customerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   author   User     @relation(fields: [authorId], references: [id])
 }
 
@@ -677,7 +709,7 @@ model Order {
   shippingStatus ShippingStatus  @default(PENDING)
   paymentStatus  PaymentStatus   @default(PENDING)
   orderItems     OrderItem[]
-  customer       Customer        @relation(fields: [customerId], references: [id])
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -759,8 +791,8 @@ model OrderItem {
   price     Decimal
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 enum SupportTicketStatus {
@@ -791,8 +823,8 @@ model SupportTicket {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customer       Customer              @relation(fields: [customerId], references: [id])
-  order          Order?                @relation(fields: [orderId], references: [id])
+  customer       Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order          Order?                @relation(fields: [orderId], references: [id], onDelete: SetNull)
   notes          TicketNote[]
 
   @@index([organizationId])
